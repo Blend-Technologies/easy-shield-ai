@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Shield, Search, BookOpen, Eye, Plug, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const features = [
   {
@@ -49,6 +50,7 @@ const features = [
     iconColor: "text-electric-sapphire-300",
     borderHover: "hover:border-electric-sapphire-400/40",
     glowColor: "group-hover:shadow-[0_0_30px_hsl(229_83%_60%/0.15)]",
+    link: "/dashboard/visualizer",
   },
   {
     icon: Plug,
@@ -65,6 +67,8 @@ const features = [
 ];
 
 const FeaturesSection = () => {
+  const navigate = useNavigate();
+
   return (
     <section id="features" className="py-24 bg-background">
       <div className="container mx-auto px-4">
@@ -92,6 +96,7 @@ const FeaturesSection = () => {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -6, transition: { duration: 0.25 } }}
+              onClick={() => feature.link && navigate(feature.link)}
               className={`group relative glass-card rounded-2xl p-8 cursor-pointer transition-all duration-300 ${feature.borderHover} ${feature.glowColor}`}
             >
               {/* Gradient overlay on hover */}

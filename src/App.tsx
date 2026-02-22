@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Connections from "./pages/Connections";
+import DesignVisualizer from "./pages/DesignVisualizer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/connections" element={<Connections />} />
+          <Route path="/dashboard/visualizer" element={<DesignVisualizer />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

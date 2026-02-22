@@ -7,6 +7,7 @@ import {
   Shield,
   BookOpen,
   Eye,
+  FileEdit,
   Settings,
   LogOut,
   Menu,
@@ -22,6 +23,7 @@ const sidebarLinks = [
   { label: "Scanner", icon: Shield, href: "/dashboard/scanner" },
   { label: "Knowledge Base", icon: BookOpen, href: "/dashboard/knowledge" },
   { label: "Design Visualizer", icon: Eye, href: "/dashboard/visualizer" },
+  { label: "Proposal Writer", icon: FileEdit, href: "/dashboard/proposal-writer" },
   { label: "Settings", icon: Settings, href: "/dashboard/settings" },
 ];
 

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Shield, Search, BookOpen, Eye, Plug, ArrowRight } from "lucide-react";
+import { Shield, Search, BookOpen, Eye, Plug, ArrowRight, FileEdit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const features = [
@@ -63,6 +63,19 @@ const features = [
     iconColor: "text-vivid-royal-200",
     borderHover: "hover:border-vivid-royal-400/40",
     glowColor: "group-hover:shadow-[0_0_30px_hsl(257_88%_34%/0.15)]",
+  },
+  {
+    icon: FileEdit,
+    title: "Proposal Writer",
+    description:
+      "AI-powered proposal generator for enterprise and government contracts. Upload docs, select your model, and export as Word.",
+    accent: "sky-aqua" as const,
+    gradient: "from-sky-aqua-400/20 to-neon-pink-400/20",
+    iconBg: "bg-sky-aqua-400/15",
+    iconColor: "text-sky-aqua-400",
+    borderHover: "hover:border-sky-aqua-400/40",
+    glowColor: "group-hover:shadow-[0_0_30px_hsl(196_86%_62%/0.15)]",
+    link: "/dashboard/proposal-writer",
   },
 ];
 

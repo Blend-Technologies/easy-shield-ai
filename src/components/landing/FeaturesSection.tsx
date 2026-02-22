@@ -16,7 +16,7 @@ const features = [
   },
   {
     icon: Shield,
-    title: "Security & Scalability Scanner",
+    title: "Cybersecurity",
     description:
       "Automated analysis of your configurations to identify vulnerabilities and bottlenecks with actionable remediation steps.",
     accent: "sky-aqua" as const,

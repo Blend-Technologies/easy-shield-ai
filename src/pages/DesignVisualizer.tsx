@@ -24,12 +24,12 @@ import CustomNode from "@/components/visualizer/CustomNode";
 const nodeTypes = { custom: CustomNode };
 
 const exampleNodes: Node[] = [
-  { id: "1", type: "custom", position: { x: 50, y: 80 }, data: { label: "Salesforce", icon: "☁️", description: "CRM & Sales Cloud" } },
-  { id: "2", type: "custom", position: { x: 350, y: 30 }, data: { label: "API Gateway", icon: "🚪", description: "Gateway & Rate Limiting" } },
-  { id: "3", type: "custom", position: { x: 350, y: 180 }, data: { label: "OAuth / SSO", icon: "🔐", description: "Authentication" } },
-  { id: "4", type: "custom", position: { x: 650, y: 80 }, data: { label: "REST API", icon: "🔗", description: "HTTP Endpoints" } },
-  { id: "5", type: "custom", position: { x: 950, y: 30 }, data: { label: "Database", icon: "🗄️", description: "SQL / NoSQL Store" } },
-  { id: "6", type: "custom", position: { x: 950, y: 180 }, data: { label: "Logging", icon: "📋", description: "Log Aggregation" } },
+  { id: "1", type: "custom", position: { x: 50, y: 80 }, data: { label: "Salesforce", icon: "SF", description: "CRM & Sales Cloud", color: "bg-[#00A1E0]", textColor: "text-white" } },
+  { id: "2", type: "custom", position: { x: 350, y: 30 }, data: { label: "API Gateway", icon: "API", description: "API Management", color: "bg-[#FF9900]", textColor: "text-white" } },
+  { id: "3", type: "custom", position: { x: 350, y: 180 }, data: { label: "Entra ID", icon: "EID", description: "Identity Platform", color: "bg-[#0078D4]", textColor: "text-white" } },
+  { id: "4", type: "custom", position: { x: 650, y: 80 }, data: { label: "Cloud Run", icon: "RUN", description: "Serverless Containers", color: "bg-[#4285F4]", textColor: "text-white" } },
+  { id: "5", type: "custom", position: { x: 950, y: 30 }, data: { label: "Aurora", icon: "AUR", description: "MySQL/Postgres", color: "bg-[#3B48CC]", textColor: "text-white" } },
+  { id: "6", type: "custom", position: { x: 950, y: 180 }, data: { label: "Cloud Armor", icon: "ARM", description: "WAF & DDoS", color: "bg-[#4285F4]", textColor: "text-white" } },
 ];
 
 const exampleEdges: Edge[] = [

@@ -5,9 +5,14 @@ type CustomNodeData = {
   label: string;
   icon: string;
   description: string;
+  color?: string;
+  textColor?: string;
 };
 
 const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData }) => {
+  const badgeColor = data.color || "bg-electric-sapphire-400";
+  const badgeText = data.textColor || "text-white";
+
   return (
     <div
       className={`
@@ -22,7 +27,11 @@ const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData 
         className="!w-3 !h-3 !bg-sky-aqua-400 !border-2 !border-background"
       />
       <div className="flex items-center gap-2.5">
-        <span className="text-2xl">{data.icon}</span>
+        <div
+          className={`w-9 h-9 rounded-lg ${badgeColor} ${badgeText} flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm`}
+        >
+          {data.icon}
+        </div>
         <div>
           <p className="text-sm font-semibold text-foreground leading-tight">
             {data.label}

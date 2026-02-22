@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef } from "react";
+import { toPng, toSvg } from "html-to-image";
+import { jsPDF } from "jspdf";
 import {
   ReactFlow,
   Background,
@@ -109,6 +111,49 @@ const DesignVisualizerInner = () => {
     setTitle("Untitled Diagram");
   };
 
+  const getFlowElement = () =>
+    reactFlowWrapper.current?.querySelector(".react-flow__viewport") as HTMLElement | null;
+
+  const onExportPNG = useCallback(() => {
+    const el = getFlowElement();
+    if (!el) return;
+    toPng(el, { backgroundColor: "#09090b", quality: 1, pixelRatio: 2 }).then((dataUrl) => {
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${title || "diagram"}.png`;
+      a.click();
+    });
+  }, [title]);
+
+  const onExportSVG = useCallback(() => {
+    const el = getFlowElement();
+    if (!el) return;
+    toSvg(el, { backgroundColor: "#09090b" }).then((dataUrl) => {
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${title || "diagram"}.svg`;
+      a.click();
+    });
+  }, [title]);
+
+  const onExportPDF = useCallback(() => {
+    const el = getFlowElement();
+    if (!el) return;
+    toPng(el, { backgroundColor: "#09090b", quality: 1, pixelRatio: 2 }).then((dataUrl) => {
+      const img = new Image();
+      img.src = dataUrl;
+      img.onload = () => {
+        const pdf = new jsPDF({
+          orientation: img.width > img.height ? "landscape" : "portrait",
+          unit: "px",
+          format: [img.width, img.height],
+        });
+        pdf.addImage(dataUrl, "PNG", 0, 0, img.width, img.height);
+        pdf.save(`${title || "diagram"}.pdf`);
+      };
+    });
+  }, [title]);
+
   return (
     <div className="h-screen flex flex-col bg-background">
       <VisualizerToolbar
@@ -116,6 +161,9 @@ const DesignVisualizerInner = () => {
         onZoomOut={zoomOut}
         onFitView={() => fitView({ padding: 0.3 })}
         onClear={clearCanvas}
+        onExportPNG={onExportPNG}
+        onExportSVG={onExportSVG}
+        onExportPDF={onExportPDF}
         title={title}
         onTitleChange={setTitle}
       />

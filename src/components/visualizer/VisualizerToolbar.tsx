@@ -1,12 +1,21 @@
-import { Download, Undo2, Redo2, ZoomIn, ZoomOut, Maximize2, Trash2 } from "lucide-react";
+import { Download, ZoomIn, ZoomOut, Maximize2, Trash2, FileImage, FileText, FileCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Props = {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFitView: () => void;
   onClear: () => void;
+  onExportPNG: () => void;
+  onExportSVG: () => void;
+  onExportPDF: () => void;
   title: string;
   onTitleChange: (t: string) => void;
 };
@@ -16,6 +25,9 @@ const VisualizerToolbar = ({
   onZoomOut,
   onFitView,
   onClear,
+  onExportPNG,
+  onExportSVG,
+  onExportPDF,
   title,
   onTitleChange,
 }: Props) => {
@@ -43,6 +55,25 @@ const VisualizerToolbar = ({
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onFitView}>
           <Maximize2 className="w-4 h-4" />
         </Button>
+        <Separator orientation="vertical" className="h-5 mx-1" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Download className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onExportPNG}>
+              <FileImage className="w-4 h-4 mr-2" /> Export as PNG
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onExportSVG}>
+              <FileCode className="w-4 h-4 mr-2" /> Export as SVG
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onExportPDF}>
+              <FileText className="w-4 h-4 mr-2" /> Export as PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Separator orientation="vertical" className="h-5 mx-1" />
         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={onClear}>
           <Trash2 className="w-4 h-4" />

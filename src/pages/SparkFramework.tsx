@@ -26,8 +26,7 @@ const sparkSteps = [
     icon: Compass,
     color: "text-neon-pink-400",
     bgColor: "bg-neon-pink-400/10",
-    borderColor: "border-neon-pink-400/40",
-    activeBg: "bg-neon-pink-400/15",
+    borderColor: "border-neon-pink-400/30",
     description: "Design the software or analytics roadmap.",
     detail:
       "Define your project scope, identify requirements, and create a comprehensive roadmap for your software or analytics solution.",
@@ -64,8 +63,7 @@ const sparkSteps = [
     icon: ShieldCheck,
     color: "text-indigo-bloom-300",
     bgColor: "bg-indigo-bloom-400/10",
-    borderColor: "border-indigo-bloom-400/40",
-    activeBg: "bg-indigo-bloom-400/15",
+    borderColor: "border-indigo-bloom-400/30",
     description: "Architect security, compliance, and infrastructure in Azure/AWS/GCP.",
     detail:
       "Establish security guardrails, compliance frameworks, and cloud infrastructure best practices for your deployment targets.",
@@ -94,8 +92,7 @@ const sparkSteps = [
     icon: Wrench,
     color: "text-electric-sapphire-300",
     bgColor: "bg-electric-sapphire-400/10",
-    borderColor: "border-electric-sapphire-400/40",
-    activeBg: "bg-electric-sapphire-400/15",
+    borderColor: "border-electric-sapphire-400/30",
     description: "Develop or configure the AI system using Lovable or Claude.",
     detail:
       "Build your solution with AI-assisted development tools. Configure integrations, set up data pipelines, and assemble components.",
@@ -124,8 +121,7 @@ const sparkSteps = [
     icon: ClipboardCheck,
     color: "text-sky-aqua-400",
     bgColor: "bg-sky-aqua-400/10",
-    borderColor: "border-sky-aqua-400/40",
-    activeBg: "bg-sky-aqua-400/15",
+    borderColor: "border-sky-aqua-400/30",
     description: "Expert validation and vulnerability check. Run structured audits before release.",
     detail:
       "Conduct thorough reviews, run security audits, and validate your build against enterprise standards before deployment.",
@@ -154,8 +150,7 @@ const sparkSteps = [
     icon: Rocket,
     color: "text-vivid-royal-200",
     bgColor: "bg-vivid-royal-400/10",
-    borderColor: "border-vivid-royal-400/40",
-    activeBg: "bg-vivid-royal-400/15",
+    borderColor: "border-vivid-royal-400/30",
     description: "Deploy confidently and deliver to stakeholders.",
     detail:
       "Finalize your deliverables, generate stakeholder-ready documentation, and deploy with confidence.",
@@ -187,8 +182,9 @@ const SparkFramework = () => {
 
   return (
     <DashboardLayout>
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
+      {/* Page header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-pink-400/20 to-indigo-bloom-400/20 flex items-center justify-center border border-neon-pink-400/30">
             <Sparkles className="w-5 h-5 text-neon-pink-400" />
           </div>
@@ -203,104 +199,92 @@ const SparkFramework = () => {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left Sidebar — Steps */}
-        <div className="lg:w-72 flex-shrink-0">
-          <nav className="space-y-1">
-            {sparkSteps.map((step, i) => {
-              const isActive = i === activeStep;
-              return (
-                <button
-                  key={step.letter}
-                  onClick={() => setActiveStep(i)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 border ${
-                    isActive
-                      ? `${step.activeBg} ${step.borderColor} shadow-sm`
-                      : "border-transparent hover:bg-muted/50"
-                  }`}
-                >
-                  <span
-                    className={`font-heading font-extrabold text-xl w-8 text-center ${step.color}`}
-                  >
-                    {step.letter}
-                  </span>
-                  <div className="min-w-0">
-                    <span
-                      className={`block text-sm font-semibold truncate ${
-                        isActive ? "text-foreground" : "text-muted-foreground"
-                      }`}
-                    >
-                      {step.title}
-                    </span>
-                    <span className="block text-xs text-muted-foreground truncate">
-                      {step.description}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Right Content — Cards */}
-        <div className="flex-1 min-w-0">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeStep}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.2 }}
+      {/* Step tabs — horizontal like Azure */}
+      <div className="flex items-center gap-1 border-b border-border mb-8 overflow-x-auto pb-px">
+        {sparkSteps.map((step, i) => {
+          const isActive = i === activeStep;
+          return (
+            <button
+              key={step.letter}
+              onClick={() => setActiveStep(i)}
+              className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
+                isActive
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <current.icon className={`w-6 h-6 ${current.color}`} />
-                  <h2 className="font-heading text-xl font-bold text-foreground">
-                    <span className={current.color}>{current.letter}</span> —{" "}
-                    {current.title}
-                  </h2>
-                </div>
-                <p className="text-muted-foreground text-sm max-w-2xl">
-                  {current.detail}
-                </p>
-              </div>
-
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {current.cards.map((card) => (
-                  <div
-                    key={card.title}
-                    className="group glass-card rounded-2xl border border-border/60 hover:border-primary/30 transition-all duration-200 flex flex-col"
-                  >
-                    <div className="p-6 flex-1">
-                      <div
-                        className={`w-12 h-12 rounded-xl ${current.bgColor} flex items-center justify-center mb-4`}
-                      >
-                        <card.icon className={`w-6 h-6 ${current.color}`} />
-                      </div>
-                      <h3 className="font-heading font-semibold text-base text-foreground mb-2">
-                        {card.title}
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        {card.description}
-                      </p>
-                    </div>
-                    <div className="px-6 pb-5">
-                      <Button
-                        variant="outline"
-                        className="w-full justify-center gap-2"
-                        onClick={() => navigate(card.link)}
-                      >
-                        {card.action}
-                        <ArrowRight className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+              <span className={`font-heading font-extrabold text-base ${step.color}`}>
+                {step.letter}
+              </span>
+              <span className="hidden sm:inline">{step.title}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="spark-tab-indicator"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full"
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
+
+      {/* Content area */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeStep}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          {/* Step heading */}
+          <div className="mb-6">
+            <h2 className="font-heading text-xl font-bold text-foreground mb-1">
+              {current.detail}
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              {current.description}
+            </p>
+          </div>
+
+          {/* Cards grid — Azure Foundry style */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {current.cards.map((card) => (
+              <div
+                key={card.title}
+                className="group rounded-xl border border-border bg-card hover:shadow-lg transition-all duration-200 flex flex-col overflow-hidden"
+              >
+                {/* Illustration area */}
+                <div className={`h-40 ${current.bgColor} flex items-center justify-center border-b border-border/50`}>
+                  <card.icon className={`w-16 h-16 ${current.color} opacity-60 group-hover:opacity-90 transition-opacity`} />
+                </div>
+
+                {/* Text */}
+                <div className="p-5 flex-1">
+                  <h3 className="font-heading font-semibold text-base text-foreground mb-1.5">
+                    {card.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {card.description}
+                  </p>
+                </div>
+
+                {/* Action */}
+                <div className="px-5 pb-5">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-center gap-2"
+                    onClick={() => navigate(card.link)}
+                  >
+                    {card.action}
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </DashboardLayout>
   );
 };

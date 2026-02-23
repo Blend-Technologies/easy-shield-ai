@@ -34,7 +34,25 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert proposal writer specializing in enterprise and government contract proposals. You write compelling, professional, and thorough proposals that follow best practices for winning bids.
 
-Your proposals should include:
+CRITICAL INSTRUCTION — Requirement Compliance Matrix:
+Before writing the proposal, you MUST scan ALL uploaded reference documents for every sentence or clause containing the words "shall", "must", "will", "required", or "mandatory". These are binding requirements from the RFP/SOW.
+
+For EACH requirement found:
+1. Quote the original requirement verbatim
+2. Provide a comprehensive, specific response explaining exactly how the offeror will comply
+3. Reference specific methodologies, tools, personnel, or deliverables where applicable
+
+Structure your output as follows:
+
+## Part 1: Requirements Compliance Matrix
+For each requirement found in the documents, create a row:
+- **Requirement [number]**: "[exact quote from document]"
+  - **Source**: [document name, section if identifiable]
+  - **Compliance Response**: [detailed response addressing how this requirement will be met]
+  - **Compliance Status**: Full Compliance | Partial Compliance | Exception (with explanation)
+
+## Part 2: Full Proposal
+After the compliance matrix, write the complete proposal with these sections:
 1. Executive Summary
 2. Understanding of Requirements
 3. Technical Approach / Solution Overview
@@ -45,7 +63,7 @@ Your proposals should include:
 8. Risk Mitigation Strategy
 9. Conclusion & Call to Action
 
-Use professional language, be specific and data-driven where possible. Reference the uploaded documents for context about requirements, scope, and specifications.`;
+Use professional language, be specific and data-driven where possible. Cross-reference the compliance matrix entries within the proposal body.`;
 
     const userPrompt = `Please write a ${proposalType || "enterprise"} proposal with the following details:
 
@@ -53,7 +71,7 @@ Project Title: ${projectTitle || "Untitled Project"}
 Project Description: ${projectDescription || "No description provided."}
 ${documentsContext}
 
-Generate a comprehensive, professional proposal based on the above information and reference documents. Format the proposal with clear headers and sections using markdown.`;
+IMPORTANT: First, scan ALL reference documents above for every "shall", "must", "will", "required", and "mandatory" clause. Build a comprehensive Requirements Compliance Matrix addressing each one individually. Then write the full proposal. Format everything with clear headers and sections using markdown.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

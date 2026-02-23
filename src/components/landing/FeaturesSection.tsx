@@ -1,6 +1,14 @@
 import { motion } from "framer-motion";
-import { Shield, Search, BookOpen, Eye, Plug, ArrowRight, FileEdit } from "lucide-react";
+import { Shield, Search, BookOpen, Eye, Plug, ArrowRight, FileEdit, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+const sparkSteps = [
+  { letter: "S", title: "Scope the Solution", description: "Design the software or analytics roadmap." },
+  { letter: "P", title: "Protect the Pipeline", description: "Architect security, compliance, and infrastructure in Azure/AWS/GCP." },
+  { letter: "A", title: "Assemble the Build", description: "Develop or configure the AI system using Lovable or Claude." },
+  { letter: "R", title: "Review & Reinforce", description: "Expert validation and vulnerability check. Run structured audits before release." },
+  { letter: "K", title: "Kickoff Delivery", description: "Deploy confidently and deliver to stakeholders." },
+];
 
 const features = [
   {
@@ -79,6 +87,14 @@ const features = [
   },
 ];
 
+const letterColors = [
+  "text-neon-pink-400",
+  "text-indigo-bloom-300",
+  "text-electric-sapphire-300",
+  "text-sky-aqua-400",
+  "text-vivid-royal-200",
+];
+
 const FeaturesSection = () => {
   const navigate = useNavigate();
 
@@ -96,10 +112,75 @@ const FeaturesSection = () => {
             <span className="text-gradient-primary">Secure & Scale</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-            Five powerful tools working together to eliminate manual research and deliver enterprise-grade security.
+            Six powerful tools working together to eliminate manual research and deliver enterprise-grade security.
           </p>
         </motion.div>
 
+        {/* SPARK Framework Hero Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-10"
+        >
+          <div className="group relative rounded-2xl p-[1px] bg-gradient-to-r from-neon-pink-400 via-indigo-bloom-400 to-electric-sapphire-400 animate-pulse-glow cursor-pointer overflow-hidden">
+            <div className="relative rounded-2xl bg-card/95 backdrop-blur-xl p-8 md:p-10 overflow-hidden">
+              {/* Background shimmer */}
+              <div className="absolute inset-0 bg-gradient-to-br from-neon-pink-400/5 via-transparent to-electric-sapphire-400/5" />
+              
+              <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-start">
+                {/* Left: Branding */}
+                <div className="flex-shrink-0 lg:w-2/5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-neon-pink-400/20 to-indigo-bloom-400/20 flex items-center justify-center border border-neon-pink-400/30">
+                      <Sparkles className="w-7 h-7 text-neon-pink-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-bold text-2xl text-foreground tracking-tight">
+                        The S.P.A.R.K.™
+                      </h3>
+                      <p className="text-xs font-semibold tracking-[0.25em] uppercase text-muted-foreground">
+                        AI Framework
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed text-sm mb-4 max-w-md">
+                    A unified, end-to-end methodology that orchestrates every capability on this platform — from initial scoping through secure delivery — into one guided workflow.
+                  </p>
+                  <div className="flex items-center gap-1 text-sm font-medium text-primary group-hover:translate-x-1 transition-transform duration-300">
+                    Start the SPARK workflow <ArrowRight className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Right: Steps */}
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-5 gap-3 w-full">
+                  {sparkSteps.map((step, i) => (
+                    <motion.div
+                      key={step.letter}
+                      initial={{ opacity: 0, y: 15 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.15 + i * 0.08 }}
+                      className="relative flex flex-col items-center text-center p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-colors duration-200"
+                    >
+                      <span className={`font-heading font-extrabold text-2xl ${letterColors[i]} mb-1`}>
+                        {step.letter}
+                      </span>
+                      <span className="font-heading font-semibold text-xs text-foreground mb-1 leading-tight">
+                        {step.title}
+                      </span>
+                      <span className="text-muted-foreground text-[11px] leading-snug">
+                        {step.description}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Feature Cards Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, i) => (
             <motion.div
@@ -112,7 +193,6 @@ const FeaturesSection = () => {
               onClick={() => feature.link && navigate(feature.link)}
               className={`group relative glass-card rounded-2xl p-8 cursor-pointer transition-all duration-300 ${feature.borderHover} ${feature.glowColor}`}
             >
-              {/* Gradient overlay on hover */}
               <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
               
               <div className="relative z-10">

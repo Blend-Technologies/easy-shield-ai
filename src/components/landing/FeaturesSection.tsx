@@ -123,7 +123,7 @@ const FeaturesSection = () => {
           viewport={{ once: true }}
           className="mb-10"
         >
-          <div className="group relative rounded-2xl p-[1px] bg-gradient-to-r from-neon-pink-400 via-indigo-bloom-400 to-electric-sapphire-400 animate-pulse-glow cursor-pointer overflow-hidden">
+          <div className="group relative rounded-2xl p-[1px] bg-gradient-to-r from-neon-pink-400 via-indigo-bloom-400 to-electric-sapphire-400 animate-pulse-glow cursor-pointer overflow-hidden" onClick={() => navigate("/dashboard/spark")}>
             <div className="relative rounded-2xl bg-card/95 backdrop-blur-xl p-8 md:p-10 overflow-hidden">
               {/* Background shimmer */}
               <div className="absolute inset-0 bg-gradient-to-br from-neon-pink-400/5 via-transparent to-electric-sapphire-400/5" />

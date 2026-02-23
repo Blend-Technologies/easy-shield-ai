@@ -147,7 +147,7 @@ const FeaturesSection = () => {
                   <p className="text-muted-foreground leading-relaxed text-sm mb-4 max-w-md">
                     A unified, end-to-end methodology that orchestrates every capability on this platform — from initial scoping through secure delivery — into one guided workflow.
                   </p>
-                  <div className="flex items-center gap-1 text-sm font-medium text-primary group-hover:translate-x-1 transition-transform duration-300">
+              <div className="flex items-center gap-1 text-sm font-medium text-primary group-hover:translate-x-1 transition-transform duration-300" onClick={() => navigate("/dashboard/spark")}>
                     Start the SPARK workflow <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>

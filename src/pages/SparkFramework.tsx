@@ -14,10 +14,14 @@ import {
   FileEdit,
   Plug,
   BookOpen,
+  ChevronDown,
+  Play,
+  CheckCircle2,
 } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Progress } from "@/components/ui/progress";
 
 const sparkSteps = [
   {
@@ -93,104 +97,133 @@ const sparkSteps = [
   },
 ];
 
+const totalTools = sparkSteps.reduce((acc, s) => acc + s.cards.length, 0);
+
 const SparkFramework = () => {
-  const [activeStep, setActiveStep] = useState(0);
+  const [expandedStep, setExpandedStep] = useState(0);
+  const [selectedCard, setSelectedCard] = useState<{ stepIdx: number; cardIdx: number }>({ stepIdx: 0, cardIdx: 0 });
   const navigate = useNavigate();
-  const current = sparkSteps[activeStep];
+
+  const currentCard = sparkSteps[selectedCard.stepIdx].cards[selectedCard.cardIdx];
+  const currentStep = sparkSteps[selectedCard.stepIdx];
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left sidebar — vertical step list */}
-        <div className="lg:w-64 flex-shrink-0">
-          <div className="flex items-center gap-2 mb-4 px-1">
-            <Sparkles className="w-4 h-4 text-neon-pink-400" />
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              S.P.A.R.K. Phases
-            </span>
+      <div className="flex flex-col lg:flex-row gap-0 h-[calc(100vh-3.5rem)]">
+        {/* Left panel — accordion course-style sidebar */}
+        <div className="lg:w-[340px] flex-shrink-0 border-r border-border bg-card overflow-y-auto">
+          {/* Header */}
+          <div className="p-4 border-b border-border">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="font-heading font-bold text-foreground text-lg">S.P.A.R.K.™ Framework</h2>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">0 / {totalTools} complete</p>
+            <Progress value={0} className="h-2" />
           </div>
-          <nav className="space-y-0.5">
-            {sparkSteps.map((step, i) => {
-              const isActive = i === activeStep;
+
+          {/* Accordion steps */}
+          <div className="py-1">
+            {sparkSteps.map((step, stepIdx) => {
+              const isExpanded = expandedStep === stepIdx;
               return (
-                <button
-                  key={step.letter}
-                  onClick={() => setActiveStep(i)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm transition-colors ${
-                    isActive
-                      ? "bg-primary/10 text-foreground font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  <step.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? step.color : ""}`} />
-                  <span className="truncate">
-                    <span className={`font-bold mr-1 ${isActive ? step.color : ""}`}>{step.letter}</span>
-                    {step.title}
-                  </span>
-                </button>
+                <div key={step.letter}>
+                  {/* Step header */}
+                  <button
+                    onClick={() => setExpandedStep(isExpanded ? -1 : stepIdx)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+                  >
+                    <ChevronDown
+                      className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform duration-200 ${
+                        isExpanded ? "rotate-0" : "-rotate-90"
+                      }`}
+                    />
+                    <span className="text-sm font-semibold text-foreground">
+                      Phase {stepIdx + 1}: {step.title}
+                    </span>
+                  </button>
+
+                  {/* Expanded tool list */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        {step.cards.map((card, cardIdx) => {
+                          const isSelected =
+                            selectedCard.stepIdx === stepIdx && selectedCard.cardIdx === cardIdx;
+                          return (
+                            <button
+                              key={card.title}
+                              onClick={() => setSelectedCard({ stepIdx, cardIdx })}
+                              className={`w-full flex items-center gap-3 pl-11 pr-4 py-2.5 text-left text-sm transition-colors ${
+                                isSelected
+                                  ? "bg-primary/10 text-primary font-medium"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                              }`}
+                            >
+                              <Play className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>{card.title}</span>
+                            </button>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               );
             })}
-          </nav>
+          </div>
         </div>
 
-        {/* Right content — header + cards */}
-        <div className="flex-1 min-w-0">
+        {/* Right content — selected tool detail */}
+        <div className="flex-1 min-w-0 overflow-y-auto">
           <AnimatePresence mode="wait">
             <motion.div
-              key={activeStep}
-              initial={{ opacity: 0, y: 10 }}
+              key={`${selectedCard.stepIdx}-${selectedCard.cardIdx}`}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
+              className="h-full flex flex-col"
             >
-              {/* Header */}
-              <div className="mb-6">
-                <h1 className="font-heading text-2xl font-semibold text-foreground mb-2">
-                  {current.detail}
+              {/* Top bar */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                <h1 className="font-heading text-xl font-semibold text-foreground">
+                  {currentCard.title}
                 </h1>
-                <p className="text-muted-foreground text-sm">
-                  {current.description}
-                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => navigate(currentCard.link)}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Mark Complete
+                </Button>
               </div>
 
-              {/* Cards grid */}
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {current.cards.map((card, i) => (
-                  <motion.div
-                    key={card.title}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.06 }}
-                    className="group rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-lg transition-all duration-200 flex flex-col overflow-hidden"
-                  >
-                    {/* Illustration area */}
-                    <div className={`h-36 ${current.bgColor} flex items-center justify-center`}>
-                      <card.icon className={`w-14 h-14 ${current.color} opacity-50 group-hover:opacity-80 transition-opacity duration-200`} />
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-5 flex-1">
-                      <h3 className="font-heading font-semibold text-base text-foreground mb-1">
-                        {card.title}
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        {card.description}
-                      </p>
-                    </div>
-
-                    {/* Action */}
-                    <div className="px-5 pb-5">
-                      <Button
-                        variant="outline"
-                        className="w-full justify-center gap-2"
-                        onClick={() => navigate(card.link)}
-                      >
-                        {card.action}
-                        <ArrowRight className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
+              {/* Main content area */}
+              <div className="flex-1 p-6">
+                <div className={`w-full rounded-xl ${currentStep.bgColor} border ${currentStep.borderColor} flex flex-col items-center justify-center min-h-[400px] gap-6`}>
+                  <currentCard.icon className={`w-20 h-20 ${currentStep.color} opacity-60`} />
+                  <div className="text-center max-w-md px-4">
+                    <h2 className="font-heading text-lg font-semibold text-foreground mb-2">
+                      {currentCard.title}
+                    </h2>
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+                      {currentCard.description}
+                    </p>
+                    <Button onClick={() => navigate(currentCard.link)} className="gap-2">
+                      {currentCard.action}
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </AnimatePresence>

@@ -14,14 +14,13 @@ import {
   FileEdit,
   Plug,
   BookOpen,
-  ChevronDown,
-  Play,
-  CheckCircle2,
+  Users,
+  GraduationCap,
 } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const sparkSteps = [
   {
@@ -32,7 +31,6 @@ const sparkSteps = [
     bgColor: "bg-neon-pink-400/10",
     borderColor: "border-neon-pink-400/40",
     description: "Design the software or analytics roadmap.",
-    detail: "Define your project scope, identify requirements, and create a comprehensive roadmap for your software or analytics solution.",
     cards: [
       { title: "Best Practice Engine", description: "Get AI-powered recommendations tailored to your platform, integration scenario, and enterprise context.", action: "Launch Engine", link: "/dashboard/best-practices", icon: Search },
       { title: "Design Visualizer", description: "Generate comprehensive visual designs of your application pipeline, illustrating data flow and architecture.", action: "Open Visualizer", link: "/dashboard/visualizer", icon: Eye },
@@ -47,7 +45,6 @@ const sparkSteps = [
     bgColor: "bg-indigo-bloom-400/10",
     borderColor: "border-indigo-bloom-400/40",
     description: "Architect security, compliance, and infrastructure.",
-    detail: "Establish security guardrails, compliance frameworks, and cloud infrastructure best practices for your deployment targets.",
     cards: [
       { title: "Security Scanner", description: "Automated vulnerability analysis of your configurations with actionable remediation steps.", action: "Run Scanner", link: "/dashboard/scanner", icon: Shield },
       { title: "Platform Connections", description: "Securely connect to Salesforce, OutSystems, Mendix, Bubble, and more via API or OAuth.", action: "Manage Connections", link: "/dashboard/connections", icon: Plug },
@@ -61,7 +58,6 @@ const sparkSteps = [
     bgColor: "bg-electric-sapphire-400/10",
     borderColor: "border-electric-sapphire-400/40",
     description: "Develop or configure the AI system.",
-    detail: "Build your solution with AI-assisted development tools. Configure integrations, set up data pipelines, and assemble components.",
     cards: [
       { title: "Design Visualizer", description: "Map out your system architecture, data flows, and integration points visually.", action: "Open Visualizer", link: "/dashboard/visualizer", icon: Eye },
       { title: "Knowledge Base", description: "Access community-driven repository of proven patterns and validated solutions.", action: "Browse Knowledge", link: "/dashboard/knowledge", icon: BookOpen },
@@ -75,7 +71,6 @@ const sparkSteps = [
     bgColor: "bg-sky-aqua-400/10",
     borderColor: "border-sky-aqua-400/40",
     description: "Expert validation and vulnerability check.",
-    detail: "Conduct thorough reviews, run security audits, and validate your build against enterprise standards before deployment.",
     cards: [
       { title: "Security Scanner", description: "Run a final vulnerability scan and compliance check before deploying your solution.", action: "Run Audit", link: "/dashboard/scanner", icon: Shield },
       { title: "Best Practice Engine", description: "Validate your implementation against industry best practices and enterprise patterns.", action: "Validate", link: "/dashboard/best-practices", icon: Search },
@@ -89,7 +84,6 @@ const sparkSteps = [
     bgColor: "bg-vivid-royal-400/10",
     borderColor: "border-vivid-royal-400/40",
     description: "Deploy confidently and deliver to stakeholders.",
-    detail: "Finalize your deliverables, generate stakeholder-ready documentation, and deploy with confidence.",
     cards: [
       { title: "Proposal Writer", description: "Generate final deliverable documentation, executive summaries, and stakeholder reports.", action: "Generate Docs", link: "/dashboard/proposal-writer", icon: FileEdit },
       { title: "Design Visualizer", description: "Export final architecture diagrams and system documentation for handoff.", action: "Export Diagrams", link: "/dashboard/visualizer", icon: Eye },
@@ -97,137 +91,139 @@ const sparkSteps = [
   },
 ];
 
-const totalTools = sparkSteps.reduce((acc, s) => acc + s.cards.length, 0);
-
 const SparkFramework = () => {
-  const [expandedStep, setExpandedStep] = useState(0);
-  const [selectedCard, setSelectedCard] = useState<{ stepIdx: number; cardIdx: number }>({ stepIdx: 0, cardIdx: 0 });
+  const [activePhase, setActivePhase] = useState(0);
   const navigate = useNavigate();
-
-  const currentCard = sparkSteps[selectedCard.stepIdx].cards[selectedCard.cardIdx];
-  const currentStep = sparkSteps[selectedCard.stepIdx];
+  const currentStep = sparkSteps[activePhase];
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col lg:flex-row gap-0 h-[calc(100vh-3.5rem)]">
-        {/* Left panel — accordion course-style sidebar */}
-        <div className="lg:w-[340px] flex-shrink-0 border-r border-border bg-card overflow-y-auto">
-          {/* Header */}
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <h2 className="font-heading font-bold text-foreground text-lg">S.P.A.R.K.™ Framework</h2>
+      <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+        {/* Horizontal top tabs */}
+        <Tabs defaultValue="courses" className="flex flex-col h-full">
+          <div className="border-b border-border px-6">
+            <TabsList className="bg-transparent h-12 gap-4 p-0">
+              <TabsTrigger
+                value="team"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 h-12 gap-2"
+              >
+                <Users className="w-4 h-4" />
+                Team
+              </TabsTrigger>
+              <TabsTrigger
+                value="courses"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 h-12 gap-2"
+              >
+                <GraduationCap className="w-4 h-4" />
+                Courses
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* Team tab content */}
+          <TabsContent value="team" className="flex-1 m-0 overflow-y-auto">
+            <div className="p-8 flex flex-col items-center justify-center h-full text-center">
+              <Users className="w-16 h-16 text-muted-foreground/40 mb-4" />
+              <h2 className="font-heading text-xl font-semibold text-foreground mb-2">Team Management</h2>
+              <p className="text-muted-foreground text-sm max-w-md">
+                Collaborate with your team members, assign roles across SPARK phases, and track collective progress.
+              </p>
+              <Button variant="outline" className="mt-6">Coming Soon</Button>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">0 / {totalTools} complete</p>
-            <Progress value={0} className="h-2" />
-          </div>
+          </TabsContent>
 
-          {/* Accordion steps */}
-          <div className="py-1">
-            {sparkSteps.map((step, stepIdx) => {
-              const isExpanded = expandedStep === stepIdx;
-              return (
-                <div key={step.letter}>
-                  {/* Step header */}
-                  <button
-                    onClick={() => setExpandedStep(isExpanded ? -1 : stepIdx)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors"
-                  >
-                    <ChevronDown
-                      className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform duration-200 ${
-                        isExpanded ? "rotate-0" : "-rotate-90"
-                      }`}
-                    />
-                    <span className="text-sm font-semibold text-foreground">
-                      Phase {stepIdx + 1}: {step.title}
-                    </span>
-                  </button>
-
-                  {/* Expanded tool list */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        {step.cards.map((card, cardIdx) => {
-                          const isSelected =
-                            selectedCard.stepIdx === stepIdx && selectedCard.cardIdx === cardIdx;
-                          return (
-                            <button
-                              key={card.title}
-                              onClick={() => setSelectedCard({ stepIdx, cardIdx })}
-                              className={`w-full flex items-center gap-3 pl-11 pr-4 py-2.5 text-left text-sm transition-colors ${
-                                isSelected
-                                  ? "bg-primary/10 text-primary font-medium"
-                                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-                              }`}
-                            >
-                              <Play className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span>{card.title}</span>
-                            </button>
-                          );
-                        })}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right content — selected tool detail */}
-        <div className="flex-1 min-w-0 overflow-y-auto">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`${selectedCard.stepIdx}-${selectedCard.cardIdx}`}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="h-full flex flex-col"
-            >
-              {/* Top bar */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h1 className="font-heading text-xl font-semibold text-foreground">
-                  {currentCard.title}
-                </h1>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => navigate(currentCard.link)}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Mark Complete
-                </Button>
-              </div>
-
-              {/* Main content area */}
-              <div className="flex-1 p-6">
-                <div className={`w-full rounded-xl ${currentStep.bgColor} border ${currentStep.borderColor} flex flex-col items-center justify-center min-h-[400px] gap-6`}>
-                  <currentCard.icon className={`w-20 h-20 ${currentStep.color} opacity-60`} />
-                  <div className="text-center max-w-md px-4">
-                    <h2 className="font-heading text-lg font-semibold text-foreground mb-2">
-                      {currentCard.title}
-                    </h2>
-                    <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-                      {currentCard.description}
-                    </p>
-                    <Button onClick={() => navigate(currentCard.link)} className="gap-2">
-                      {currentCard.action}
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
+          {/* Courses tab content */}
+          <TabsContent value="courses" className="flex-1 m-0 overflow-hidden">
+            <div className="flex h-full">
+              {/* Vertical phase tabs */}
+              <div className="w-[220px] flex-shrink-0 border-r border-border bg-card overflow-y-auto">
+                <div className="p-3 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <span className="font-heading font-semibold text-sm text-foreground">S.P.A.R.K.™</span>
                   </div>
                 </div>
+                <nav className="py-1">
+                  {sparkSteps.map((step, idx) => {
+                    const isActive = activePhase === idx;
+                    return (
+                      <button
+                        key={step.letter}
+                        onClick={() => setActivePhase(idx)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${
+                          isActive
+                            ? "bg-primary/10 text-primary font-medium border-l-2 border-primary"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border-l-2 border-transparent"
+                        }`}
+                      >
+                        <step.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? step.color : ""}`} />
+                        <span className="truncate">{step.letter} – {step.title.split(" ").slice(0, 2).join(" ")}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
               </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+
+              {/* Center content */}
+              <div className="flex-1 min-w-0 overflow-y-auto">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activePhase}
+                    initial={{ opacity: 0, x: 12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -12 }}
+                    transition={{ duration: 0.2 }}
+                    className="p-6"
+                  >
+                    {/* Phase header */}
+                    <div className="mb-6">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`w-10 h-10 rounded-lg ${currentStep.bgColor} border ${currentStep.borderColor} flex items-center justify-center`}>
+                          <currentStep.icon className={`w-5 h-5 ${currentStep.color}`} />
+                        </div>
+                        <div>
+                          <h1 className="font-heading text-xl font-semibold text-foreground">
+                            {currentStep.letter} – {currentStep.title}
+                          </h1>
+                          <p className="text-sm text-muted-foreground">{currentStep.description}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tool cards grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {currentStep.cards.map((card) => (
+                        <div
+                          key={card.title}
+                          className={`rounded-xl border ${currentStep.borderColor} ${currentStep.bgColor} p-5 flex flex-col gap-4 hover:shadow-md transition-shadow`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-9 h-9 rounded-lg bg-background/60 border ${currentStep.borderColor} flex items-center justify-center flex-shrink-0`}>
+                              <card.icon className={`w-4 h-4 ${currentStep.color}`} />
+                            </div>
+                            <div className="min-w-0">
+                              <h3 className="font-heading font-semibold text-foreground text-sm">{card.title}</h3>
+                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{card.description}</p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="self-start gap-2 mt-auto"
+                            onClick={() => navigate(card.link)}
+                          >
+                            {card.action}
+                            <ArrowRight className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );

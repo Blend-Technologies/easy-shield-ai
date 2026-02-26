@@ -1,13 +1,14 @@
 import { useState, useRef } from "react";
-import { Sparkles, ImagePlus, X, ChevronUp, ChevronDown, Send } from "lucide-react";
+import { Sparkles, ImagePlus, X, ChevronUp, ChevronDown, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 type Props = {
-  onSubmit: (prompt: string, images: File[]) => void;
+  onSubmit: (prompt: string, imageDataUrls: string[]) => void;
+  isLoading?: boolean;
 };
 
-const AIPromptPanel = ({ onSubmit }: Props) => {
+const AIPromptPanel = ({ onSubmit, isLoading = false }: Props) => {
   const [expanded, setExpanded] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [images, setImages] = useState<File[]>([]);
@@ -35,8 +36,9 @@ const AIPromptPanel = ({ onSubmit }: Props) => {
   };
 
   const handleSubmit = () => {
-    if (!prompt.trim() && images.length === 0) return;
-    onSubmit(prompt, images);
+    if (isLoading) return;
+    if (!prompt.trim() && previews.length === 0) return;
+    onSubmit(prompt, previews);
     setPrompt("");
     setImages([]);
     setPreviews([]);
@@ -50,7 +52,6 @@ const AIPromptPanel = ({ onSubmit }: Props) => {
 
   return (
     <div className="border-t border-border bg-background shrink-0">
-      {/* Toggle bar */}
       <button
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -58,6 +59,7 @@ const AIPromptPanel = ({ onSubmit }: Props) => {
         <Sparkles className="w-4 h-4 text-primary" />
         <span>AI Prompt</span>
         <span className="text-xs text-muted-foreground/60 ml-1">(optional)</span>
+        {isLoading && <Loader2 className="w-4 h-4 ml-2 animate-spin text-primary" />}
         {expanded ? (
           <ChevronDown className="w-4 h-4 ml-auto" />
         ) : (
@@ -71,15 +73,14 @@ const AIPromptPanel = ({ onSubmit }: Props) => {
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDrop={handleDrop}
         >
-          {/* Text prompt */}
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Describe the architecture you want to build, e.g. 'Create a 3-tier web app with API Gateway, Lambda, and DynamoDB...'"
             className="min-h-[80px] resize-none bg-muted/40 text-sm"
+            disabled={isLoading}
           />
 
-          {/* Image previews */}
           {previews.length > 0 && (
             <div className="flex gap-2 flex-wrap">
               {previews.map((src, i) => (
@@ -96,7 +97,6 @@ const AIPromptPanel = ({ onSubmit }: Props) => {
             </div>
           )}
 
-          {/* Actions */}
           <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
@@ -111,6 +111,7 @@ const AIPromptPanel = ({ onSubmit }: Props) => {
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               className="gap-1.5 text-xs"
+              disabled={isLoading}
             >
               <ImagePlus className="w-3.5 h-3.5" />
               Add Reference Image
@@ -118,11 +119,20 @@ const AIPromptPanel = ({ onSubmit }: Props) => {
             <Button
               size="sm"
               onClick={handleSubmit}
-              disabled={!prompt.trim() && images.length === 0}
+              disabled={isLoading || (!prompt.trim() && previews.length === 0)}
               className="ml-auto gap-1.5 text-xs"
             >
-              <Send className="w-3.5 h-3.5" />
-              Generate Diagram
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" />
+                  Generate Diagram
+                </>
+              )}
             </Button>
           </div>
         </div>

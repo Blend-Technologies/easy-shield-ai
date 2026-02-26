@@ -7,10 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileUp, Sparkles, Download, Loader2, X, FileText, Trash2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileUp, Sparkles, Download, Loader2, X, FileText, Trash2, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
 import { saveAs } from "file-saver";
+import { EvaluatorDashboard, type EvaluationResult } from "@/components/proposal/EvaluatorDashboard";
 
 type UploadedFile = {
   file: File;
@@ -36,6 +38,9 @@ const ProposalWriter = () => {
   const [supplementaryFile, setSupplementaryFile] = useState<UploadedFile | null>(null);
   const [proposal, setProposal] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
+  const [activeTab, setActiveTab] = useState("evaluate");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supplementaryFileRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -85,6 +90,51 @@ const ProposalWriter = () => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const evaluateRFP = useCallback(async () => {
+    if (files.length === 0 && !supplementaryFile) {
+      toast({ title: "Missing documents", description: "Upload an RFP and your resume/capability statement to evaluate.", variant: "destructive" });
+      return;
+    }
+
+    setIsEvaluating(true);
+    setEvaluationResult(null);
+
+    const rfpDocuments = files
+      .filter((f) => f.status === "done")
+      .map((f) => ({ name: f.file.name, content: f.content.slice(0, 15000) }));
+
+    const supplementaryDocument = supplementaryFile?.status === "done"
+      ? { name: supplementaryFile.file.name, content: supplementaryFile.content.slice(0, 15000) }
+      : null;
+
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evaluate-rfp`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ rfpDocuments, supplementaryDocument, proposalType }),
+        }
+      );
+
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.error || "Evaluation failed");
+      }
+
+      const result = await resp.json();
+      setEvaluationResult(result);
+      toast({ title: "Evaluation complete!", description: `Match score: ${result.overallScore}/100` });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setIsEvaluating(false);
+    }
+  }, [files, supplementaryFile, proposalType, toast]);
+
   const generateProposal = useCallback(async () => {
     if (!projectTitle.trim()) {
       toast({ title: "Missing title", description: "Please enter a project title.", variant: "destructive" });
@@ -99,7 +149,6 @@ const ProposalWriter = () => {
       .filter((f) => f.status === "done")
       .map((f) => ({ name: f.file.name, content: f.content.slice(0, 15000) }));
 
-    // Include supplementary file (resume or capability statement)
     if (supplementaryFile?.status === "done") {
       const label = proposalType === "enterprise" ? "Resume" : "Capability Statement";
       documentTexts.unshift({ name: `${label}: ${supplementaryFile.file.name}`, content: supplementaryFile.content.slice(0, 15000) });
@@ -196,7 +245,6 @@ const ProposalWriter = () => {
       } else if (line.trim() === "") {
         paragraphs.push(new Paragraph({ text: "" }));
       } else {
-        // Handle bold (**text**) inline
         const parts = line.split(/(\*\*[^*]+\*\*)/g);
         const runs = parts.map((part) => {
           if (part.startsWith("**") && part.endsWith("**")) {
@@ -223,7 +271,7 @@ const ProposalWriter = () => {
         <div>
           <h1 className="font-heading text-2xl font-bold text-foreground">Proposal Writer</h1>
           <p className="text-muted-foreground mt-1">
-            Generate professional enterprise & government contract proposals powered by AI.
+            Evaluate RFP fit, then generate professional proposals powered by AI.
           </p>
         </div>
 
@@ -268,7 +316,7 @@ const ProposalWriter = () => {
                   </RadioGroup>
                 </div>
 
-                {/* Supplementary Document (Resume / Capability Statement) */}
+                {/* Supplementary Document */}
                 <div className="space-y-2">
                   <Label>
                     {proposalType === "enterprise" ? "Resume (optional)" : "Capability Statement (optional)"}
@@ -385,65 +433,109 @@ const ProposalWriter = () => {
                   </div>
                 ))}
 
-                <Button
-                  className="w-full mt-2"
-                  size="lg"
-                  onClick={generateProposal}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" /> Generate Proposal
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    size="lg"
+                    onClick={evaluateRFP}
+                    disabled={isEvaluating || isGenerating}
+                  >
+                    {isEvaluating ? (
+                      <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Evaluating...</>
+                    ) : (
+                      <><BarChart3 className="w-4 h-4 mr-2" /> Evaluate Fit</>
+                    )}
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    size="lg"
+                    onClick={generateProposal}
+                    disabled={isGenerating || isEvaluating}
+                  >
+                    {isGenerating ? (
+                      <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4 mr-2" /> Generate Proposal</>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Right: Proposal Output */}
+          {/* Right: Tabbed Output */}
           <div className="lg:col-span-3">
-            <Card className="h-full flex flex-col">
-              <CardHeader className="pb-4 flex-row items-center justify-between">
-                <CardTitle className="text-base">Generated Proposal</CardTitle>
-                {proposal && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={downloadAsWord}>
-                      <Download className="w-4 h-4 mr-1" /> Download .docx
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setProposal("")}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent className="flex-1">
-                {!proposal && !isGenerating ? (
-                  <div className="h-full min-h-[400px] flex items-center justify-center text-muted-foreground">
-                    <div className="text-center">
-                      <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                      <p>Your generated proposal will appear here</p>
-                    </div>
-                  </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="w-full">
+                <TabsTrigger value="evaluate" className="flex-1">
+                  <BarChart3 className="w-4 h-4 mr-1.5" /> Evaluator
+                </TabsTrigger>
+                <TabsTrigger value="proposal" className="flex-1">
+                  <FileText className="w-4 h-4 mr-1.5" /> Proposal
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="evaluate" className="mt-4">
+                {isEvaluating ? (
+                  <Card>
+                    <CardContent className="py-16 flex flex-col items-center justify-center">
+                      <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                      <p className="text-muted-foreground text-sm">Analyzing RFP match with your qualifications...</p>
+                    </CardContent>
+                  </Card>
+                ) : evaluationResult ? (
+                  <EvaluatorDashboard result={evaluationResult} />
                 ) : (
-                  <div className="prose prose-sm prose-invert max-w-none min-h-[400px] whitespace-pre-wrap text-foreground text-sm leading-relaxed">
-                    {proposal}
-                    {isGenerating && (
-                      <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
-                    )}
-                  </div>
+                  <Card>
+                    <CardContent className="py-16 flex flex-col items-center justify-center text-muted-foreground">
+                      <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p>Upload documents and click "Evaluate Fit" to see your RFP match score</p>
+                    </CardContent>
+                  </Card>
                 )}
-              </CardContent>
-            </Card>
+              </TabsContent>
+
+              <TabsContent value="proposal" className="mt-4">
+                <Card className="flex flex-col">
+                  <CardHeader className="pb-4 flex-row items-center justify-between">
+                    <CardTitle className="text-base">Generated Proposal</CardTitle>
+                    {proposal && (
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={downloadAsWord}>
+                          <Download className="w-4 h-4 mr-1" /> Download .docx
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setProposal("")}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </CardHeader>
+                  <CardContent className="flex-1">
+                    {!proposal && !isGenerating ? (
+                      <div className="min-h-[400px] flex items-center justify-center text-muted-foreground">
+                        <div className="text-center">
+                          <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                          <p>Your generated proposal will appear here</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="prose prose-sm max-w-none min-h-[400px] whitespace-pre-wrap text-foreground text-sm leading-relaxed">
+                        {proposal}
+                        {isGenerating && (
+                          <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>

@@ -4,7 +4,6 @@ import { jsPDF } from "jspdf";
 import {
   ReactFlow,
   Background,
-  Controls,
   MiniMap,
   addEdge,
   useNodesState,
@@ -17,6 +16,8 @@ import {
   BackgroundVariant,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 import ComponentSidebar from "@/components/visualizer/ComponentSidebar";
 import VisualizerToolbar from "@/components/visualizer/VisualizerToolbar";
@@ -51,6 +52,7 @@ const DesignVisualizerInner = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [showWelcome, setShowWelcome] = useState(true);
   const [title, setTitle] = useState("Untitled Diagram");
+  const [isGenerating, setIsGenerating] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, zoomIn, zoomOut, fitView } = useReactFlow();
 
@@ -155,6 +157,62 @@ const DesignVisualizerInner = () => {
     });
   }, [title]);
 
+  const handleAIGenerate = useCallback(
+    async (prompt: string, imageDataUrls: string[]) => {
+      setIsGenerating(true);
+      setShowWelcome(false);
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-diagram", {
+          body: { prompt, imageDataUrls },
+        });
+
+        if (error) {
+          toast.error(error.message || "Failed to generate diagram");
+          return;
+        }
+
+        if (data?.error) {
+          toast.error(data.error);
+          return;
+        }
+
+        const generatedNodes: Node[] = (data.nodes || []).map((n: any) => ({
+          id: n.id,
+          type: "custom",
+          position: { x: n.x, y: n.y },
+          data: {
+            label: n.label,
+            icon: n.abbr,
+            description: n.description,
+            color: n.color,
+            textColor: n.textColor,
+          },
+        }));
+
+        const generatedEdges: Edge[] = (data.edges || []).map((e: any) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          animated: e.animated,
+          style: { stroke: "hsl(196 86% 62%)" },
+          type: "smoothstep",
+        }));
+
+        setNodes(generatedNodes);
+        setEdges(generatedEdges);
+        if (data.title) setTitle(data.title);
+        toast.success("Diagram generated successfully!");
+        setTimeout(() => fitView({ padding: 0.3 }), 200);
+      } catch (err) {
+        console.error("AI generation error:", err);
+        toast.error("Failed to generate diagram. Please try again.");
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [setNodes, setEdges, fitView]
+  );
+
   return (
     <div className="h-screen flex flex-col bg-background">
       <VisualizerToolbar
@@ -194,12 +252,7 @@ const DesignVisualizerInner = () => {
         </div>
       </div>
 
-      <AIPromptPanel
-        onSubmit={(prompt, images) => {
-          console.log("AI Prompt:", prompt, "Images:", images);
-          // TODO: integrate with AI to auto-generate diagram nodes
-        }}
-      />
+      <AIPromptPanel onSubmit={handleAIGenerate} isLoading={isGenerating} />
 
       <WelcomeDialog
         open={showWelcome}

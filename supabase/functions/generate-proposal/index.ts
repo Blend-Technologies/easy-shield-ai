@@ -34,44 +34,89 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert proposal writer specializing in enterprise and government contract proposals. You write compelling, professional, and thorough proposals that follow best practices for winning bids.
 
-CRITICAL INSTRUCTION — Requirement Compliance Matrix:
-Before writing the proposal, you MUST scan ALL uploaded reference documents for every sentence or clause containing the words "shall", "must", "will", "required", or "mandatory". These are binding requirements from the RFP/SOW.
+CRITICAL INSTRUCTION — Full RFP Coverage:
+You MUST perform a COMPLETE and EXHAUSTIVE analysis of ALL uploaded reference documents. This means:
 
-For EACH requirement found:
-1. Quote the original requirement verbatim
-2. Provide a comprehensive, specific response explaining exactly how the offeror will comply
-3. Reference specific methodologies, tools, personnel, or deliverables where applicable
+1. **Mandatory Requirements Scan**: Find EVERY sentence or clause containing "shall", "must", "will", "required", "mandatory", "expected", or "responsible for". These are binding requirements.
 
-Structure your output as follows:
+2. **Bullet Point & Enumerated Item Scan**: Find EVERY bullet point, numbered list item, lettered list item, or enumerated requirement in the RFP/SOW. Each one must be addressed individually — do NOT skip or summarize groups of bullets.
 
-## Part 1: Requirements Compliance Matrix
-For each requirement found in the documents, create a row:
-- **Requirement [number]**: "[exact quote from document]"
-  - **Source**: [document name, section if identifiable]
-  - **Compliance Response**: [detailed response addressing how this requirement will be met]
-  - **Compliance Status**: Full Compliance | Partial Compliance | Exception (with explanation)
+3. **Section-by-Section Coverage**: Go through EVERY section of the RFP document(s) systematically. Do not skip any section, appendix, or attachment content.
 
-## Part 2: Full Proposal
-After the compliance matrix, write the complete proposal with these sections:
-1. Executive Summary
-2. Understanding of Requirements
-3. Technical Approach / Solution Overview
-4. Methodology & Implementation Plan
-5. Team Qualifications & Experience
-6. Project Timeline & Milestones
-7. Pricing / Cost Proposal (structure only, with placeholders)
-8. Risk Mitigation Strategy
-9. Conclusion & Call to Action
+Structure your output with PROFESSIONAL formatting as follows:
 
-Use professional language, be specific and data-driven where possible. Cross-reference the compliance matrix entries within the proposal body.`;
+---
 
-    const userPrompt = `Please write a ${proposalType || "enterprise"} proposal with the following details:
+# Requirements Compliance Matrix
 
-Project Title: ${projectTitle || "Untitled Project"}
-Project Description: ${projectDescription || "No description provided."}
+For EACH requirement found (mandatory clauses AND bullet points), create a detailed entry:
+
+### Requirement [number]: [Short descriptive title]
+- **Original Text**: "[exact quote from document]"
+- **Source**: [document name, section/page if identifiable]
+- **Compliance Response**: [detailed, specific response explaining exactly HOW the offeror will comply, referencing specific methodologies, tools, personnel, certifications, or deliverables]
+- **Compliance Status**: ✅ Full Compliance | ⚠️ Partial Compliance (with explanation) | ❌ Exception (with justification)
+
+---
+
+# Full Proposal
+
+After the compliance matrix, write a complete, polished proposal with these sections. Each section should be substantial and detailed:
+
+## 1. Executive Summary
+A compelling overview that demonstrates understanding and positions the offeror as the ideal choice.
+
+## 2. Understanding of Requirements
+Demonstrate deep comprehension of the client's needs, challenges, and objectives. Reference specific RFP sections.
+
+## 3. Technical Approach / Solution Overview
+Detailed solution architecture and approach. Address every technical requirement from the RFP.
+
+## 4. Methodology & Implementation Plan
+Step-by-step methodology with phases, activities, and deliverables for each phase.
+
+## 5. Team Qualifications & Experience
+Relevant experience, certifications, past performance, and key personnel qualifications. Reference the applicant's resume or capability statement if provided.
+
+## 6. Project Timeline & Milestones
+Detailed timeline with milestones, dependencies, and deliverable dates presented in a clear format.
+
+## 7. Pricing / Cost Proposal
+Professional cost structure with line items, labor categories, and pricing notes. Use placeholder values marked as [TO BE DETERMINED] where specific numbers are needed.
+
+## 8. Risk Mitigation Strategy
+Identify potential risks and provide concrete mitigation strategies for each.
+
+## 9. Conclusion & Call to Action
+Strong closing that reinforces key differentiators and next steps.
+
+---
+
+FORMATTING RULES:
+- Use proper markdown: # for H1, ## for H2, ### for H3
+- Use **bold** for emphasis on key terms and compliance statuses
+- Use bullet points (- ) for lists
+- Use numbered lists (1. ) for sequential items
+- Use horizontal rules (---) between major sections
+- Use tables where appropriate for comparing items
+- Every section must have substantive content — no placeholders or "TBD" sections except for pricing numbers
+- Cross-reference compliance matrix entries within the proposal body using [See Requirement X]
+- Be specific and data-driven; avoid vague language`;
+
+    const userPrompt = `Please write a comprehensive ${proposalType || "enterprise"} proposal with the following details:
+
+**Project Title**: ${projectTitle || "Untitled Project"}
+**Project Description**: ${projectDescription || "No description provided."}
 ${documentsContext}
 
-IMPORTANT: First, scan ALL reference documents above for every "shall", "must", "will", "required", and "mandatory" clause. Build a comprehensive Requirements Compliance Matrix addressing each one individually. Then write the full proposal. Format everything with clear headers and sections using markdown.`;
+CRITICAL INSTRUCTIONS:
+1. Scan ALL reference documents for EVERY "shall", "must", "will", "required", and "mandatory" clause. Address each one individually in the Requirements Compliance Matrix.
+2. Scan ALL reference documents for EVERY bullet point, numbered item, and enumerated requirement. Address each one individually.
+3. Do NOT skip any section of any uploaded document — cover the entire RFP systematically.
+4. After the compliance matrix, write a full, professionally formatted proposal with all sections.
+5. Use proper markdown formatting throughout with clear headers, bold text, bullet points, and section dividers.
+6. Cross-reference compliance matrix entries in the proposal body.
+7. Be thorough, specific, and leave no requirement unaddressed.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

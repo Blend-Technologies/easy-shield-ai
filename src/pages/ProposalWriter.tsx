@@ -33,9 +33,11 @@ const ProposalWriter = () => {
   const [projectTitle, setProjectTitle] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
   const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [supplementaryFile, setSupplementaryFile] = useState<UploadedFile | null>(null);
   const [proposal, setProposal] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const supplementaryFileRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const readFileContent = (file: File): Promise<string> => {
@@ -97,6 +99,12 @@ const ProposalWriter = () => {
       .filter((f) => f.status === "done")
       .map((f) => ({ name: f.file.name, content: f.content.slice(0, 15000) }));
 
+    // Include supplementary file (resume or capability statement)
+    if (supplementaryFile?.status === "done") {
+      const label = proposalType === "enterprise" ? "Resume" : "Capability Statement";
+      documentTexts.unshift({ name: `${label}: ${supplementaryFile.file.name}`, content: supplementaryFile.content.slice(0, 15000) });
+    }
+
     try {
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-proposal`,
@@ -156,7 +164,7 @@ const ProposalWriter = () => {
     } finally {
       setIsGenerating(false);
     }
-  }, [model, projectTitle, projectDescription, proposalType, files, toast]);
+  }, [model, projectTitle, projectDescription, proposalType, files, supplementaryFile, toast]);
 
   const downloadAsWord = useCallback(async () => {
     if (!proposal) return;
@@ -258,6 +266,59 @@ const ProposalWriter = () => {
                       <Label htmlFor="government" className="cursor-pointer">Government</Label>
                     </div>
                   </RadioGroup>
+                </div>
+
+                {/* Supplementary Document (Resume / Capability Statement) */}
+                <div className="space-y-2">
+                  <Label>
+                    {proposalType === "enterprise" ? "Resume (optional)" : "Capability Statement (optional)"}
+                  </Label>
+                  <div
+                    className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/40 transition-colors"
+                    onClick={() => supplementaryFileRef.current?.click()}
+                  >
+                    {supplementaryFile ? (
+                      <div className="flex items-center gap-2 justify-center">
+                        <FileText className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-sm truncate">{supplementaryFile.file.name}</span>
+                        {supplementaryFile.status === "reading" && <Loader2 className="w-3 h-3 animate-spin" />}
+                        {supplementaryFile.status === "error" && <span className="text-xs text-destructive">Error</span>}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSupplementaryFile(null); }}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <FileUp className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+                        <p className="text-xs text-muted-foreground">
+                          {proposalType === "enterprise"
+                            ? "Upload your resume to tailor the proposal"
+                            : "Upload your capability statement for compliance"}
+                        </p>
+                      </>
+                    )}
+                    <input
+                      ref={supplementaryFileRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx,.txt"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        setSupplementaryFile({ file: f, content: "", status: "reading" });
+                        try {
+                          const content = await readFileContent(f);
+                          setSupplementaryFile({ file: f, content, status: "done" });
+                        } catch {
+                          setSupplementaryFile({ file: f, content: "", status: "error" });
+                        }
+                        if (supplementaryFileRef.current) supplementaryFileRef.current.value = "";
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Title */}

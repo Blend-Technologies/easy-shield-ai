@@ -10,9 +10,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileUp, Sparkles, Download, Loader2, X, FileText, Trash2, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
 import { saveAs } from "file-saver";
+import ReactMarkdown from "react-markdown";
 import { EvaluatorDashboard, type EvaluationResult } from "@/components/proposal/EvaluatorDashboard";
+
 
 type UploadedFile = {
   file: File;
@@ -215,55 +217,150 @@ const ProposalWriter = () => {
     }
   }, [model, projectTitle, projectDescription, proposalType, files, supplementaryFile, toast]);
 
+  const parseInlineRuns = (text: string): TextRun[] => {
+    // Handle bold, italic, and bold-italic inline formatting
+    const parts = text.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g);
+    return parts.filter(Boolean).map((part) => {
+      if (part.startsWith("***") && part.endsWith("***")) {
+        return new TextRun({ text: part.slice(3, -3), bold: true, italics: true, font: "Calibri", size: 22 });
+      }
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return new TextRun({ text: part.slice(2, -2), bold: true, font: "Calibri", size: 22 });
+      }
+      if (part.startsWith("*") && part.endsWith("*")) {
+        return new TextRun({ text: part.slice(1, -1), italics: true, font: "Calibri", size: 22 });
+      }
+      return new TextRun({ text: part, font: "Calibri", size: 22 });
+    });
+  };
+
   const downloadAsWord = useCallback(async () => {
     if (!proposal) return;
 
     const lines = proposal.split("\n");
     const paragraphs: Paragraph[] = [];
 
+    // Title page
+    paragraphs.push(new Paragraph({ text: "", spacing: { after: 600 } }));
+    paragraphs.push(
+      new Paragraph({
+        children: [new TextRun({ text: projectTitle || "Proposal", bold: true, font: "Calibri", size: 52, color: "0066FF" })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+      })
+    );
+    paragraphs.push(
+      new Paragraph({
+        children: [new TextRun({ text: proposalType === "government" ? "Government Contract Proposal" : "Enterprise Proposal", font: "Calibri", size: 28, color: "4A90D9", italics: true })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 400 },
+      })
+    );
+    paragraphs.push(
+      new Paragraph({
+        children: [new TextRun({ text: `Generated on ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, font: "Calibri", size: 22, color: "666666" })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 600 },
+      })
+    );
+
     for (const line of lines) {
-      if (line.startsWith("# ")) {
+      if (line.startsWith("---")) {
+        paragraphs.push(new Paragraph({
+          children: [new TextRun({ text: "─".repeat(60), color: "CCCCCC", font: "Calibri", size: 18 })],
+          spacing: { before: 200, after: 200 },
+        }));
+      } else if (line.startsWith("# ")) {
         paragraphs.push(
-          new Paragraph({ text: line.slice(2), heading: HeadingLevel.HEADING_1, spacing: { after: 200 } })
+          new Paragraph({
+            children: [new TextRun({ text: line.slice(2), bold: true, font: "Calibri", size: 36, color: "0066FF" })],
+            heading: HeadingLevel.HEADING_1,
+            spacing: { before: 400, after: 200 },
+          })
         );
       } else if (line.startsWith("## ")) {
         paragraphs.push(
-          new Paragraph({ text: line.slice(3), heading: HeadingLevel.HEADING_2, spacing: { after: 150 } })
+          new Paragraph({
+            children: [new TextRun({ text: line.slice(3), bold: true, font: "Calibri", size: 30, color: "1A202C" })],
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 300, after: 150 },
+          })
         );
       } else if (line.startsWith("### ")) {
         paragraphs.push(
-          new Paragraph({ text: line.slice(4), heading: HeadingLevel.HEADING_3, spacing: { after: 100 } })
+          new Paragraph({
+            children: [new TextRun({ text: line.slice(4), bold: true, font: "Calibri", size: 26, color: "4A90D9" })],
+            heading: HeadingLevel.HEADING_3,
+            spacing: { before: 200, after: 100 },
+          })
+        );
+      } else if (line.startsWith("#### ")) {
+        paragraphs.push(
+          new Paragraph({
+            children: [new TextRun({ text: line.slice(5), bold: true, font: "Calibri", size: 24, color: "1A202C" })],
+            heading: HeadingLevel.HEADING_4,
+            spacing: { before: 150, after: 80 },
+          })
+        );
+      } else if (/^\d+\.\s/.test(line)) {
+        const text = line.replace(/^\d+\.\s/, "");
+        paragraphs.push(
+          new Paragraph({
+            children: parseInlineRuns(text),
+            numbering: { reference: "default-numbering", level: 0 },
+            spacing: { after: 80 },
+            indent: { left: 360 },
+          })
+        );
+      } else if (line.startsWith("  - ") || line.startsWith("  * ")) {
+        paragraphs.push(
+          new Paragraph({
+            children: parseInlineRuns(line.slice(4)),
+            bullet: { level: 1 },
+            spacing: { after: 60 },
+          })
         );
       } else if (line.startsWith("- ") || line.startsWith("* ")) {
         paragraphs.push(
           new Paragraph({
-            children: [new TextRun(line.slice(2))],
+            children: parseInlineRuns(line.slice(2)),
             bullet: { level: 0 },
             spacing: { after: 80 },
           })
         );
       } else if (line.trim() === "") {
-        paragraphs.push(new Paragraph({ text: "" }));
+        paragraphs.push(new Paragraph({ text: "", spacing: { after: 60 } }));
       } else {
-        const parts = line.split(/(\*\*[^*]+\*\*)/g);
-        const runs = parts.map((part) => {
-          if (part.startsWith("**") && part.endsWith("**")) {
-            return new TextRun({ text: part.slice(2, -2), bold: true });
-          }
-          return new TextRun(part);
-        });
-        paragraphs.push(new Paragraph({ children: runs, spacing: { after: 80 } }));
+        paragraphs.push(new Paragraph({ children: parseInlineRuns(line), spacing: { after: 100, line: 276 } }));
       }
     }
 
     const doc = new Document({
-      sections: [{ properties: {}, children: paragraphs }],
+      numbering: {
+        config: [{
+          reference: "default-numbering",
+          levels: [{
+            level: 0,
+            format: "decimal" as any,
+            text: "%1.",
+            alignment: AlignmentType.START,
+          }],
+        }],
+      },
+      sections: [{
+        properties: {
+          page: {
+            margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 },
+          },
+        },
+        children: paragraphs,
+      }],
     });
 
     const blob = await Packer.toBlob(doc);
     saveAs(blob, `${projectTitle || "proposal"}.docx`);
     toast({ title: "Downloaded!", description: "Your proposal has been saved as a Word document." });
-  }, [proposal, projectTitle, toast]);
+  }, [proposal, projectTitle, proposalType, toast]);
 
   return (
     <DashboardLayout>
@@ -525,8 +622,8 @@ const ProposalWriter = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="prose prose-sm max-w-none min-h-[400px] whitespace-pre-wrap text-foreground text-sm leading-relaxed">
-                        {proposal}
+                      <div className="prose prose-sm max-w-none min-h-[400px] text-foreground text-sm leading-relaxed prose-headings:text-foreground prose-h1:text-xl prose-h1:font-bold prose-h1:text-primary prose-h1:border-b prose-h1:border-border prose-h1:pb-2 prose-h1:mb-4 prose-h2:text-lg prose-h2:font-semibold prose-h2:mt-6 prose-h2:mb-3 prose-h3:text-base prose-h3:font-semibold prose-h3:text-primary/80 prose-strong:text-foreground prose-ul:my-2 prose-li:my-0.5 prose-hr:my-4 prose-hr:border-border prose-p:my-2">
+                        <ReactMarkdown>{proposal}</ReactMarkdown>
                         {isGenerating && (
                           <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
                         )}

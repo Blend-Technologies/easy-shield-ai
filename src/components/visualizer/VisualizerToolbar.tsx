@@ -1,4 +1,5 @@
-import { Download, ZoomIn, ZoomOut, Maximize2, Trash2, FileImage, FileText, FileCode } from "lucide-react";
+import { Download, ZoomIn, ZoomOut, Maximize2, Trash2, FileImage, FileText, FileCode, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -31,9 +32,20 @@ const VisualizerToolbar = ({
   title,
   onTitleChange,
 }: Props) => {
+  const navigate = useNavigate();
+
   return (
     <header className="h-12 border-b border-border bg-background flex items-center justify-between px-4 shrink-0">
       <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => navigate("/dashboard/spark")}
+          title="Back to S.P.A.R.K.™ Framework"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-electric-sapphire-400 to-indigo-bloom-400 flex items-center justify-center">
           <span className="text-white text-xs font-bold">EZ</span>
         </div>

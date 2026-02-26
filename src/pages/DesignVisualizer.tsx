@@ -22,6 +22,7 @@ import ComponentSidebar from "@/components/visualizer/ComponentSidebar";
 import VisualizerToolbar from "@/components/visualizer/VisualizerToolbar";
 import WelcomeDialog from "@/components/visualizer/WelcomeDialog";
 import CustomNode from "@/components/visualizer/CustomNode";
+import AIPromptPanel from "@/components/visualizer/AIPromptPanel";
 
 const nodeTypes = { custom: CustomNode };
 
@@ -192,6 +193,13 @@ const DesignVisualizerInner = () => {
           </ReactFlow>
         </div>
       </div>
+
+      <AIPromptPanel
+        onSubmit={(prompt, images) => {
+          console.log("AI Prompt:", prompt, "Images:", images);
+          // TODO: integrate with AI to auto-generate diagram nodes
+        }}
+      />
 
       <WelcomeDialog
         open={showWelcome}

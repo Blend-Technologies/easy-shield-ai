@@ -1,53 +1,63 @@
 import { useState, useRef } from "react";
-import { Sparkles, ImagePlus, X, ChevronUp, ChevronDown, Send, Loader2 } from "lucide-react";
+import { Sparkles, ImagePlus, X, ChevronUp, ChevronDown, Send, Loader2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
+const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf"];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+type FilePreview = {
+  dataUrl: string;
+  name: string;
+  type: string;
+};
+
 type Props = {
-  onSubmit: (prompt: string, imageDataUrls: string[]) => void;
+  onSubmit: (prompt: string, fileDataUrls: string[]) => void;
   isLoading?: boolean;
 };
 
 const AIPromptPanel = ({ onSubmit, isLoading = false }: Props) => {
   const [expanded, setExpanded] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const [images, setImages] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [files, setFiles] = useState<FilePreview[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageAdd = (files: FileList | null) => {
-    if (!files) return;
-    const newFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
-    if (newFiles.length === 0) return;
+  const handleFileAdd = (fileList: FileList | null) => {
+    if (!fileList) return;
+    const validFiles = Array.from(fileList).filter(
+      (f) => ACCEPTED_TYPES.includes(f.type) && f.size <= MAX_FILE_SIZE
+    );
+    if (validFiles.length === 0) return;
 
-    setImages((prev) => [...prev, ...newFiles]);
-    newFiles.forEach((file) => {
+    validFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setPreviews((prev) => [...prev, e.target?.result as string]);
+        setFiles((prev) => [
+          ...prev,
+          { dataUrl: e.target?.result as string, name: file.name, type: file.type },
+        ]);
       };
       reader.readAsDataURL(file);
     });
   };
 
-  const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = () => {
     if (isLoading) return;
-    if (!prompt.trim() && previews.length === 0) return;
-    onSubmit(prompt, previews);
+    if (!prompt.trim() && files.length === 0) return;
+    onSubmit(prompt, files.map((f) => f.dataUrl));
     setPrompt("");
-    setImages([]);
-    setPreviews([]);
+    setFiles([]);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    handleImageAdd(e.dataTransfer.files);
+    handleFileAdd(e.dataTransfer.files);
   };
 
   return (
@@ -81,13 +91,20 @@ const AIPromptPanel = ({ onSubmit, isLoading = false }: Props) => {
             disabled={isLoading}
           />
 
-          {previews.length > 0 && (
+          {files.length > 0 && (
             <div className="flex gap-2 flex-wrap">
-              {previews.map((src, i) => (
+              {files.map((file, i) => (
                 <div key={i} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-border">
-                  <img src={src} alt={`Reference ${i + 1}`} className="w-full h-full object-cover" />
+                  {file.type === "application/pdf" ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-muted/60 gap-0.5">
+                      <FileText className="w-5 h-5 text-destructive" />
+                      <span className="text-[8px] text-muted-foreground truncate max-w-full px-1">PDF</span>
+                    </div>
+                  ) : (
+                    <img src={file.dataUrl} alt={`Reference ${i + 1}`} className="w-full h-full object-cover" />
+                  )}
                   <button
-                    onClick={() => removeImage(i)}
+                    onClick={() => removeFile(i)}
                     className="absolute inset-0 bg-background/70 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
                   >
                     <X className="w-4 h-4 text-destructive" />
@@ -101,10 +118,10 @@ const AIPromptPanel = ({ onSubmit, isLoading = false }: Props) => {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.pdf,application/pdf"
               multiple
               className="hidden"
-              onChange={(e) => handleImageAdd(e.target.files)}
+              onChange={(e) => handleFileAdd(e.target.files)}
             />
             <Button
               variant="outline"
@@ -114,12 +131,12 @@ const AIPromptPanel = ({ onSubmit, isLoading = false }: Props) => {
               disabled={isLoading}
             >
               <ImagePlus className="w-3.5 h-3.5" />
-              Add Reference Image
+              Add Image / PDF
             </Button>
             <Button
               size="sm"
               onClick={handleSubmit}
-              disabled={isLoading || (!prompt.trim() && previews.length === 0)}
+              disabled={isLoading || (!prompt.trim() && files.length === 0)}
               className="ml-auto gap-1.5 text-xs"
             >
               {isLoading ? (

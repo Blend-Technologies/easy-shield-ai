@@ -10,7 +10,7 @@ type CustomNodeData = {
 };
 
 const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData }) => {
-  const badgeColor = data.color || "bg-electric-sapphire-400";
+  const badgeColor = data.color || "bg-electric-blue-400";
   const badgeText = data.textColor || "text-white";
 
   return (
@@ -18,13 +18,13 @@ const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData 
       className={`
         bg-background border-2 rounded-xl px-4 py-3 min-w-[160px] shadow-md
         transition-all duration-200
-        ${selected ? "border-electric-sapphire-400 shadow-electric-sapphire-400/20 shadow-lg" : "border-border hover:border-electric-sapphire-300/50"}
+        ${selected ? "border-electric-blue-400 shadow-electric-blue-400/20 shadow-lg" : "border-border hover:border-electric-blue-300/50"}
       `}
     >
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-3 !h-3 !bg-sky-aqua-400 !border-2 !border-background"
+        className="!w-3 !h-3 !bg-ai-cyan-400 !border-2 !border-background"
       />
       <div className="flex items-center gap-2.5">
         <div
@@ -44,7 +44,7 @@ const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData 
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-3 !h-3 !bg-neon-pink-400 !border-2 !border-background"
+        className="!w-3 !h-3 !bg-electric-blue-400 !border-2 !border-background"
       />
     </div>
   );

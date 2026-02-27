@@ -46,7 +46,7 @@ const VisualizerToolbar = ({
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-electric-blue-400 to-ai-cyan-400 flex items-center justify-center">
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-electric-sapphire-400 to-indigo-bloom-400 flex items-center justify-center">
           <span className="text-white text-xs font-bold">EZ</span>
         </div>
         <input

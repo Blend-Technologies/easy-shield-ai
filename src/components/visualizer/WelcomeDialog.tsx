@@ -38,14 +38,14 @@ const WelcomeDialog = ({ open, onClose, onLoadExample }: Props) => {
         <ul className="space-y-3 my-4">
           {features.map((f) => (
             <li key={f} className="flex items-start gap-2.5 text-sm text-foreground">
-              <CheckCircle2 className="w-5 h-5 text-ai-cyan-400 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-5 h-5 text-sky-aqua-400 shrink-0 mt-0.5" />
               {f}
             </li>
           ))}
         </ul>
 
         <div className="flex gap-3 mt-2">
-          <Button onClick={onLoadExample} className="bg-electric-blue-500 hover:bg-electric-blue-600 text-white">
+          <Button onClick={onLoadExample} className="bg-electric-sapphire-500 hover:bg-electric-sapphire-600 text-white">
             Load Example
           </Button>
           <Button variant="outline" onClick={onClose}>

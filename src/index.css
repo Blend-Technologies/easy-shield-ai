@@ -6,86 +6,87 @@
 
 @layer base {
   :root {
-    --background: 220 40% 97%;
-    --foreground: 218 62% 10%;
+    --background: 210 40% 98%;
+    --foreground: 220 26% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 218 62% 10%;
+    --card-foreground: 220 26% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 218 62% 10%;
+    --popover-foreground: 220 26% 14%;
 
     --primary: 216 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 192 100% 42%;
+    --secondary: 213 55% 57%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 25% 92%;
-    --muted-foreground: 218 15% 46%;
+    --muted: 210 30% 93%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 43 100% 50%;
-    --accent-foreground: 218 62% 10%;
+    --accent: 193 100% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 18% 87%;
-    --input: 220 18% 87%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
     --ring: 216 100% 50%;
 
     --radius: 0.75rem;
 
     /* Custom palette tokens */
-    --navy: 218 62% 10%;
-    --electric-blue: 216 100% 50%;
-    --ai-cyan: 192 100% 42%;
-    --contract-gold: 43 100% 50%;
+    --neon-pink: 216 100% 50%;
+    --indigo-bloom: 213 55% 57%;
+    --vivid-royal: 216 100% 40%;
+    --electric-sapphire: 213 55% 57%;
+    --sky-aqua: 193 100% 50%;
 
     /* Custom tokens */
-    --hero-gradient: linear-gradient(135deg, hsl(218, 62%, 10%) 0%, hsl(218, 62%, 14%) 50%, hsl(216, 100%, 18%) 100%);
+    --hero-gradient: linear-gradient(135deg, hsl(216, 100%, 10%) 0%, hsl(213, 55%, 15%) 50%, hsl(193, 100%, 15%) 100%);
     --card-shadow: 0 4px 24px -4px hsl(216 100% 50% / 0.08);
     --card-shadow-hover: 0 8px 32px -4px hsl(216 100% 50% / 0.18);
     --glow-primary: 0 0 40px hsl(216 100% 50% / 0.3);
-    --glow-accent: 0 0 40px hsl(43 100% 50% / 0.3);
+    --glow-accent: 0 0 40px hsl(193 100% 50% / 0.3);
 
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 218 62% 10%;
+    --sidebar-foreground: 220 26% 14%;
     --sidebar-primary: 216 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 25% 95%;
-    --sidebar-accent-foreground: 218 62% 10%;
-    --sidebar-border: 220 18% 90%;
+    --sidebar-accent: 210 30% 96%;
+    --sidebar-accent-foreground: 220 26% 14%;
+    --sidebar-border: 214 20% 91%;
     --sidebar-ring: 216 100% 50%;
   }
 
   .dark {
-    --background: 218 62% 5%;
+    --background: 216 50% 5%;
     --foreground: 210 40% 96%;
-    --card: 218 55% 10%;
+    --card: 216 40% 10%;
     --card-foreground: 210 40% 96%;
-    --popover: 218 55% 10%;
+    --popover: 216 40% 10%;
     --popover-foreground: 210 40% 96%;
     --primary: 216 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 192 100% 42%;
+    --secondary: 213 55% 57%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 218 30% 17%;
+    --muted: 216 30% 17%;
     --muted-foreground: 215 15% 65%;
-    --accent: 43 100% 50%;
-    --accent-foreground: 218 62% 10%;
+    --accent: 193 100% 50%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 96%;
-    --border: 218 30% 17%;
-    --input: 218 30% 17%;
+    --border: 216 30% 17%;
+    --input: 216 30% 17%;
     --ring: 216 100% 50%;
-    --sidebar-background: 218 55% 8%;
+    --sidebar-background: 220 10% 10%;
     --sidebar-foreground: 210 40% 96%;
     --sidebar-primary: 216 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 218 30% 15%;
+    --sidebar-accent: 216 10% 16%;
     --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 218 30% 15%;
+    --sidebar-border: 216 10% 16%;
     --sidebar-ring: 216 100% 50%;
   }
 }
@@ -107,17 +108,17 @@
 @layer utilities {
   .text-gradient-primary {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(216, 100%, 50%), hsl(192, 100%, 42%));
+    background-image: linear-gradient(135deg, hsl(216, 100%, 50%), hsl(213, 55%, 57%));
   }
 
   .text-gradient-accent {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(192, 100%, 42%), hsl(43, 100%, 50%));
+    background-image: linear-gradient(135deg, hsl(193, 100%, 50%), hsl(213, 55%, 57%));
   }
 
   .text-gradient-royal {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(216, 100%, 50%), hsl(218, 62%, 10%));
+    background-image: linear-gradient(135deg, hsl(213, 55%, 57%), hsl(216, 100%, 40%));
   }
 
   .bg-hero {

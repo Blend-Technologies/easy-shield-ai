@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ProjectSelector from "@/components/spark/ProjectSelector";
-import ProjectHome from "@/components/spark/ProjectHome";
+import SparkTopNav from "@/components/spark/SparkTopNav";
+import SparkSidebar from "@/components/spark/SparkSidebar";
+import SparkDashboardContent from "@/components/spark/SparkDashboardContent";
 import { useSparkProjects, SparkProject } from "@/hooks/useSparkProjects";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -10,6 +11,7 @@ const SparkFramework = () => {
   const { projects, loading, createProject, deleteProject } = useSparkProjects();
   const [selectedProject, setSelectedProject] = useState<SparkProject | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [userName, setUserName] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,6 +21,8 @@ const SparkFramework = () => {
         navigate("/login");
         return;
       }
+      const name = session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "User";
+      setUserName(name);
       setAuthChecked(true);
     };
     checkAuth();
@@ -26,14 +30,10 @@ const SparkFramework = () => {
 
   if (!authChecked) return null;
 
-  return (
-    <DashboardLayout>
-      {selectedProject ? (
-        <ProjectHome
-          project={selectedProject}
-          onBack={() => setSelectedProject(null)}
-        />
-      ) : (
+  // Project selector view (no project selected)
+  if (!selectedProject) {
+    return (
+      <div className="min-h-screen bg-background">
         <ProjectSelector
           projects={projects}
           loading={loading}
@@ -41,8 +41,27 @@ const SparkFramework = () => {
           onCreate={createProject}
           onDelete={deleteProject}
         />
-      )}
-    </DashboardLayout>
+      </div>
+    );
+  }
+
+  // Full ClickUp-style dashboard
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Top nav */}
+      <SparkTopNav userName={userName} />
+
+      {/* Body: sidebar + content */}
+      <div className="flex flex-1 overflow-hidden">
+        <SparkSidebar
+          projects={projects}
+          selectedProjectId={selectedProject.id}
+          onSelectProject={setSelectedProject}
+          onBack={() => setSelectedProject(null)}
+        />
+        <SparkDashboardContent project={selectedProject} />
+      </div>
+    </div>
   );
 };
 

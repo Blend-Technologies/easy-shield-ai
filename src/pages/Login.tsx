@@ -23,7 +23,7 @@ const Login = () => {
     if (error) {
       toast({ variant: "destructive", title: "Login failed", description: error.message });
     } else {
-      navigate("/dashboard");
+      navigate("/dashboard/spark");
     }
   };
 

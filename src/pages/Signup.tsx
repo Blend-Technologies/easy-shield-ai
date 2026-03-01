@@ -3,39 +3,71 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, User, Building, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, Building, ArrowRight, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.jpeg";
 
 const Signup = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    company: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ name: "", email: "", company: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const { toast } = useToast();
 
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => setLoading(false), 1000);
+    const { error } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { full_name: formData.name, company: formData.company },
+      },
+    });
+    setLoading(false);
+    if (error) {
+      toast({ variant: "destructive", title: "Signup failed", description: error.message });
+    } else {
+      setSuccess(true);
+    }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md text-center">
+          <img src={logo} alt="EZShield+AI" className="h-16 w-auto rounded-xl mb-4 mx-auto" />
+          <span className="font-heading font-bold text-3xl text-foreground block mb-2">
+            EZShield<span className="text-gradient-primary">+AI</span>
+          </span>
+          <div className="glass-card rounded-2xl p-8 mt-6">
+            <CheckCircle2 className="w-12 h-12 text-accent mx-auto mb-4" />
+            <h2 className="font-heading text-xl font-bold text-foreground mb-2">Check your email</h2>
+            <p className="text-muted-foreground text-sm">
+              We've sent a confirmation link to <strong className="text-foreground">{formData.email}</strong>. Please click the link to verify your account.
+            </p>
+            <Link to="/login" className="inline-block mt-6">
+              <Button variant="outline">Back to Login</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <img src={logo} alt="EZShield+AI" className="h-10 w-auto rounded-md" />
-            <span className="font-heading font-bold text-2xl text-foreground">
-              EZShield<span className="text-gradient-primary">+AI</span>
-            </span>
-          </Link>
-          <h1 className="font-heading text-2xl font-bold text-foreground mb-2">Create your account</h1>
-          <p className="text-muted-foreground text-sm">Start securing your integrations today</p>
+        <div className="flex flex-col items-center mb-8">
+          <img src={logo} alt="EZShield+AI" className="h-16 w-auto rounded-xl mb-4" />
+          <span className="font-heading font-bold text-3xl text-foreground">
+            EZShield<span className="text-gradient-primary">+AI</span>
+          </span>
+          <p className="text-muted-foreground text-sm mt-2">Start securing your integrations today</p>
         </div>
 
         <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-8 space-y-5">

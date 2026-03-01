@@ -72,7 +72,7 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
             </AvatarFallback>
           </Avatar>
           <span className="text-sm font-semibold text-spark-sidebar-foreground truncate flex-1 text-left">
-            Blend AI tech...
+            Testing
           </span>
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
         </button>

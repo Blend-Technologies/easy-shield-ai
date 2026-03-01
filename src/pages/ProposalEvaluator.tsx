@@ -1,10 +1,11 @@
 import { useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileUp, Loader2, X, FileText, BarChart3 } from "lucide-react";
+import { FileUp, Loader2, X, FileText, BarChart3, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EvaluatorDashboard, type EvaluationResult } from "@/components/proposal/EvaluatorDashboard";
 
@@ -15,6 +16,7 @@ type UploadedFile = {
 };
 
 const ProposalEvaluator = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [proposalType, setProposalType] = useState("enterprise");
   const [files, setFiles] = useState<UploadedFile[]>([]);
@@ -105,11 +107,16 @@ const ProposalEvaluator = () => {
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6">
-        <div>
-          <h1 className="font-heading text-2xl font-bold text-foreground">Proposal Evaluator</h1>
-          <p className="text-muted-foreground mt-1">
-            Evaluate your fit against an RFP before writing a proposal.
-          </p>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/spark")} className="shrink-0">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="font-heading text-2xl font-bold text-foreground">Proposal Evaluator</h1>
+            <p className="text-muted-foreground mt-1">
+              Evaluate your fit against an RFP before writing a proposal.
+            </p>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-5 gap-6">

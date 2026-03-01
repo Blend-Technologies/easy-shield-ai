@@ -79,19 +79,15 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
         {navItems.map((item) => (
           <button
             key={item.label}
+            title={"tooltip" in item ? (item as any).tooltip : undefined}
             className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors ${
-              item.active
+              "active" in item && item.active
                 ? "bg-primary/10 text-primary font-medium"
                 : "text-spark-sidebar-foreground hover:bg-black/5"
             }`}
           >
             <item.icon className="w-4 h-4 flex-shrink-0" />
             <span className="flex-1 text-left">{item.label}</span>
-            {item.badge && (
-              <span className="bg-destructive text-destructive-foreground text-[10px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center px-1.5">
-                {item.badge}
-              </span>
-            )}
           </button>
         ))}
       </nav>

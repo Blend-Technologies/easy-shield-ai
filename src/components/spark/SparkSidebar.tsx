@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import {
   Home,
   Compass,
   Users,
-  FileText,
+  FileEdit,
+  ClipboardCheck,
   LayoutDashboard,
   Pencil,
   Target,
@@ -32,14 +34,17 @@ type Props = {
 
 const navItems = [
   { icon: Home, label: "Home", active: true },
-  { icon: Compass, label: "Scope", tooltip: "Scope the solution" },
   { icon: Users, label: "Teams" },
-  { icon: FileText, label: "Docs" },
   { icon: LayoutDashboard, label: "Dashboards" },
   { icon: Pencil, label: "Whiteboards" },
   { icon: Target, label: "Goals" },
   { icon: Clock, label: "Timesheets" },
   { icon: MoreHorizontal, label: "More" },
+];
+
+const scopeSubItems = [
+  { icon: ClipboardCheck, label: "Proposal Evaluator", href: "/dashboard/proposal-writer" },
+  { icon: FileEdit, label: "Proposal Writer", href: "/dashboard/proposal-writer" },
 ];
 
 const workspaceColors: Record<number, string> = {
@@ -76,10 +81,40 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
 
       {/* Main nav */}
       <nav className="px-2 py-2 space-y-0.5">
+        {/* Scope with dropdown */}
+        <Collapsible defaultOpen>
+          <CollapsibleTrigger asChild>
+            <button
+              title="Scope the solution"
+              className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors text-spark-sidebar-foreground hover:bg-black/5 group"
+            >
+              <Compass className="w-4 h-4 flex-shrink-0" style={{ color: "#7B68EE" }} />
+              <span className="flex-1 text-left font-medium bg-gradient-to-r from-spark-accent-purple to-primary bg-clip-text text-transparent">
+                Scope
+              </span>
+              <ChevronDown className="w-3 h-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-0 group-data-[state=closed]:-rotate-90" />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
+              {scopeSubItems.map((sub) => (
+                <button
+                  key={sub.label}
+                  onClick={() => navigate(sub.href)}
+                  className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors"
+                >
+                  <sub.icon className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+                  <span className="text-left">{sub.label}</span>
+                </button>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Other nav items */}
         {navItems.map((item) => (
           <button
             key={item.label}
-            title={"tooltip" in item ? (item as any).tooltip : undefined}
             className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors ${
               "active" in item && item.active
                 ? "bg-primary/10 text-primary font-medium"

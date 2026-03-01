@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Home,
-  Inbox,
+  Compass,
   Users,
   FileText,
   LayoutDashboard,
@@ -32,7 +32,7 @@ type Props = {
 
 const navItems = [
   { icon: Home, label: "Home", active: true },
-  { icon: Inbox, label: "Inbox", badge: 1 },
+  { icon: Compass, label: "Scope", tooltip: "Scope the solution" },
   { icon: Users, label: "Teams" },
   { icon: FileText, label: "Docs" },
   { icon: LayoutDashboard, label: "Dashboards" },

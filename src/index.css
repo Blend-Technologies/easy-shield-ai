@@ -50,6 +50,15 @@
     --glow-primary: 0 0 40px hsl(216 100% 50% / 0.3);
     --glow-accent: 0 0 40px hsl(193 100% 50% / 0.3);
 
+    /* Spark dashboard tokens */
+    --spark-nav: 240 33% 14%;
+    --spark-nav-foreground: 240 10% 90%;
+    --spark-sidebar-bg: 240 5% 97%;
+    --spark-sidebar-foreground: 220 15% 30%;
+    --spark-card-border: 220 13% 90%;
+    --spark-accent-purple: 249 65% 68%;
+    --spark-status-blue: 224 76% 51%;
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 220 26% 14%;
     --sidebar-primary: 216 100% 50%;

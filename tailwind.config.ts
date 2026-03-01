@@ -61,6 +61,15 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        spark: {
+          nav: "hsl(var(--spark-nav))",
+          "nav-foreground": "hsl(var(--spark-nav-foreground))",
+          "sidebar-bg": "hsl(var(--spark-sidebar-bg))",
+          "sidebar-foreground": "hsl(var(--spark-sidebar-foreground))",
+          "card-border": "hsl(var(--spark-card-border))",
+          "accent-purple": "hsl(var(--spark-accent-purple))",
+          "status-blue": "hsl(var(--spark-status-blue))",
+        },
         // Custom palette
         "neon-pink": {
           DEFAULT: "hsl(var(--neon-pink))",

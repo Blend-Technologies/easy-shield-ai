@@ -33,7 +33,6 @@ type Props = {
 };
 
 const navItems = [
-  { icon: Home, label: "Home", active: true },
   { icon: Users, label: "Teams" },
   { icon: LayoutDashboard, label: "Dashboards" },
   { icon: Pencil, label: "Whiteboards" },
@@ -43,7 +42,7 @@ const navItems = [
 ];
 
 const scopeSubItems = [
-  { icon: ClipboardCheck, label: "Proposal Evaluator", href: "/dashboard/proposal-writer" },
+  { icon: ClipboardCheck, label: "Proposal Evaluator", href: "/dashboard/proposal-evaluator" },
   { icon: FileEdit, label: "Proposal Writer", href: "/dashboard/proposal-writer" },
 ];
 
@@ -81,6 +80,14 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
 
       {/* Main nav */}
       <nav className="px-2 py-2 space-y-0.5">
+        {/* Home - always on top */}
+        <button
+          className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors bg-primary/10 text-primary font-medium"
+        >
+          <Home className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1 text-left">Home</span>
+        </button>
+
         {/* Scope with dropdown */}
         <Collapsible defaultOpen>
           <CollapsibleTrigger asChild>

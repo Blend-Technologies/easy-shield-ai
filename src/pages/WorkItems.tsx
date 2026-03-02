@@ -33,17 +33,41 @@ const WorkItems = () => {
   });
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
+  const [newAssignee, setNewAssignee] = useState("KN");
+  const [newDueDate, setNewDueDate] = useState("");
+  const [newPriority, setNewPriority] = useState("none");
   const { grouped, loading, addItem, deleteItem } = useWorkItems();
 
   const toggleGroup = (id: string) =>
     setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const handleAddTask = async (status: string) => {
-    if (!newTitle.trim()) return;
-    await addItem({ title: newTitle.trim(), status });
+  const resetNewTask = () => {
     setNewTitle("");
+    setNewAssignee("KN");
+    setNewDueDate("");
+    setNewPriority("none");
     setAddingTo(null);
   };
+
+  const handleAddTask = async (status: string) => {
+    if (!newTitle.trim()) return;
+    await addItem({
+      title: newTitle.trim(),
+      status,
+      assignee_initials: newAssignee || "KN",
+      due_date: newDueDate || undefined,
+      priority: newPriority,
+    });
+    resetNewTask();
+  };
+
+  const priorityOptions = [
+    { value: "urgent", label: "Urgent", color: "text-red-500" },
+    { value: "high", label: "High", color: "text-orange-500" },
+    { value: "normal", label: "Normal", color: "text-blue-500" },
+    { value: "low", label: "Low", color: "text-gray-400" },
+    { value: "none", label: "None", color: "text-[#CCC]" },
+  ];
 
   // Theme classes
   const pageBg = darkMode ? "bg-[#0D1F3C]" : "bg-white";
@@ -155,7 +179,7 @@ const WorkItems = () => {
                 <StatusBadge style={group.id} label={group.label} />
                 <span className={`text-[13px] ${textMuted}`}>{tasks.length}</span>
                 <MoreHorizontal className={`w-4 h-4 ${textMuted}`} />
-                <button onClick={() => { setAddingTo(group.id); setNewTitle(""); }} className={`flex items-center gap-1 text-[13px] ${textMuted} ml-2`}>
+                <button onClick={() => { setAddingTo(group.id); setNewTitle(""); setNewAssignee("KN"); setNewDueDate(""); setNewPriority("none"); }} className={`flex items-center gap-1 text-[13px] ${textMuted} ml-2`}>
                   <Plus className="w-3.5 h-3.5" />Add Task
                 </button>
               </div>
@@ -191,15 +215,47 @@ const WorkItems = () => {
                   })}
 
                   {addingTo === group.id ? (
-                    <div className="flex items-center gap-2 h-10 pl-8">
-                      <input autoFocus value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleAddTask(group.id); if (e.key === "Escape") setAddingTo(null); }}
-                        placeholder="Task name..." className={`flex-1 h-7 px-3 text-sm rounded border ${inputBorder} ${inputBg} ${textDark} outline-none`} />
-                      <button onClick={() => handleAddTask(group.id)} className="px-3 py-1 text-xs font-bold text-white bg-[#00BFA5] rounded">Save</button>
-                      <button onClick={() => setAddingTo(null)} className={`text-xs ${textMuted}`}>Cancel</button>
+                    <div className={`pl-8 py-2 border-b ${rowDivider}`}>
+                      <div className="flex items-center gap-2">
+                        <StatusIcon style={group.id} />
+                        <input autoFocus value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") handleAddTask(group.id); if (e.key === "Escape") resetNewTask(); }}
+                          placeholder="Task Name or type '/' for commands" className={`flex-1 h-8 px-3 text-sm rounded border ${inputBorder} ${inputBg} ${textDark} outline-none`} />
+                      </div>
+                      <div className="flex items-center gap-2 mt-2 ml-7">
+                        {/* Assignee */}
+                        <div className="flex items-center gap-1">
+                          <User className={`w-3.5 h-3.5 ${textMuted}`} />
+                          <input value={newAssignee} onChange={(e) => setNewAssignee(e.target.value.toUpperCase().slice(0, 3))}
+                            placeholder="Initials" className={`w-14 h-7 px-2 text-xs rounded border ${inputBorder} ${inputBg} ${textDark} outline-none text-center`} />
+                        </div>
+                        {/* Due Date */}
+                        <div className="flex items-center gap-1">
+                          <Clock className={`w-3.5 h-3.5 ${textMuted}`} />
+                          <input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)}
+                            className={`h-7 px-2 text-xs rounded border ${inputBorder} ${inputBg} ${textDark} outline-none`} />
+                        </div>
+                        {/* Priority */}
+                        <div className="flex items-center gap-1">
+                          <Flag className={`w-3.5 h-3.5 ${textMuted}`} />
+                          <select value={newPriority} onChange={(e) => setNewPriority(e.target.value)}
+                            className={`h-7 px-2 text-xs rounded border ${inputBorder} ${inputBg} ${textDark} outline-none`}>
+                            {priorityOptions.map((p) => (
+                              <option key={p.value} value={p.value}>{p.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="ml-auto flex items-center gap-2">
+                          <button onClick={() => resetNewTask()} className={`text-xs ${textMuted}`}>Cancel</button>
+                          <button onClick={() => handleAddTask(group.id)}
+                            className="flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-[#1A1A1A] rounded">
+                            Save <span className="text-[10px] opacity-60">↵</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ) : (
-                    <button onClick={() => { setAddingTo(group.id); setNewTitle(""); }}
+                    <button onClick={() => { setAddingTo(group.id); setNewTitle(""); setNewAssignee("KN"); setNewDueDate(""); setNewPriority("none"); }}
                       className={`flex items-center gap-2 h-9 pl-8 ${textMutedLight} text-[13px] cursor-pointer ${rowHover} w-full`}>
                       <Plus className="w-3.5 h-3.5" />Add Task
                     </button>

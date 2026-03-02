@@ -20,8 +20,8 @@ const tabs = [
 type StatusStyle = "shipped" | "testing" | "backlog";
 
 const statusGroups: { id: StatusStyle; label: string }[] = [
-  { id: "shipped", label: "SHIPPED" },
-  { id: "testing", label: "TESTING" },
+  { id: "shipped", label: "DONE" },
+  { id: "testing", label: "IN PROGRESS" },
   { id: "backlog", label: "BACKLOG" },
 ];
 

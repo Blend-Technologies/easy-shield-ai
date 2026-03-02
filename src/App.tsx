@@ -14,6 +14,7 @@ import DesignVisualizer from "./pages/DesignVisualizer";
 import ProposalWriter from "./pages/ProposalWriter";
 import ProposalEvaluator from "./pages/ProposalEvaluator";
 import SparkFramework from "./pages/SparkFramework";
+import WorkItems from "./pages/WorkItems";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/dashboard/proposal-writer" element={<ProposalWriter />} />
           <Route path="/dashboard/proposal-evaluator" element={<ProposalEvaluator />} />
           <Route path="/dashboard/spark" element={<SparkFramework />} />
+          <Route path="/dashboard/work-items" element={<WorkItems />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

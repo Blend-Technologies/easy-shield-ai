@@ -38,11 +38,11 @@ const sidebarLinks = [
 ];
 
 const boardsSubItems = [
-  { label: "Work Items", icon: ListTodo },
-  { label: "Boards", icon: Kanban },
-  { label: "Backlogs", icon: IterationCcw },
-  { label: "Sprints", icon: Sparkles },
-  { label: "Delivery Plans", icon: Truck },
+  { label: "Work Items", icon: ListTodo, href: "/dashboard/work-items" },
+  { label: "Boards", icon: Kanban, href: "" },
+  { label: "Backlogs", icon: IterationCcw, href: "" },
+  { label: "Sprints", icon: Sparkles, href: "" },
+  { label: "Delivery Plans", icon: Truck, href: "" },
 ];
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
@@ -84,15 +84,31 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="ml-4 pl-3 border-l border-border space-y-0.5 py-0.5">
-                {boardsSubItems.map((sub) => (
-                  <button
-                    key={sub.label}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-full"
-                  >
-                    <sub.icon className="w-3.5 h-3.5" />
-                    <span>{sub.label}</span>
-                  </button>
-                ))}
+                {boardsSubItems.map((sub) =>
+                  sub.href ? (
+                    <Link
+                      key={sub.label}
+                      to={sub.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors w-full ${
+                        location.pathname === sub.href
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <sub.icon className="w-3.5 h-3.5" />
+                      <span>{sub.label}</span>
+                    </Link>
+                  ) : (
+                    <button
+                      key={sub.label}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-full"
+                    >
+                      <sub.icon className="w-3.5 h-3.5" />
+                      <span>{sub.label}</span>
+                    </button>
+                  )
+                )}
               </div>
             </CollapsibleContent>
           </Collapsible>

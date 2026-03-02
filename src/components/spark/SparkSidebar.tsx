@@ -21,6 +21,11 @@ import {
   UserPlus,
   HelpCircle,
   FolderOpen,
+  ListTodo,
+  Kanban,
+  IterationCcw,
+  Sparkles,
+  Truck,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SparkProject } from "@/hooks/useSparkProjects";
@@ -44,6 +49,14 @@ const navItems = [
 const scopeSubItems = [
   { icon: ClipboardCheck, label: "Proposal Evaluator", href: "/dashboard/proposal-evaluator" },
   { icon: FileEdit, label: "Proposal Writer", href: "/dashboard/proposal-writer" },
+];
+
+const tasksSubItems = [
+  { icon: ListTodo, label: "Work Items", href: "/dashboard/work-items" },
+  { icon: Kanban, label: "Boards", href: "" },
+  { icon: IterationCcw, label: "Backlogs", href: "" },
+  { icon: Sparkles, label: "Sprints", href: "" },
+  { icon: Truck, label: "Delivery Plans", href: "" },
 ];
 
 const workspaceColors: Record<number, string> = {
@@ -114,6 +127,43 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
                   <span className="text-left">{sub.label}</span>
                 </button>
               ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Tasks Management */}
+        <Collapsible defaultOpen>
+          <CollapsibleTrigger asChild>
+            <button
+              className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors text-spark-sidebar-foreground hover:bg-black/5 group"
+            >
+              <Kanban className="w-4 h-4 flex-shrink-0 text-primary" />
+              <span className="flex-1 text-left font-medium">Tasks Management</span>
+              <ChevronDown className="w-3 h-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-0 group-data-[state=closed]:-rotate-90" />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
+              {tasksSubItems.map((sub) =>
+                sub.href ? (
+                  <button
+                    key={sub.label}
+                    onClick={() => navigate(sub.href)}
+                    className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors"
+                  >
+                    <sub.icon className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+                    <span className="text-left">{sub.label}</span>
+                  </button>
+                ) : (
+                  <button
+                    key={sub.label}
+                    className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-black/5 transition-colors"
+                  >
+                    <sub.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="text-left">{sub.label}</span>
+                  </button>
+                )
+              )}
             </div>
           </CollapsibleContent>
         </Collapsible>

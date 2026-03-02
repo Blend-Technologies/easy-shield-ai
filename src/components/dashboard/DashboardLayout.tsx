@@ -1,6 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import {
   LayoutDashboard,
   Plug,
@@ -15,12 +14,6 @@ import {
   X,
   Sparkles,
   FileText,
-  Kanban,
-  ListTodo,
-  IterationCcw,
-  Truck,
-  ChevronDown,
-  ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
 import logo from "@/assets/logo.jpeg";
@@ -37,13 +30,6 @@ const sidebarLinks = [
   { label: "Settings", icon: Settings, href: "/dashboard/settings" },
 ];
 
-const boardsSubItems = [
-  { label: "Work Items", icon: ListTodo, href: "/dashboard/work-items" },
-  { label: "Boards", icon: Kanban, href: "" },
-  { label: "Backlogs", icon: IterationCcw, href: "" },
-  { label: "Sprints", icon: Sparkles, href: "" },
-  { label: "Delivery Plans", icon: Truck, href: "" },
-];
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -73,45 +59,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             Wikis
           </button>
 
-          {/* Boards - collapsible */}
-          <Collapsible defaultOpen>
-            <CollapsibleTrigger asChild>
-              <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-full group">
-                <Kanban className="w-4 h-4" />
-                <span className="flex-1 text-left">Boards</span>
-                <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=closed]:-rotate-90" />
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="ml-4 pl-3 border-l border-border space-y-0.5 py-0.5">
-                {boardsSubItems.map((sub) =>
-                  sub.href ? (
-                    <Link
-                      key={sub.label}
-                      to={sub.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors w-full ${
-                        location.pathname === sub.href
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                      }`}
-                    >
-                      <sub.icon className="w-3.5 h-3.5" />
-                      <span>{sub.label}</span>
-                    </Link>
-                  ) : (
-                    <button
-                      key={sub.label}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-full"
-                    >
-                      <sub.icon className="w-3.5 h-3.5" />
-                      <span>{sub.label}</span>
-                    </button>
-                  )
-                )}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
 
           <div className="my-2 border-t border-border" />
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import ProjectSelector from "@/components/spark/ProjectSelector";
 import SparkTopNav from "@/components/spark/SparkTopNav";
 import SparkSidebar from "@/components/spark/SparkSidebar";
@@ -13,6 +13,7 @@ const SparkFramework = () => {
   const [authChecked, setAuthChecked] = useState(false);
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
+  const { projectName } = useParams();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -28,6 +29,29 @@ const SparkFramework = () => {
     checkAuth();
   }, [navigate]);
 
+  // Sync URL param to selected project
+  useEffect(() => {
+    if (!projects.length || loading) return;
+    if (projectName) {
+      const match = projects.find((p) => p.name === decodeURIComponent(projectName));
+      if (match && match.id !== selectedProject?.id) {
+        setSelectedProject(match);
+      }
+    } else {
+      setSelectedProject(null);
+    }
+  }, [projectName, projects, loading]);
+
+  const handleSelectProject = (project: SparkProject) => {
+    setSelectedProject(project);
+    navigate(`/dashboard/spark/${encodeURIComponent(project.name)}`);
+  };
+
+  const handleBack = () => {
+    setSelectedProject(null);
+    navigate("/dashboard/spark");
+  };
+
   if (!authChecked) return null;
 
   // Project selector view (no project selected)
@@ -37,7 +61,7 @@ const SparkFramework = () => {
         <ProjectSelector
           projects={projects}
           loading={loading}
-          onSelect={setSelectedProject}
+          onSelect={handleSelectProject}
           onCreate={createProject}
           onDelete={deleteProject}
         />
@@ -56,8 +80,8 @@ const SparkFramework = () => {
         <SparkSidebar
           projects={projects}
           selectedProjectId={selectedProject.id}
-          onSelectProject={setSelectedProject}
-          onBack={() => setSelectedProject(null)}
+          onSelectProject={handleSelectProject}
+          onBack={handleBack}
         />
         <SparkDashboardContent project={selectedProject} />
       </div>

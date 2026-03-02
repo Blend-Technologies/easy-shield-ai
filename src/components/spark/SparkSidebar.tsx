@@ -51,8 +51,8 @@ const scopeSubItems = [
   { icon: FileEdit, label: "Proposal Writer", href: "/dashboard/proposal-writer" },
 ];
 
-const tasksSubItems = [
-  { icon: ListTodo, label: "Work Items", href: "/dashboard/work-items" },
+const getTasksSubItems = (projectName: string) => [
+  { icon: ListTodo, label: "Work Items", href: `/dashboard/${encodeURIComponent(projectName)}/work-items` },
   { icon: Kanban, label: "Boards", href: "" },
   { icon: IterationCcw, label: "Backlogs", href: "" },
   { icon: Sparkles, label: "Sprints", href: "" },
@@ -70,6 +70,8 @@ const workspaceColors: Record<number, string> = {
 const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: Props) => {
   const [spacesExpanded, setSpacesExpanded] = useState(true);
   const navigate = useNavigate();
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
+  const tasksSubItems = getTasksSubItems(selectedProject?.name || "");
 
   return (
     <aside className="w-[260px] flex-shrink-0 bg-spark-sidebar-bg border-r border-spark-card-border flex flex-col h-full overflow-hidden">

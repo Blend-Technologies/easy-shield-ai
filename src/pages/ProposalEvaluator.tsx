@@ -303,11 +303,11 @@ const ProposalEvaluator = () => {
                   disabled={isExtracting || files.length === 0}
                 >
                   {isExtracting ? (
-                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Extracting Requirements...</>
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating Checklist Requirements...</>
                   ) : requirementsResult ? (
-                    <><ListChecks className="w-4 h-4 mr-2" /> Re-extract Shall &amp; Must</>
+                    <><ListChecks className="w-4 h-4 mr-2" /> Re-generate Checklist Requirements</>
                   ) : (
-                    <><ListChecks className="w-4 h-4 mr-2" /> Step 1: Extract Shall &amp; Must</>
+                    <><ListChecks className="w-4 h-4 mr-2" /> Step 1: Generate Checklist Requirements</>
                   )}
                 </Button>
 

@@ -294,39 +294,41 @@ const ProposalEvaluator = () => {
                   </div>
                 ))}
 
-                {/* Step 1: Extract Shall & Must */}
-                <Button
-                  className="w-full"
-                  size="lg"
-                  variant={requirementsResult ? "outline" : "default"}
-                  onClick={extractRequirements}
-                  disabled={isExtracting || files.length === 0}
-                >
-                  {isExtracting ? (
-                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating Checklist Requirements...</>
-                  ) : requirementsResult ? (
-                    <><ListChecks className="w-4 h-4 mr-2" /> Re-generate Checklist Requirements</>
-                  ) : (
-                    <><ListChecks className="w-4 h-4 mr-2" /> Step 1: Generate Checklist Requirements</>
-                  )}
-                </Button>
+                {/* Step 1: Generate Checklist Requirements (Government only) */}
+                {proposalType === "government" && (
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    variant={requirementsResult ? "outline" : "default"}
+                    onClick={extractRequirements}
+                    disabled={isExtracting || files.length === 0}
+                  >
+                    {isExtracting ? (
+                      <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating Checklist Requirements...</>
+                    ) : requirementsResult ? (
+                      <><ListChecks className="w-4 h-4 mr-2" /> Re-generate Checklist Requirements</>
+                    ) : (
+                      <><ListChecks className="w-4 h-4 mr-2" /> Step 1: Generate Checklist Requirements</>
+                    )}
+                  </Button>
+                )}
 
-                {/* Step 2: Evaluate Fit (only after requirements extracted) */}
+                {/* Evaluate Fit */}
                 <Button
                   className="w-full"
                   size="lg"
                   onClick={evaluateRFP}
-                  disabled={isEvaluating || !requirementsResult}
+                  disabled={isEvaluating || (proposalType === "government" && !requirementsResult)}
                 >
                   {isEvaluating ? (
                     <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Evaluating...</>
                   ) : (
-                    <><BarChart3 className="w-4 h-4 mr-2" /> Step 2: Evaluate Fit</>
+                    <><BarChart3 className="w-4 h-4 mr-2" /> {proposalType === "government" ? "Step 2: " : ""}Evaluate Fit</>
                   )}
                 </Button>
-                {!requirementsResult && files.length > 0 && (
+                {proposalType === "government" && !requirementsResult && files.length > 0 && (
                   <p className="text-xs text-muted-foreground text-center">
-                    Extract Shall &amp; Must requirements first before evaluating fit.
+                    Generate checklist requirements first before evaluating fit.
                   </p>
                 )}
               </CardContent>

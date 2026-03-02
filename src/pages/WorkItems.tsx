@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useWorkItems, WorkItem } from "@/hooks/useWorkItems";
 import { format, isToday, isPast } from "date-fns";
+import TaskDetailDialog from "@/components/workitems/TaskDetailDialog";
 
 const tabs = [
   { id: "overview", label: "Overview", icon: LayoutGrid },
@@ -36,7 +37,8 @@ const WorkItems = () => {
   const [newAssignee, setNewAssignee] = useState("KN");
   const [newDueDate, setNewDueDate] = useState("");
   const [newPriority, setNewPriority] = useState("none");
-  const { grouped, loading, addItem, deleteItem } = useWorkItems();
+  const [selectedTask, setSelectedTask] = useState<WorkItem | null>(null);
+  const { grouped, loading, addItem, updateItem, deleteItem } = useWorkItems();
 
   const toggleGroup = (id: string) =>
     setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -197,7 +199,7 @@ const WorkItems = () => {
                       <div key={task.id} className={`grid grid-cols-[1fr_150px_120px_120px_40px] items-center h-11 text-sm border-b ${rowDivider} ${rowHover} transition-colors pl-8 group/row`}>
                         <div className="flex items-center gap-2.5 min-w-0 pr-4">
                           <StatusIcon style={group.id} />
-                          <span className={`${textDark} truncate text-[14px]`}>{task.title}</span>
+                          <span onClick={() => setSelectedTask(task)} className={`${textDark} truncate text-[14px] cursor-pointer hover:underline`}>{task.title}</span>
                           {task.description && <AlignJustify className={`w-3.5 h-3.5 flex-shrink-0 ${textMuted}`} />}
                         </div>
                         <div>
@@ -266,6 +268,12 @@ const WorkItems = () => {
           );
         })}
       </div>
+      <TaskDetailDialog
+        task={selectedTask}
+        open={!!selectedTask}
+        onOpenChange={(open) => { if (!open) setSelectedTask(null); }}
+        onUpdate={updateItem}
+      />
     </div>
   );
 };

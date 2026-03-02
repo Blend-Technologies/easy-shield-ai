@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChevronDown, Plus, Search, Eye, Settings, LayoutGrid, List,
   Columns3, BarChart3, Table, Activity, Layers, GitBranch,
   CheckCircle2, Circle, Clock, MoreHorizontal, Flag, PlusCircle,
-  AlignJustify, User, Filter, Sun, Moon, Trash2,
+  AlignJustify, User, Filter, Sun, Moon, Trash2, ArrowLeft,
 } from "lucide-react";
 import { useWorkItems, WorkItem } from "@/hooks/useWorkItems";
 import { format, isToday, isPast } from "date-fns";
@@ -27,6 +28,7 @@ const statusGroups: { id: StatusStyle; label: string }[] = [
 ];
 
 const WorkItems = () => {
+  const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
@@ -112,8 +114,15 @@ const WorkItems = () => {
 
   return (
     <div className={`min-h-screen ${pageBg} font-sans transition-colors duration-300`}>
-      {/* TAB BAR */}
+      {/* BACK + TAB BAR */}
       <div className={`flex items-center h-11 ${barBg} border-b ${barBorder} px-4 overflow-x-auto`}>
+        <button
+          onClick={() => navigate("/dashboard/spark")}
+          className={`flex items-center gap-1 mr-3 px-2 py-1 rounded text-sm ${textMuted} hover:${textDark} transition-colors flex-shrink-0`}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          SPARK
+        </button>
         <div className="flex items-center gap-0 flex-shrink-0">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTab;

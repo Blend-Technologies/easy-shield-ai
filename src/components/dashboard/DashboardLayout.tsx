@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import {
   LayoutDashboard,
   Plug,
@@ -13,6 +14,13 @@ import {
   Menu,
   X,
   Sparkles,
+  FileText,
+  Kanban,
+  ListTodo,
+  IterationCcw,
+  Truck,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
 import logo from "@/assets/logo.jpeg";
@@ -27,6 +35,14 @@ const sidebarLinks = [
   { label: "Design Visualizer", icon: Eye, href: "/dashboard/visualizer" },
   { label: "Proposal Writer", icon: FileEdit, href: "/dashboard/proposal-writer" },
   { label: "Settings", icon: Settings, href: "/dashboard/settings" },
+];
+
+const boardsSubItems = [
+  { label: "Work Items", icon: ListTodo },
+  { label: "Boards", icon: Kanban },
+  { label: "Backlogs", icon: IterationCcw },
+  { label: "Sprints", icon: Sparkles },
+  { label: "Delivery Plans", icon: Truck },
 ];
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
@@ -47,6 +63,42 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
 
         <nav className="p-3 space-y-1">
+          {/* Top section: Dashboards, Wikis, Boards */}
+          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-full">
+            <LayoutDashboard className="w-4 h-4" />
+            Dashboards
+          </button>
+          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-full">
+            <FileText className="w-4 h-4" />
+            Wikis
+          </button>
+
+          {/* Boards - collapsible */}
+          <Collapsible defaultOpen>
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-full group">
+                <Kanban className="w-4 h-4" />
+                <span className="flex-1 text-left">Boards</span>
+                <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=closed]:-rotate-90" />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="ml-4 pl-3 border-l border-border space-y-0.5 py-0.5">
+                {boardsSubItems.map((sub) => (
+                  <button
+                    key={sub.label}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-full"
+                  >
+                    <sub.icon className="w-3.5 h-3.5" />
+                    <span>{sub.label}</span>
+                  </button>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <div className="my-2 border-t border-border" />
+
           {sidebarLinks.map((link) => {
             const isActive = location.pathname === link.href;
             return (

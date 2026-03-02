@@ -37,6 +37,7 @@ const App = () => (
           <Route path="/dashboard/proposal-writer" element={<ProposalWriter />} />
           <Route path="/dashboard/proposal-evaluator" element={<ProposalEvaluator />} />
           <Route path="/dashboard/spark" element={<SparkFramework />} />
+          <Route path="/dashboard/spark/:projectName" element={<SparkFramework />} />
           <Route path="/dashboard/work-items" element={<WorkItems />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

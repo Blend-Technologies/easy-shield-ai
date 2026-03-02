@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileUp, Loader2, X, FileText, BarChart3, ArrowLeft } from "lucide-react";
+import { FileUp, Loader2, X, FileText, BarChart3, ArrowLeft, ListChecks, ChevronDown, ChevronUp, Badge } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EvaluatorDashboard, type EvaluationResult } from "@/components/proposal/EvaluatorDashboard";
 
@@ -15,12 +15,29 @@ type UploadedFile = {
   status: "reading" | "done" | "error";
 };
 
+type Requirement = {
+  id: string;
+  type: "shall" | "must";
+  text: string;
+  section: string;
+};
+
+type RequirementsResult = {
+  requirements: Requirement[];
+  totalShall: number;
+  totalMust: number;
+  summary: string;
+};
+
 const ProposalEvaluator = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [proposalType, setProposalType] = useState("enterprise");
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [supplementaryFile, setSupplementaryFile] = useState<UploadedFile | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [requirementsResult, setRequirementsResult] = useState<RequirementsResult | null>(null);
+  const [requirementsExpanded, setRequirementsExpanded] = useState(true);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,7 +74,52 @@ const ProposalEvaluator = () => {
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+    // Reset requirements when files change
+    setRequirementsResult(null);
+    setEvaluationResult(null);
   };
+
+  const extractRequirements = useCallback(async () => {
+    if (files.length === 0) {
+      toast({ title: "Missing documents", description: "Upload at least one RFP document first.", variant: "destructive" });
+      return;
+    }
+
+    setIsExtracting(true);
+    setRequirementsResult(null);
+    setEvaluationResult(null);
+
+    const rfpDocuments = files
+      .filter((f) => f.status === "done")
+      .map((f) => ({ name: f.file.name, content: f.content.slice(0, 15000) }));
+
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-requirements`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ rfpDocuments }),
+        }
+      );
+
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.error || "Extraction failed");
+      }
+
+      const result = await resp.json();
+      setRequirementsResult(result);
+      toast({ title: "Requirements extracted!", description: `Found ${result.totalShall} shall + ${result.totalMust} must requirements.` });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setIsExtracting(false);
+    }
+  }, [files, toast]);
 
   const evaluateRFP = useCallback(async () => {
     if (files.length === 0 && !supplementaryFile) {
@@ -232,24 +294,103 @@ const ProposalEvaluator = () => {
                   </div>
                 ))}
 
+                {/* Step 1: Extract Shall & Must */}
+                <Button
+                  className="w-full"
+                  size="lg"
+                  variant={requirementsResult ? "outline" : "default"}
+                  onClick={extractRequirements}
+                  disabled={isExtracting || files.length === 0}
+                >
+                  {isExtracting ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Extracting Requirements...</>
+                  ) : requirementsResult ? (
+                    <><ListChecks className="w-4 h-4 mr-2" /> Re-extract Shall &amp; Must</>
+                  ) : (
+                    <><ListChecks className="w-4 h-4 mr-2" /> Step 1: Extract Shall &amp; Must</>
+                  )}
+                </Button>
+
+                {/* Step 2: Evaluate Fit (only after requirements extracted) */}
                 <Button
                   className="w-full"
                   size="lg"
                   onClick={evaluateRFP}
-                  disabled={isEvaluating}
+                  disabled={isEvaluating || !requirementsResult}
                 >
                   {isEvaluating ? (
                     <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Evaluating...</>
                   ) : (
-                    <><BarChart3 className="w-4 h-4 mr-2" /> Evaluate Fit</>
+                    <><BarChart3 className="w-4 h-4 mr-2" /> Step 2: Evaluate Fit</>
                   )}
                 </Button>
+                {!requirementsResult && files.length > 0 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Extract Shall &amp; Must requirements first before evaluating fit.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
 
           {/* Right: Results */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 space-y-4">
+            {/* Requirements Result */}
+            {isExtracting ? (
+              <Card>
+                <CardContent className="py-12 flex flex-col items-center justify-center">
+                  <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                  <p className="text-muted-foreground text-sm">Extracting Shall &amp; Must requirements from RFP...</p>
+                </CardContent>
+              </Card>
+            ) : requirementsResult ? (
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ListChecks className="w-5 h-5 text-primary" />
+                      <CardTitle className="text-base">Shall &amp; Must Requirements</CardTitle>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex gap-2 text-xs">
+                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                          {requirementsResult.totalShall} Shall
+                        </span>
+                        <span className="bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium">
+                          {requirementsResult.totalMust} Must
+                        </span>
+                      </div>
+                      <button onClick={() => setRequirementsExpanded(!requirementsExpanded)} className="text-muted-foreground hover:text-foreground">
+                        {requirementsExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">{requirementsResult.summary}</p>
+                </CardHeader>
+                {requirementsExpanded && (
+                  <CardContent className="pt-0">
+                    <div className="max-h-[400px] overflow-y-auto space-y-2 pr-1">
+                      {requirementsResult.requirements.map((req) => (
+                        <div key={req.id} className="flex gap-3 p-2.5 rounded-lg bg-muted/40 text-sm">
+                          <span className="text-xs font-mono text-muted-foreground shrink-0 mt-0.5">{req.id}</span>
+                          <span className={`text-xs font-semibold uppercase shrink-0 mt-0.5 ${req.type === "must" ? "text-destructive" : "text-primary"}`}>
+                            {req.type}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-foreground">{req.text}</p>
+                            {req.section && (
+                              <p className="text-xs text-muted-foreground mt-0.5">Section: {req.section}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            ) : null}
+
+            {/* Evaluation Result */}
             {isEvaluating ? (
               <Card>
                 <CardContent className="py-16 flex flex-col items-center justify-center">
@@ -259,14 +400,14 @@ const ProposalEvaluator = () => {
               </Card>
             ) : evaluationResult ? (
               <EvaluatorDashboard result={evaluationResult} />
-            ) : (
+            ) : !requirementsResult && !isExtracting ? (
               <Card>
                 <CardContent className="py-16 flex flex-col items-center justify-center text-muted-foreground">
                   <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>Upload documents and click "Evaluate Fit" to see your RFP match score</p>
+                  <p>Upload documents and extract requirements to get started</p>
                 </CardContent>
               </Card>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

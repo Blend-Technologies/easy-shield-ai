@@ -75,6 +75,16 @@ const KanbanBoard = () => {
   const [newTitle, setNewTitle] = useState("");
   const [selectedSprintId, setSelectedSprintId] = useState<string>("");
   const [draggedTask, setDraggedTask] = useState<{ colId: string; taskId: string } | null>(null);
+  const [collapsedSprints, setCollapsedSprints] = useState<Set<string>>(new Set());
+
+  const toggleSprintCollapse = (key: string) => {
+    setCollapsedSprints((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const handleAddTask = (colId: string) => {
     if (!newTitle.trim()) return;
@@ -231,31 +241,78 @@ const KanbanBoard = () => {
                   </div>
                 </div>
 
-                {/* Task Cards */}
+                {/* Task Cards - grouped by sprint */}
                 <div className="flex-1 space-y-2">
-                  {col.tasks.map((task) => (
-                    <div
-                      key={task.id}
-                      draggable
-                      onDragStart={() => handleDragStart(col.id, task.id)}
-                      className="bg-white border border-[#E5E5E5] rounded-lg p-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)] hover:border-[#D0D0D0] transition-all cursor-grab active:cursor-grabbing"
-                    >
-                      <p className="text-[14px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mb-2">
-                        {task.title}
-                      </p>
-                      {task.sprintName && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EDE9FF] text-[#7C3AED] mb-2">
-                          <Zap className="w-3 h-3" />{task.sprintName}
-                        </span>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <User className="w-[15px] h-[15px] text-[#AAAAAA]" />
-                        <Calendar className="w-[15px] h-[15px] text-[#AAAAAA]" />
-                        <Flag className="w-[15px] h-[15px] text-[#AAAAAA]" />
-                        <Tag className="w-[15px] h-[15px] text-[#AAAAAA]" />
-                      </div>
-                    </div>
-                  ))}
+                  {(() => {
+                    const ungrouped = col.tasks.filter((t) => !t.sprintId);
+                    const sprintGroups = new Map<string, { name: string; tasks: typeof col.tasks }>();
+                    col.tasks.forEach((t) => {
+                      if (t.sprintId && t.sprintName) {
+                        if (!sprintGroups.has(t.sprintId)) sprintGroups.set(t.sprintId, { name: t.sprintName, tasks: [] });
+                        sprintGroups.get(t.sprintId)!.tasks.push(t);
+                      }
+                    });
+
+                    return (
+                      <>
+                        {/* Sprint groups */}
+                        {Array.from(sprintGroups.entries()).map(([sprintId, group]) => {
+                          const collapseKey = `${col.id}-${sprintId}`;
+                          const isCollapsed = collapsedSprints.has(collapseKey);
+                          return (
+                            <div key={sprintId} className="rounded-lg border border-[#D8D0F0] bg-[#F9F7FF] overflow-hidden">
+                              <button
+                                onClick={() => toggleSprintCollapse(collapseKey)}
+                                className="flex items-center gap-2 w-full px-2.5 py-2 text-left hover:bg-[#F0ECFF] transition-colors"
+                              >
+                                <ChevronDown className={`w-3.5 h-3.5 text-[#7C3AED] transition-transform ${isCollapsed ? "-rotate-90" : ""}`} />
+                                <Zap className="w-3.5 h-3.5 text-[#7C3AED]" />
+                                <span className="text-[12px] font-bold text-[#7C3AED] truncate">{group.name}</span>
+                                <span className="text-[11px] text-[#A78BFA] ml-auto">{group.tasks.length}</span>
+                              </button>
+                              {!isCollapsed && (
+                                <div className="px-1.5 pb-1.5 space-y-1.5">
+                                  {group.tasks.map((task) => (
+                                    <div
+                                      key={task.id}
+                                      draggable
+                                      onDragStart={() => handleDragStart(col.id, task.id)}
+                                      className="bg-white border border-[#E5E5E5] rounded-md p-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)] hover:border-[#D0D0D0] transition-all cursor-grab active:cursor-grabbing"
+                                    >
+                                      <p className="text-[13px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mb-2">{task.title}</p>
+                                      <div className="flex items-center gap-2">
+                                        <User className="w-[14px] h-[14px] text-[#AAAAAA]" />
+                                        <Calendar className="w-[14px] h-[14px] text-[#AAAAAA]" />
+                                        <Flag className="w-[14px] h-[14px] text-[#AAAAAA]" />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Ungrouped tasks */}
+                        {ungrouped.map((task) => (
+                          <div
+                            key={task.id}
+                            draggable
+                            onDragStart={() => handleDragStart(col.id, task.id)}
+                            className="bg-white border border-[#E5E5E5] rounded-lg p-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)] hover:border-[#D0D0D0] transition-all cursor-grab active:cursor-grabbing"
+                          >
+                            <p className="text-[14px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mb-3">{task.title}</p>
+                            <div className="flex items-center gap-2">
+                              <User className="w-[15px] h-[15px] text-[#AAAAAA]" />
+                              <Calendar className="w-[15px] h-[15px] text-[#AAAAAA]" />
+                              <Flag className="w-[15px] h-[15px] text-[#AAAAAA]" />
+                              <Tag className="w-[15px] h-[15px] text-[#AAAAAA]" />
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Add Task */}

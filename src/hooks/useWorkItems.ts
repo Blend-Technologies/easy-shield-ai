@@ -11,6 +11,7 @@ export type WorkItem = {
   assignee_initials: string | null;
   due_date: string | null;
   priority: string;
+  sprint_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -42,6 +43,7 @@ export function useWorkItems() {
     assignee_initials?: string;
     due_date?: string;
     priority?: string;
+    sprint_id?: string;
   }) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -59,6 +61,7 @@ export function useWorkItems() {
         assignee_initials: item.assignee_initials || "KN",
         due_date: item.due_date || null,
         priority: item.priority || "none",
+        sprint_id: item.sprint_id || null,
       })
       .select()
       .single();
@@ -72,7 +75,7 @@ export function useWorkItems() {
     return data as WorkItem;
   };
 
-  const updateItem = async (id: string, updates: Partial<Pick<WorkItem, "title" | "status" | "description" | "assignee_initials" | "due_date" | "priority">>) => {
+  const updateItem = async (id: string, updates: Partial<Pick<WorkItem, "title" | "status" | "description" | "assignee_initials" | "due_date" | "priority" | "sprint_id">>) => {
     const { error } = await supabase
       .from("work_items")
       .update({ ...updates, updated_at: new Date().toISOString() })

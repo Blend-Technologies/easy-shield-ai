@@ -186,6 +186,33 @@ export type Database = {
           },
         ]
       }
+      sprints: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          name: string
+          start_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          name: string
+          start_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          name?: string
+          start_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       work_items: {
         Row: {
           assignee_initials: string | null
@@ -194,6 +221,7 @@ export type Database = {
           due_date: string | null
           id: string
           priority: string
+          sprint_id: string | null
           status: string
           title: string
           updated_at: string
@@ -206,6 +234,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string
+          sprint_id?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -218,12 +247,21 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string
+          sprint_id?: string | null
           status?: string
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "work_items_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

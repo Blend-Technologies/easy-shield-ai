@@ -48,6 +48,7 @@ const WorkItems = () => {
   const [sprintName, setSprintName] = useState("");
   const [sprintStart, setSprintStart] = useState("");
   const [sprintEnd, setSprintEnd] = useState("");
+  const [creatingSprint, setCreatingSprint] = useState(false);
   const { grouped, loading, addItem, updateItem, deleteItem } = useWorkItems();
   const { sprints, addSprint } = useSprints();
 
@@ -305,6 +306,7 @@ const WorkItems = () => {
         onOpenChange={(open) => { if (!open) setSelectedTask(null); }}
         onUpdate={updateItem}
         sprints={sprints}
+        onCreateSprint={addSprint}
       />
 
       {/* Sprint Creation Dialog */}
@@ -334,22 +336,27 @@ const WorkItems = () => {
                   className="w-full h-9 px-3 text-sm rounded-md border border-[#E0E0E0] bg-white text-[#1A1A1A] outline-none focus:border-[#7C3AED] transition-colors" />
               </div>
             </div>
-            {(!sprintName || !sprintStart || !sprintEnd) && (sprintName || sprintStart || sprintEnd) && (
+            {(!sprintName.trim() || !sprintStart || !sprintEnd) && (sprintName || sprintStart || sprintEnd) && (
               <p className="text-xs text-red-400">Please fill in all fields.</p>
             )}
             <div className="flex justify-end gap-2 pt-2">
               <button onClick={() => { setSprintDialogOpen(false); setSprintName(""); setSprintStart(""); setSprintEnd(""); }} className="px-3 py-1.5 text-sm text-[#999] hover:text-[#333] transition-colors">Cancel</button>
               <button
-                disabled={!sprintName || !sprintStart || !sprintEnd}
+                disabled={!sprintName.trim() || !sprintStart || !sprintEnd || creatingSprint}
                 onClick={async () => {
-                  if (sprintName && sprintStart && sprintEnd) {
-                    await addSprint({ name: sprintName, start_date: sprintStart, end_date: sprintEnd });
-                    setSprintName(""); setSprintStart(""); setSprintEnd("");
-                    setSprintDialogOpen(false);
-                  }
+                  if (!sprintName.trim() || !sprintStart || !sprintEnd) return;
+                  setCreatingSprint(true);
+                  const created = await addSprint({ name: sprintName.trim(), start_date: sprintStart, end_date: sprintEnd });
+                  setCreatingSprint(false);
+                  if (!created) return;
+
+                  setSprintName("");
+                  setSprintStart("");
+                  setSprintEnd("");
+                  setSprintDialogOpen(false);
                 }}
                 className="px-4 py-1.5 text-sm font-bold text-white bg-[#1A1A1A] rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#333] transition-colors"
-              >Create</button>
+              >{creatingSprint ? "Creating..." : "Create"}</button>
             </div>
           </div>
         </DialogContent>

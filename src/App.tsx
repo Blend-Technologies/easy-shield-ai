@@ -15,6 +15,7 @@ import ProposalWriter from "./pages/ProposalWriter";
 import ProposalEvaluator from "./pages/ProposalEvaluator";
 import SparkFramework from "./pages/SparkFramework";
 import WorkItems from "./pages/WorkItems";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/dashboard/spark/:projectName" element={<SparkFramework />} />
           <Route path="/dashboard/:projectName" element={<SparkFramework />} />
           <Route path="/dashboard/:projectName/work-items" element={<WorkItems />} />
+          <Route path="/dashboard/:projectName/analytics" element={<AnalyticsDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

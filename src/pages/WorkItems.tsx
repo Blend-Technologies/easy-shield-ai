@@ -5,6 +5,7 @@ import {
   Columns3, BarChart3, Table, Activity, Layers, GitBranch,
   CheckCircle2, Circle, Clock, MoreHorizontal, Flag, PlusCircle,
   AlignJustify, User, Filter, Sun, Moon, Trash2, ArrowLeft,
+  RefreshCw, AlertTriangle, Pause,
 } from "lucide-react";
 import { useWorkItems, WorkItem } from "@/hooks/useWorkItems";
 import { useSprints, Sprint } from "@/hooks/useSprints";
@@ -22,12 +23,18 @@ const tabs = [
   { id: "workload", label: "Workload", icon: Activity },
 ];
 
-type StatusStyle = "shipped" | "testing" | "backlog";
+type StatusStyle = "backlog" | "in-progress" | "testing" | "at-risk" | "blocked" | "update-required" | "on-hold" | "complete" | "closed";
 
-const statusGroups: { id: StatusStyle; label: string }[] = [
-  { id: "shipped", label: "DONE" },
-  { id: "testing", label: "IN PROGRESS" },
-  { id: "backlog", label: "BACKLOG" },
+const statusGroups: { id: StatusStyle; label: string; color: string; iconColor: string }[] = [
+  { id: "backlog", label: "BACKLOG", color: "#AAAAAA", iconColor: "#AAAAAA" },
+  { id: "in-progress", label: "IN PROGRESS", color: "#7C3AED", iconColor: "#7C3AED" },
+  { id: "testing", label: "TESTING", color: "#2563EB", iconColor: "#2563EB" },
+  { id: "at-risk", label: "AT RISK", color: "#F57C00", iconColor: "#F57C00" },
+  { id: "blocked", label: "BLOCKED", color: "#DC2626", iconColor: "#DC2626" },
+  { id: "update-required", label: "UPDATE REQUIRED", color: "#F59E0B", iconColor: "#F59E0B" },
+  { id: "on-hold", label: "ON HOLD", color: "#78350F", iconColor: "#78350F" },
+  { id: "complete", label: "COMPLETE", color: "#00BFA5", iconColor: "#00BFA5" },
+  { id: "closed", label: "CLOSED", color: "#6B7280", iconColor: "#6B7280" },
 ];
 
 const WorkItems = () => {
@@ -36,7 +43,8 @@ const WorkItems = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
-    shipped: true, testing: true, backlog: true,
+    backlog: true, "in-progress": true, testing: true, "at-risk": true, blocked: true,
+    "update-required": true, "on-hold": true, complete: true, closed: true,
   });
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
@@ -100,18 +108,26 @@ const WorkItems = () => {
   const inputBg = darkMode ? "bg-white/5" : "bg-white";
 
   const StatusIcon = ({ style }: { style: StatusStyle }) => {
-    if (style === "shipped")
-      return (<div className="w-[18px] h-[18px] rounded-full bg-[#00BFA5] flex items-center justify-center flex-shrink-0"><CheckCircle2 className="w-3 h-3 text-white" /></div>);
-    if (style === "testing")
-      return (<div className="w-[18px] h-[18px] rounded-full border-2 border-[#8B6347] flex items-center justify-center flex-shrink-0"><Clock className="w-2.5 h-2.5 text-[#8B6347]" /></div>);
-    return (<div className="w-[18px] h-[18px] rounded-full border-2 border-dashed border-[#CCC] flex-shrink-0" />);
+    const group = statusGroups.find((g) => g.id === style);
+    const color = group?.color || "#CCC";
+    if (style === "complete" || style === "closed")
+      return (<div className="w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: color }}><CheckCircle2 className="w-3 h-3 text-white" /></div>);
+    if (style === "in-progress" || style === "testing")
+      return (<div className="w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: color }}><Clock className="w-2.5 h-2.5" style={{ color }} /></div>);
+    if (style === "blocked" || style === "on-hold")
+      return (<div className="w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: color }}><Pause className="w-2.5 h-2.5" style={{ color }} /></div>);
+    if (style === "at-risk" || style === "update-required")
+      return (<div className="w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: color }}><AlertTriangle className="w-2.5 h-2.5" style={{ color }} /></div>);
+    return (<div className="w-[18px] h-[18px] rounded-full border-2 border-dashed flex-shrink-0" style={{ borderColor: color }} />);
   };
 
   const StatusBadge = ({ style, label }: { style: StatusStyle; label: string }) => {
+    const group = statusGroups.find((g) => g.id === style);
+    const color = group?.color || "#CCC";
     const base = "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase";
-    if (style === "shipped") return (<span className={`${base} bg-[#00BFA5] text-white`}><CheckCircle2 className="w-3 h-3" />{label}</span>);
-    if (style === "testing") return (<span className={`${base} bg-[#8B6347] text-white`}><Clock className="w-3 h-3" />{label}</span>);
-    return (<span className={`${base} border border-[#CCC] ${darkMode ? "text-gray-400" : "text-[#888]"}`}><Circle className="w-3 h-3" strokeDasharray="4 2" />{label}</span>);
+    if (style === "backlog")
+      return (<span className={`${base} border ${darkMode ? "text-gray-400" : "text-[#888]"}`} style={{ borderColor: color }}><Circle className="w-3 h-3" strokeDasharray="4 2" />{label}</span>);
+    return (<span className={`${base} text-white`} style={{ backgroundColor: color }}><CheckCircle2 className="w-3 h-3" />{label}</span>);
   };
 
   const getDueDateDisplay = (item: WorkItem) => {
@@ -137,7 +153,13 @@ const WorkItems = () => {
           {tabs.map((tab) => {
             const isActive = tab.id === activeTab;
             return (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              <button key={tab.id} onClick={() => {
+                  if (tab.id === "board") {
+                    navigate(projectName ? `/dashboard/${encodeURIComponent(projectName)}/boards` : "/dashboard/spark");
+                    return;
+                  }
+                  setActiveTab(tab.id);
+                }}
                 className={`flex items-center gap-1.5 px-5 h-11 text-sm transition-colors relative flex-shrink-0 ${isActive ? `${textDark} font-semibold` : `${textMuted} font-normal`}`}>
                 <tab.icon className="w-4 h-4" />{tab.label}
                 {isActive && <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${darkMode ? "bg-white" : "bg-[#1A1A1A]"}`} />}

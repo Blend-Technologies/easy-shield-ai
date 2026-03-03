@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { WorkItem } from "@/hooks/useWorkItems";
+import { Sprint } from "@/hooks/useSprints";
 import {
   Dialog,
   DialogContent,
@@ -30,16 +31,18 @@ interface TaskDetailDialogProps {
   task: WorkItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdate: (id: string, updates: Partial<Pick<WorkItem, "title" | "status" | "description" | "assignee_initials" | "due_date" | "priority">>) => Promise<void>;
+  onUpdate: (id: string, updates: Partial<Pick<WorkItem, "title" | "status" | "description" | "assignee_initials" | "due_date" | "priority" | "sprint_id">>) => Promise<void>;
+  sprints?: Sprint[];
 }
 
-export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate }: TaskDetailDialogProps) {
+export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate, sprints = [] }: TaskDetailDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<string>("backlog");
   const [assignee, setAssignee] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("none");
+  const [sprintId, setSprintId] = useState<string | null>(null);
 
   useEffect(() => {
     if (task) {
@@ -49,12 +52,13 @@ export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate }:
       setAssignee(task.assignee_initials || "");
       setDueDate(task.due_date || "");
       setPriority(task.priority);
+      setSprintId(task.sprint_id || null);
     }
   }, [task]);
 
   if (!task) return null;
 
-  const save = (updates: Partial<Pick<WorkItem, "title" | "status" | "description" | "assignee_initials" | "due_date" | "priority">>) => {
+  const save = (updates: Partial<Pick<WorkItem, "title" | "status" | "description" | "assignee_initials" | "due_date" | "priority" | "sprint_id">>) => {
     onUpdate(task.id, updates);
   };
 
@@ -163,8 +167,17 @@ export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate }:
               </select>
             </DetailRow>
 
-            <DetailRow icon={Target} label="Sprint Points">
-              <span className="text-[13px] text-[#CCC]">Empty</span>
+            <DetailRow icon={Target} label="Sprint">
+              <select
+                value={sprintId || ""}
+                onChange={(e) => { const val = e.target.value || null; setSprintId(val); save({ sprint_id: val }); }}
+                className="text-[13px] px-2 py-1 rounded outline-none border-none bg-[#F5F5F5] cursor-pointer"
+              >
+                <option value="">None</option>
+                {sprints.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
             </DetailRow>
 
             <DetailRow icon={Tag} label="Tags">

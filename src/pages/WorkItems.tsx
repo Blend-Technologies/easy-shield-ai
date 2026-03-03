@@ -7,8 +7,11 @@ import {
   AlignJustify, User, Filter, Sun, Moon, Trash2, ArrowLeft,
 } from "lucide-react";
 import { useWorkItems, WorkItem } from "@/hooks/useWorkItems";
+import { useSprints, Sprint } from "@/hooks/useSprints";
 import { format, isToday, isPast } from "date-fns";
 import TaskDetailDialog from "@/components/workitems/TaskDetailDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Zap } from "lucide-react";
 
 const tabs = [
   { id: "overview", label: "Overview", icon: LayoutGrid },
@@ -41,7 +44,12 @@ const WorkItems = () => {
   const [newDueDate, setNewDueDate] = useState("");
   const [newPriority, setNewPriority] = useState("none");
   const [selectedTask, setSelectedTask] = useState<WorkItem | null>(null);
+  const [sprintDialogOpen, setSprintDialogOpen] = useState(false);
+  const [sprintName, setSprintName] = useState("");
+  const [sprintStart, setSprintStart] = useState("");
+  const [sprintEnd, setSprintEnd] = useState("");
   const { grouped, loading, addItem, updateItem, deleteItem } = useWorkItems();
+  const { sprints, addSprint } = useSprints();
 
   const toggleGroup = (id: string) =>
     setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -163,6 +171,9 @@ const WorkItems = () => {
           <button className={`flex items-center gap-1.5 text-[13px] ${textMuted}`}><CheckCircle2 className="w-3.5 h-3.5" />Closed</button>
           <button className={`flex items-center gap-1.5 text-[13px] ${textMuted}`}><User className="w-3.5 h-3.5" />Assignee</button>
           <div className="w-6 h-6 rounded-full bg-[#1A1A1A] flex items-center justify-center"><span className="text-white text-[11px] font-bold">0</span></div>
+          <button onClick={() => setSprintDialogOpen(true)} className={`flex items-center gap-1.5 text-[13px] font-medium px-3 py-1 rounded-full bg-[#EDE9FF] text-[#7C3AED]`}>
+            <Zap className="w-3.5 h-3.5" />Sprints
+          </button>
           <input type="text" placeholder="Search..." className={`w-44 h-7 px-3 text-[13px] rounded-md border ${inputBorder} ${inputBg} ${textMuted} outline-none`} />
         </div>
       </div>
@@ -198,31 +209,41 @@ const WorkItems = () => {
 
               {expandedGroups[group.id] && (
                 <>
-                  <div className={`grid grid-cols-[1fr_150px_120px_120px_40px] items-center h-8 text-xs font-medium ${textMuted} border-b ${rowDivider} pl-8`}>
-                    <span>Name</span><span>Assignee</span><span>Due date</span><span>Priority</span>
+                  <div className={`grid grid-cols-[1fr_150px_120px_150px_120px_40px] items-center h-8 text-xs font-medium ${textMuted} border-b ${rowDivider} pl-8`}>
+                    <span>Name</span><span>Assignee</span><span>Due date</span><span>Sprint</span><span>Priority</span>
                     <PlusCircle className={`w-4 h-4 ${textMuted}`} />
                   </div>
 
                   {tasks.map((task) => {
                     const dd = getDueDateDisplay(task);
-                    return (
-                      <div key={task.id} className={`grid grid-cols-[1fr_150px_120px_120px_40px] items-center h-11 text-sm border-b ${rowDivider} ${rowHover} transition-colors pl-8 group/row`}>
-                        <div className="flex items-center gap-2.5 min-w-0 pr-4">
-                          <StatusIcon style={group.id} />
-                          <span onClick={() => setSelectedTask(task)} className={`${textDark} truncate text-[14px] cursor-pointer hover:underline`}>{task.title}</span>
-                          {task.description && <AlignJustify className={`w-3.5 h-3.5 flex-shrink-0 ${textMuted}`} />}
-                        </div>
-                        <div>
-                          <div className="w-[26px] h-[26px] rounded-full bg-[#8B5CF6] flex items-center justify-center">
-                            <span className="text-white text-[10px] font-bold">{task.assignee_initials || "?"}</span>
+                      return (
+                        <div key={task.id} className={`grid grid-cols-[1fr_150px_120px_150px_120px_40px] items-center h-11 text-sm border-b ${rowDivider} ${rowHover} transition-colors pl-8 group/row`}>
+                          <div className="flex items-center gap-2.5 min-w-0 pr-4">
+                            <StatusIcon style={group.id} />
+                            <span onClick={() => setSelectedTask(task)} className={`${textDark} truncate text-[14px] cursor-pointer hover:underline`}>{task.title}</span>
+                            {task.description && <AlignJustify className={`w-3.5 h-3.5 flex-shrink-0 ${textMuted}`} />}
                           </div>
+                          <div>
+                            <div className="w-[26px] h-[26px] rounded-full bg-[#8B5CF6] flex items-center justify-center">
+                              <span className="text-white text-[10px] font-bold">{task.assignee_initials || "?"}</span>
+                            </div>
+                          </div>
+                          <span className={`text-[13px] ${dd.color}`}>{dd.text}</span>
+                          <div>
+                            {(() => {
+                              const sprint = sprints.find((s) => s.id === task.sprint_id);
+                              return sprint ? (
+                                <span className="text-[12px] px-2 py-0.5 rounded-full bg-[#EDE9FF] text-[#7C3AED] font-medium truncate max-w-[140px] inline-block">{sprint.name}</span>
+                              ) : (
+                                <span className={`text-[13px] ${textMuted}`}>—</span>
+                              );
+                            })()}
+                          </div>
+                          <Flag className="w-3.5 h-3.5 text-[#CCC]" />
+                          <button onClick={() => deleteItem(task.id)} className={`${textMuted} opacity-0 group-hover/row:opacity-100 transition-opacity`}>
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-                        <span className={`text-[13px] ${dd.color}`}>{dd.text}</span>
-                        <Flag className="w-3.5 h-3.5 text-[#CCC]" />
-                        <button onClick={() => deleteItem(task.id)} className={`${textMuted} opacity-0 group-hover/row:opacity-100 transition-opacity`}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
                     );
                   })}
 
@@ -283,7 +304,48 @@ const WorkItems = () => {
         open={!!selectedTask}
         onOpenChange={(open) => { if (!open) setSelectedTask(null); }}
         onUpdate={updateItem}
+        sprints={sprints}
       />
+
+      {/* Sprint Creation Dialog */}
+      <Dialog open={sprintDialogOpen} onOpenChange={setSprintDialogOpen}>
+        <DialogContent className="max-w-[400px] bg-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[#1A1A1A]">
+              <Zap className="w-4 h-4 text-[#7C3AED]" /> Create Sprint
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div>
+              <label className="text-xs text-[#999] mb-1 block">Sprint Name</label>
+              <input value={sprintName} onChange={(e) => setSprintName(e.target.value)}
+                placeholder="e.g. Sprint 1" className={`w-full h-9 px-3 text-sm rounded-md border ${inputBorder} ${inputBg} ${textDark} outline-none`} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-[#999] mb-1 block">Start Date</label>
+                <input type="date" value={sprintStart} onChange={(e) => setSprintStart(e.target.value)}
+                  className={`w-full h-9 px-3 text-sm rounded-md border ${inputBorder} ${inputBg} ${textDark} outline-none`} />
+              </div>
+              <div>
+                <label className="text-xs text-[#999] mb-1 block">End Date</label>
+                <input type="date" value={sprintEnd} onChange={(e) => setSprintEnd(e.target.value)}
+                  className={`w-full h-9 px-3 text-sm rounded-md border ${inputBorder} ${inputBg} ${textDark} outline-none`} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setSprintDialogOpen(false)} className="px-3 py-1.5 text-sm text-[#999]">Cancel</button>
+              <button onClick={async () => {
+                if (sprintName && sprintStart && sprintEnd) {
+                  await addSprint({ name: sprintName, start_date: sprintStart, end_date: sprintEnd });
+                  setSprintName(""); setSprintStart(""); setSprintEnd("");
+                  setSprintDialogOpen(false);
+                }
+              }} className="px-4 py-1.5 text-sm font-bold text-white bg-[#1A1A1A] rounded-md">Create</button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

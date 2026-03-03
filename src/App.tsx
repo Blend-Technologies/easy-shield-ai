@@ -16,6 +16,7 @@ import ProposalEvaluator from "./pages/ProposalEvaluator";
 import SparkFramework from "./pages/SparkFramework";
 import WorkItems from "./pages/WorkItems";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import KanbanBoard from "./pages/KanbanBoard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/dashboard/:projectName" element={<SparkFramework />} />
           <Route path="/dashboard/:projectName/work-items" element={<WorkItems />} />
           <Route path="/dashboard/:projectName/analytics" element={<AnalyticsDashboard />} />
+          <Route path="/dashboard/:projectName/boards" element={<KanbanBoard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

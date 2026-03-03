@@ -102,10 +102,18 @@ export function useWorkItems() {
     fetchItems();
   }, []);
 
-  const grouped = {
-    shipped: items.filter((i) => i.status === "shipped"),
-    testing: items.filter((i) => i.status === "testing"),
+  const grouped: Record<string, WorkItem[]> = {
     backlog: items.filter((i) => i.status === "backlog"),
+    "in-progress": items.filter((i) => i.status === "in-progress"),
+    testing: items.filter((i) => i.status === "testing"),
+    "at-risk": items.filter((i) => i.status === "at-risk"),
+    blocked: items.filter((i) => i.status === "blocked"),
+    "update-required": items.filter((i) => i.status === "update-required"),
+    "on-hold": items.filter((i) => i.status === "on-hold"),
+    complete: items.filter((i) => i.status === "complete"),
+    closed: items.filter((i) => i.status === "closed"),
+    // Legacy mappings
+    shipped: items.filter((i) => i.status === "shipped"),
   };
 
   return { items, grouped, loading, addItem, updateItem, deleteItem, refetch: fetchItems };

@@ -48,6 +48,7 @@ export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate, s
   const [newSprintStart, setNewSprintStart] = useState("");
   const [newSprintEnd, setNewSprintEnd] = useState("");
   const [creatingSprint, setCreatingSprint] = useState(false);
+  const [showNewSprintForm, setShowNewSprintForm] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -205,38 +206,40 @@ export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate, s
                   ))}
                 </select>
 
-                <div className="rounded-md bg-[#FAFAFA] p-2 space-y-2">
-                  <p className="text-[11px] text-[#999]">Create sprint (label + date range)</p>
-                  <div className="grid grid-cols-1 gap-2">
+                {!showNewSprintForm ? (
+                  <button
+                    onClick={() => setShowNewSprintForm(true)}
+                    className="text-[12px] text-[#7C3AED] hover:underline"
+                  >
+                    + Create new sprint
+                  </button>
+                ) : (
+                  <div className="rounded-md bg-[#FAFAFA] p-2 space-y-2">
+                    <p className="text-[11px] text-[#999]">Create sprint (label + date range)</p>
                     <input
                       value={newSprintName}
                       onChange={(e) => setNewSprintName(e.target.value)}
                       placeholder="Sprint label"
-                      className="h-8 text-[12px] px-2 rounded border border-[#E5E5E5] bg-white outline-none"
+                      className="w-full h-8 text-[12px] px-2 rounded border border-[#E5E5E5] bg-white outline-none"
                     />
                     <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="date"
-                        value={newSprintStart}
-                        onChange={(e) => setNewSprintStart(e.target.value)}
-                        className="h-8 text-[12px] px-2 rounded border border-[#E5E5E5] bg-white outline-none"
-                      />
-                      <input
-                        type="date"
-                        value={newSprintEnd}
-                        onChange={(e) => setNewSprintEnd(e.target.value)}
-                        className="h-8 text-[12px] px-2 rounded border border-[#E5E5E5] bg-white outline-none"
-                      />
+                      <input type="date" value={newSprintStart} onChange={(e) => setNewSprintStart(e.target.value)}
+                        className="h-8 text-[12px] px-2 rounded border border-[#E5E5E5] bg-white outline-none" />
+                      <input type="date" value={newSprintEnd} onChange={(e) => setNewSprintEnd(e.target.value)}
+                        className="h-8 text-[12px] px-2 rounded border border-[#E5E5E5] bg-white outline-none" />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        disabled={!newSprintName.trim() || !newSprintStart || !newSprintEnd || creatingSprint}
+                        onClick={async () => { await createSprintAndAssign(); setShowNewSprintForm(false); }}
+                        className="px-2.5 py-1 text-[12px] font-semibold rounded bg-[#1A1A1A] text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {creatingSprint ? "Creating..." : "Create + Assign"}
+                      </button>
+                      <button onClick={() => setShowNewSprintForm(false)} className="text-[12px] text-[#999]">Cancel</button>
                     </div>
                   </div>
-                  <button
-                    disabled={!newSprintName.trim() || !newSprintStart || !newSprintEnd || creatingSprint}
-                    onClick={createSprintAndAssign}
-                    className="px-2.5 py-1 text-[12px] font-semibold rounded bg-[#1A1A1A] text-white disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {creatingSprint ? "Creating..." : "Create + Assign"}
-                  </button>
-                </div>
+                )}
               </div>
             </DetailRow>
 

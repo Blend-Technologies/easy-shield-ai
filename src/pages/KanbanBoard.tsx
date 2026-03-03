@@ -26,21 +26,25 @@ type KanbanColumn = {
 
 const initialColumns: KanbanColumn[] = [
   {
-    id: "todo", label: "TO DO", icon: Circle, iconColor: "#AAAAAA",
+    id: "backlog", label: "BACKLOG", icon: Circle, iconColor: "#AAAAAA",
     pillBg: null, columnBg: "#FFFFFF",
     tasks: [{ id: "1", title: "Entry level jobs are going away" }],
-  },
-  {
-    id: "planning", label: "PLANNING", icon: Clock, iconColor: "#AAAAAA",
-    pillBg: null, columnBg: "#FFFFFF", tasks: [],
   },
   {
     id: "in-progress", label: "IN PROGRESS", icon: RefreshCw, iconColor: "#FFFFFF",
     pillBg: "#7C3AED", columnBg: "#FDFAFF", tasks: [],
   },
   {
+    id: "testing", label: "TESTING", icon: CheckCircle2, iconColor: "#FFFFFF",
+    pillBg: "#2563EB", columnBg: "#F5F8FF", tasks: [],
+  },
+  {
     id: "at-risk", label: "AT RISK", icon: AlertTriangle, iconColor: "#FFFFFF",
     pillBg: "#F57C00", columnBg: "#FFFAF5", tasks: [],
+  },
+  {
+    id: "blocked", label: "BLOCKED", icon: Pause, iconColor: "#FFFFFF",
+    pillBg: "#DC2626", columnBg: "#FFF5F5", tasks: [],
   },
   {
     id: "update-required", label: "UPDATE REQUIRED", icon: RefreshCw, iconColor: "#FFFFFF",
@@ -53,6 +57,10 @@ const initialColumns: KanbanColumn[] = [
   {
     id: "complete", label: "COMPLETE", icon: CheckCircle2, iconColor: "#FFFFFF",
     pillBg: "#00BFA5", columnBg: "#F5FFFD", tasks: [],
+  },
+  {
+    id: "closed", label: "CLOSED", icon: Circle, iconColor: "#FFFFFF",
+    pillBg: "#6B7280", columnBg: "#F9FAFB", tasks: [],
   },
 ];
 

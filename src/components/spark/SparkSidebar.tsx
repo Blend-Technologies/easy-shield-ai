@@ -51,6 +51,10 @@ const scopeSubItems = [
   { icon: FileEdit, label: "Proposal Writer", href: "/dashboard/proposal-writer" },
 ];
 
+const getDashboardSubItems = (projectName: string) => [
+  { icon: LayoutDashboard, label: "Dashboard", href: `/dashboard/${encodeURIComponent(projectName)}/analytics` },
+];
+
 const getTasksSubItems = (projectName: string) => [
   { icon: ListTodo, label: "Work Items", href: `/dashboard/${encodeURIComponent(projectName)}/work-items` },
   { icon: Kanban, label: "Boards", href: "" },
@@ -71,6 +75,7 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
   const [spacesExpanded, setSpacesExpanded] = useState(true);
   const navigate = useNavigate();
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
+  const dashboardSubItems = getDashboardSubItems(selectedProject?.name || "");
   const tasksSubItems = getTasksSubItems(selectedProject?.name || "");
 
   return (
@@ -146,6 +151,21 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
+              {/* Dashboard section */}
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2.5 pt-2 pb-1">Dashboard</p>
+              {dashboardSubItems.map((sub) => (
+                <button
+                  key={sub.label}
+                  onClick={() => navigate(sub.href)}
+                  className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors"
+                >
+                  <sub.icon className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+                  <span className="text-left">{sub.label}</span>
+                </button>
+              ))}
+
+              {/* Tasks section */}
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2.5 pt-2 pb-1">Tasks</p>
               {tasksSubItems.map((sub) =>
                 sub.href ? (
                   <button

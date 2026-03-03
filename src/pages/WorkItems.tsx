@@ -309,39 +309,47 @@ const WorkItems = () => {
 
       {/* Sprint Creation Dialog */}
       <Dialog open={sprintDialogOpen} onOpenChange={setSprintDialogOpen}>
-        <DialogContent className="max-w-[400px] bg-white">
+        <DialogContent className="max-w-[400px] bg-white" aria-describedby="sprint-dialog-desc">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-[#1A1A1A]">
               <Zap className="w-4 h-4 text-[#7C3AED]" /> Create Sprint
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 pt-2">
+          <p id="sprint-dialog-desc" className="text-xs text-[#999]">Define a sprint with a name and date range.</p>
+          <div className="space-y-3 pt-1">
             <div>
-              <label className="text-xs text-[#999] mb-1 block">Sprint Name</label>
+              <label className="text-xs text-[#999] mb-1 block">Sprint Name <span className="text-red-400">*</span></label>
               <input value={sprintName} onChange={(e) => setSprintName(e.target.value)}
-                placeholder="e.g. Sprint 1" className={`w-full h-9 px-3 text-sm rounded-md border ${inputBorder} ${inputBg} ${textDark} outline-none`} />
+                placeholder="e.g. Sprint 1" className="w-full h-9 px-3 text-sm rounded-md border border-[#E0E0E0] bg-white text-[#1A1A1A] outline-none focus:border-[#7C3AED] transition-colors" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-[#999] mb-1 block">Start Date</label>
+                <label className="text-xs text-[#999] mb-1 block">Start Date <span className="text-red-400">*</span></label>
                 <input type="date" value={sprintStart} onChange={(e) => setSprintStart(e.target.value)}
-                  className={`w-full h-9 px-3 text-sm rounded-md border ${inputBorder} ${inputBg} ${textDark} outline-none`} />
+                  className="w-full h-9 px-3 text-sm rounded-md border border-[#E0E0E0] bg-white text-[#1A1A1A] outline-none focus:border-[#7C3AED] transition-colors" />
               </div>
               <div>
-                <label className="text-xs text-[#999] mb-1 block">End Date</label>
+                <label className="text-xs text-[#999] mb-1 block">End Date <span className="text-red-400">*</span></label>
                 <input type="date" value={sprintEnd} onChange={(e) => setSprintEnd(e.target.value)}
-                  className={`w-full h-9 px-3 text-sm rounded-md border ${inputBorder} ${inputBg} ${textDark} outline-none`} />
+                  className="w-full h-9 px-3 text-sm rounded-md border border-[#E0E0E0] bg-white text-[#1A1A1A] outline-none focus:border-[#7C3AED] transition-colors" />
               </div>
             </div>
+            {(!sprintName || !sprintStart || !sprintEnd) && (sprintName || sprintStart || sprintEnd) && (
+              <p className="text-xs text-red-400">Please fill in all fields.</p>
+            )}
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setSprintDialogOpen(false)} className="px-3 py-1.5 text-sm text-[#999]">Cancel</button>
-              <button onClick={async () => {
-                if (sprintName && sprintStart && sprintEnd) {
-                  await addSprint({ name: sprintName, start_date: sprintStart, end_date: sprintEnd });
-                  setSprintName(""); setSprintStart(""); setSprintEnd("");
-                  setSprintDialogOpen(false);
-                }
-              }} className="px-4 py-1.5 text-sm font-bold text-white bg-[#1A1A1A] rounded-md">Create</button>
+              <button onClick={() => { setSprintDialogOpen(false); setSprintName(""); setSprintStart(""); setSprintEnd(""); }} className="px-3 py-1.5 text-sm text-[#999] hover:text-[#333] transition-colors">Cancel</button>
+              <button
+                disabled={!sprintName || !sprintStart || !sprintEnd}
+                onClick={async () => {
+                  if (sprintName && sprintStart && sprintEnd) {
+                    await addSprint({ name: sprintName, start_date: sprintStart, end_date: sprintEnd });
+                    setSprintName(""); setSprintStart(""); setSprintEnd("");
+                    setSprintDialogOpen(false);
+                  }
+                }}
+                className="px-4 py-1.5 text-sm font-bold text-white bg-[#1A1A1A] rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#333] transition-colors"
+              >Create</button>
             </div>
           </div>
         </DialogContent>

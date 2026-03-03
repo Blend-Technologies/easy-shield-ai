@@ -48,7 +48,8 @@ const KanbanBoard = () => {
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [selectedSprintId, setSelectedSprintId] = useState<string>("");
-  const [draggedTask, setDraggedTask] = useState<{ statusKey: string; taskId: string } | null>(null);
+  const [draggedTask, setDraggedTask] = useState<{ statusKey: string; taskId: string; sprintId: string | null } | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [collapsedSprints, setCollapsedSprints] = useState<Set<string>>(new Set());
 
   // Build a sprint lookup map
@@ -79,11 +80,25 @@ const KanbanBoard = () => {
     setAddingTo(null);
   };
 
-  const handleDragStart = (statusKey: string, taskId: string) => {
-    setDraggedTask({ statusKey, taskId });
+  const handleDragStart = (e: React.DragEvent, statusKey: string, taskId: string, sprintId: string | null) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", taskId);
+    setDraggedTask({ statusKey, taskId, sprintId });
   };
 
-  const handleDrop = async (targetStatusKey: string) => {
+  const handleDragOver = (e: React.DragEvent, colId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverColumn(colId);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetStatusKey: string) => {
+    e.preventDefault();
+    setDragOverColumn(null);
     if (!draggedTask || draggedTask.statusKey === targetStatusKey) {
       setDraggedTask(null);
       return;
@@ -195,10 +210,11 @@ const KanbanBoard = () => {
             return (
               <div
                 key={col.id}
-                className="min-w-[230px] w-[230px] flex-shrink-0 rounded-lg border border-[#EEEEEE] p-3 flex flex-col"
-                style={{ backgroundColor: col.columnBg }}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => handleDrop(col.statusKey)}
+                className={`min-w-[230px] w-[230px] flex-shrink-0 rounded-lg border p-3 flex flex-col transition-colors ${dragOverColumn === col.id ? "border-[#7C3AED] bg-[#F5F0FF]" : "border-[#EEEEEE]"}`}
+                style={{ backgroundColor: dragOverColumn === col.id ? undefined : col.columnBg }}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverColumn(col.id); }}
+                onDragLeave={() => setDragOverColumn(null)}
+                onDrop={(e) => { e.preventDefault(); setDragOverColumn(null); handleDrop(e, col.statusKey); }}
               >
                 {/* Column Header */}
                 <div className="flex items-center gap-2 mb-3">
@@ -246,8 +262,8 @@ const KanbanBoard = () => {
                               <div
                                 key={task.id}
                                 draggable
-                                onDragStart={() => handleDragStart(col.statusKey, task.id)}
-                                className="bg-white border border-[#E5E5E5] rounded-md p-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)] hover:border-[#D0D0D0] transition-all cursor-grab active:cursor-grabbing"
+                                onDragStart={(e) => { e.stopPropagation(); handleDragStart(e, col.statusKey, task.id, task.sprint_id); }}
+                                className="bg-white border border-[#E5E5E5] rounded-md p-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)] hover:border-[#D0D0D0] transition-all cursor-grab active:cursor-grabbing select-none"
                               >
                                 <p className="text-[13px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mb-2">{task.title}</p>
                                 <div className="flex items-center gap-2">
@@ -268,8 +284,8 @@ const KanbanBoard = () => {
                     <div
                       key={task.id}
                       draggable
-                      onDragStart={() => handleDragStart(col.statusKey, task.id)}
-                      className="bg-white border border-[#E5E5E5] rounded-lg p-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)] hover:border-[#D0D0D0] transition-all cursor-grab active:cursor-grabbing"
+                      onDragStart={(e) => handleDragStart(e, col.statusKey, task.id, task.sprint_id)}
+                      className="bg-white border border-[#E5E5E5] rounded-lg p-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)] hover:border-[#D0D0D0] transition-all cursor-grab active:cursor-grabbing select-none"
                     >
                       <p className="text-[14px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mb-3">{task.title}</p>
                       <div className="flex items-center gap-2">

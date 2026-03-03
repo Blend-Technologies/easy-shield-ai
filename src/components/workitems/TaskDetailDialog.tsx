@@ -33,9 +33,10 @@ interface TaskDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   onUpdate: (id: string, updates: Partial<Pick<WorkItem, "title" | "status" | "description" | "assignee_initials" | "due_date" | "priority" | "sprint_id">>) => Promise<void>;
   sprints?: Sprint[];
+  onCreateSprint?: (sprint: { name: string; start_date: string; end_date: string }) => Promise<Sprint | null>;
 }
 
-export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate, sprints = [] }: TaskDetailDialogProps) {
+export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate, sprints = [], onCreateSprint }: TaskDetailDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<string>("backlog");
@@ -43,6 +44,10 @@ export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate, s
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("none");
   const [sprintId, setSprintId] = useState<string | null>(null);
+  const [newSprintName, setNewSprintName] = useState("");
+  const [newSprintStart, setNewSprintStart] = useState("");
+  const [newSprintEnd, setNewSprintEnd] = useState("");
+  const [creatingSprint, setCreatingSprint] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -60,6 +65,26 @@ export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate, s
 
   const save = (updates: Partial<Pick<WorkItem, "title" | "status" | "description" | "assignee_initials" | "due_date" | "priority" | "sprint_id">>) => {
     onUpdate(task.id, updates);
+  };
+
+  const createSprintAndAssign = async () => {
+    if (!onCreateSprint || !newSprintName.trim() || !newSprintStart || !newSprintEnd || creatingSprint) return;
+
+    setCreatingSprint(true);
+    const created = await onCreateSprint({
+      name: newSprintName.trim(),
+      start_date: newSprintStart,
+      end_date: newSprintEnd,
+    });
+    setCreatingSprint(false);
+
+    if (!created) return;
+
+    setSprintId(created.id);
+    save({ sprint_id: created.id });
+    setNewSprintName("");
+    setNewSprintStart("");
+    setNewSprintEnd("");
   };
 
   const currentStatus = statusOptions.find((s) => s.value === status) || statusOptions[2];
@@ -168,16 +193,51 @@ export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate, s
             </DetailRow>
 
             <DetailRow icon={Target} label="Sprint">
-              <select
-                value={sprintId || ""}
-                onChange={(e) => { const val = e.target.value || null; setSprintId(val); save({ sprint_id: val }); }}
-                className="text-[13px] px-2 py-1 rounded outline-none border-none bg-[#F5F5F5] cursor-pointer"
-              >
-                <option value="">None</option>
-                {sprints.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <div className="w-full space-y-2">
+                <select
+                  value={sprintId || ""}
+                  onChange={(e) => { const val = e.target.value || null; setSprintId(val); save({ sprint_id: val }); }}
+                  className="w-full text-[13px] px-2 py-1 rounded outline-none border-none bg-[#F5F5F5] cursor-pointer"
+                >
+                  <option value="">None</option>
+                  {sprints.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.start_date} → {s.end_date})</option>
+                  ))}
+                </select>
+
+                <div className="rounded-md bg-[#FAFAFA] p-2 space-y-2">
+                  <p className="text-[11px] text-[#999]">Create sprint (label + date range)</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    <input
+                      value={newSprintName}
+                      onChange={(e) => setNewSprintName(e.target.value)}
+                      placeholder="Sprint label"
+                      className="h-8 text-[12px] px-2 rounded border border-[#E5E5E5] bg-white outline-none"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="date"
+                        value={newSprintStart}
+                        onChange={(e) => setNewSprintStart(e.target.value)}
+                        className="h-8 text-[12px] px-2 rounded border border-[#E5E5E5] bg-white outline-none"
+                      />
+                      <input
+                        type="date"
+                        value={newSprintEnd}
+                        onChange={(e) => setNewSprintEnd(e.target.value)}
+                        className="h-8 text-[12px] px-2 rounded border border-[#E5E5E5] bg-white outline-none"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    disabled={!newSprintName.trim() || !newSprintStart || !newSprintEnd || creatingSprint}
+                    onClick={createSprintAndAssign}
+                    className="px-2.5 py-1 text-[12px] font-semibold rounded bg-[#1A1A1A] text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {creatingSprint ? "Creating..." : "Create + Assign"}
+                  </button>
+                </div>
+              </div>
             </DetailRow>
 
             <DetailRow icon={Tag} label="Tags">

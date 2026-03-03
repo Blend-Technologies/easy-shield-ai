@@ -4,7 +4,9 @@ import {
   List, Columns3, Calendar, BarChart3, Users, Plus, Search, Eye, Settings,
   ChevronDown, Layers, GitBranch, Filter, CheckCircle2, User, ArrowLeft,
   Circle, Clock, AlertTriangle, RefreshCw, Pause, Flag, Tag, MoreHorizontal,
+  Zap,
 } from "lucide-react";
+import { useSprints } from "@/hooks/useSprints";
 
 const viewTabs = [
   { id: "list", label: "List", icon: List },
@@ -21,7 +23,7 @@ type KanbanColumn = {
   iconColor: string;
   pillBg: string | null;
   columnBg: string;
-  tasks: { id: string; title: string }[];
+  tasks: { id: string; title: string; sprintId?: string; sprintName?: string }[];
 };
 
 const initialColumns: KanbanColumn[] = [
@@ -67,21 +69,25 @@ const initialColumns: KanbanColumn[] = [
 const KanbanBoard = () => {
   const navigate = useNavigate();
   const { projectName } = useParams();
+  const { sprints } = useSprints();
   const [columns, setColumns] = useState<KanbanColumn[]>(initialColumns);
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
+  const [selectedSprintId, setSelectedSprintId] = useState<string>("");
   const [draggedTask, setDraggedTask] = useState<{ colId: string; taskId: string } | null>(null);
 
   const handleAddTask = (colId: string) => {
     if (!newTitle.trim()) return;
+    const sprint = sprints.find((s) => s.id === selectedSprintId);
     setColumns((prev) =>
       prev.map((col) =>
         col.id === colId
-          ? { ...col, tasks: [...col.tasks, { id: crypto.randomUUID(), title: newTitle.trim() }] }
+          ? { ...col, tasks: [...col.tasks, { id: crypto.randomUUID(), title: newTitle.trim(), sprintId: sprint?.id, sprintName: sprint?.name }] }
           : col
       )
     );
     setNewTitle("");
+    setSelectedSprintId("");
     setAddingTo(null);
   };
 
@@ -234,9 +240,14 @@ const KanbanBoard = () => {
                       onDragStart={() => handleDragStart(col.id, task.id)}
                       className="bg-white border border-[#E5E5E5] rounded-lg p-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)] hover:border-[#D0D0D0] transition-all cursor-grab active:cursor-grabbing"
                     >
-                      <p className="text-[14px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mb-3">
+                      <p className="text-[14px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mb-2">
                         {task.title}
                       </p>
+                      {task.sprintName && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EDE9FF] text-[#7C3AED] mb-2">
+                          <Zap className="w-3 h-3" />{task.sprintName}
+                        </span>
+                      )}
                       <div className="flex items-center gap-2">
                         <User className="w-[15px] h-[15px] text-[#AAAAAA]" />
                         <Calendar className="w-[15px] h-[15px] text-[#AAAAAA]" />
@@ -249,19 +260,29 @@ const KanbanBoard = () => {
 
                 {/* Add Task */}
                 {addingTo === col.id ? (
-                  <div className="mt-2">
+                  <div className="mt-2 space-y-1.5">
                     <input
                       autoFocus
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") handleAddTask(col.id);
-                        if (e.key === "Escape") { setAddingTo(null); setNewTitle(""); }
+                        if (e.key === "Escape") { setAddingTo(null); setNewTitle(""); setSelectedSprintId(""); }
                       }}
                       placeholder="Task name..."
                       className="w-full h-8 px-3 text-sm rounded-md border border-[#E0E0E0] bg-white text-[#1A1A1A] outline-none"
                     />
-                    <div className="flex items-center gap-2 mt-1.5">
+                    <select
+                      value={selectedSprintId}
+                      onChange={(e) => setSelectedSprintId(e.target.value)}
+                      className="w-full h-8 px-2 text-xs rounded-md border border-[#E0E0E0] bg-white text-[#555] outline-none"
+                    >
+                      <option value="">No sprint</option>
+                      {sprints.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleAddTask(col.id)}
                         className="px-3 py-1 text-xs font-bold text-white bg-[#1A1A1A] rounded"
@@ -269,7 +290,7 @@ const KanbanBoard = () => {
                         Save
                       </button>
                       <button
-                        onClick={() => { setAddingTo(null); setNewTitle(""); }}
+                        onClick={() => { setAddingTo(null); setNewTitle(""); setSelectedSprintId(""); }}
                         className="text-xs text-[#999]"
                       >
                         Cancel

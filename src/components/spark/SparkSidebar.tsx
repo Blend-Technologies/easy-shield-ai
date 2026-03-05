@@ -58,7 +58,6 @@ const getDashboardSubItems = (projectName: string) => [
 const getTasksSubItems = (projectName: string) => [
   { icon: ListTodo, label: "Work Items", href: `/dashboard/${encodeURIComponent(projectName)}/work-items` },
   { icon: Sparkles, label: "Sprints", href: `/dashboard/${encodeURIComponent(projectName)}/boards` },
-  { icon: IterationCcw, label: "Backlogs", href: "" },
   { icon: Truck, label: "Delivery Plans", href: "" },
 ];
 

@@ -16,7 +16,7 @@ import CustomNode from "@/components/visualizer/CustomNode";
 export type SolutionResult = {
   solutionTitle: string;
   solutionOverview: string;
-  keyComponents: { name: string; description: string; cloudProvider: string }[];
+  keyComponents: { name: string; description: string; cloudProvider: string; rfpQuotes?: string[] }[];
   nodes: {
     id: string;
     label: string;

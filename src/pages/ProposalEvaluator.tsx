@@ -484,6 +484,18 @@ const ProposalEvaluator = () => {
                 </CardContent>
               </Card>
             ) : null}
+
+            {/* Solution Result */}
+            {isGeneratingSolution ? (
+              <Card>
+                <CardContent className="py-16 flex flex-col items-center justify-center">
+                  <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                  <p className="text-muted-foreground text-sm">Generating solution architecture and diagram...</p>
+                </CardContent>
+              </Card>
+            ) : solutionResult ? (
+              <SolutionDashboard result={solutionResult} />
+            ) : null}
           </div>
         </div>
       </div>

@@ -235,9 +235,9 @@ const ProposalEvaluator = () => {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-5 gap-6">
-          {/* Left: Configuration & Upload */}
-          <div className="lg:col-span-2 space-y-4">
+        <div className="space-y-6">
+          {/* Configuration & Upload */}
+          <div className="grid lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="text-base">Configuration</CardTitle>

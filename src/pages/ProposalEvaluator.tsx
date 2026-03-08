@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EvaluatorDashboard, type EvaluationResult } from "@/components/proposal/EvaluatorDashboard";
 import { SolutionDashboard, type SolutionResult } from "@/components/proposal/SolutionDashboard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 type UploadedFile = {
   file: File;

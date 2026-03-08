@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      diagrams: {
+        Row: {
+          created_at: string
+          edges: Json
+          id: string
+          nodes: Json
+          source: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          edges?: Json
+          id?: string
+          nodes?: Json
+          source?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          edges?: Json
+          id?: string
+          nodes?: Json
+          source?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company: string | null

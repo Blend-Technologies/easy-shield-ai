@@ -86,7 +86,7 @@ const AIPromptPanel = ({ onSubmit, isLoading = false }: Props) => {
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe the architecture you want to build, e.g. 'Create a 3-tier web app with API Gateway, Lambda, and DynamoDB...'"
+            placeholder="Describe changes: 'Add a Redis cache between API and DB' or generate new: 'Create a 3-tier web app...'"
             className="min-h-[80px] resize-none bg-muted/40 text-sm"
             disabled={isLoading}
           />

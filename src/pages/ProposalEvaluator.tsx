@@ -201,7 +201,7 @@ const ProposalEvaluator = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ rfpDocuments, supplementaryDocument, proposalType, evaluationSummary }),
+          body: JSON.stringify({ rfpDocuments, supplementaryDocument, proposalType, evaluationSummary, cloudProvider }),
         }
       );
 

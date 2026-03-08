@@ -46,6 +46,7 @@ const ProposalEvaluator = () => {
   const [isGeneratingSolution, setIsGeneratingSolution] = useState(false);
   const [solutionResult, setSolutionResult] = useState<SolutionResult | null>(null);
   const [cloudProvider, setCloudProvider] = useState<string>("aws");
+  const [diagramId, setDiagramId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supplementaryFileRef = useRef<HTMLInputElement>(null);
 

@@ -313,7 +313,16 @@ const DiagramEditorInner = () => {
         onTitleChange={setTitle}
       />
       {/* Save bar */}
-      <div className="h-10 border-b border-border bg-muted/30 flex items-center justify-end px-4 gap-2 shrink-0">
+      <div className="h-10 border-b border-border bg-muted/30 flex items-center justify-between px-4 gap-2 shrink-0">
+        <a
+          href="https://azurediagrams.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Finalize Azure Diagrams
+        </a>
         <button
           onClick={saveDiagram}
           disabled={isSaving}

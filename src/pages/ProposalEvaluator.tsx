@@ -169,6 +169,55 @@ const ProposalEvaluator = () => {
     }
   }, [files, supplementaryFile, proposalType, toast]);
 
+  const generateSolution = useCallback(async () => {
+    if (files.length === 0) {
+      toast({ title: "Missing documents", description: "Upload at least one RFP document first.", variant: "destructive" });
+      return;
+    }
+
+    setIsGeneratingSolution(true);
+    setSolutionResult(null);
+
+    const rfpDocuments = files
+      .filter((f) => f.status === "done")
+      .map((f) => ({ name: f.file.name, content: f.content.slice(0, 15000) }));
+
+    const supplementaryDocument = supplementaryFile?.status === "done"
+      ? { name: supplementaryFile.file.name, content: supplementaryFile.content.slice(0, 15000) }
+      : null;
+
+    const evaluationSummary = evaluationResult
+      ? `Score: ${evaluationResult.overallScore}/100. ${evaluationResult.summary}`
+      : "";
+
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-solution`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ rfpDocuments, supplementaryDocument, proposalType, evaluationSummary }),
+        }
+      );
+
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.error || "Solution generation failed");
+      }
+
+      const result = await resp.json();
+      setSolutionResult(result);
+      toast({ title: "Solution generated!", description: `Architecture: ${result.solutionTitle}` });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingSolution(false);
+    }
+  }, [files, supplementaryFile, proposalType, evaluationResult, toast]);
+
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6">

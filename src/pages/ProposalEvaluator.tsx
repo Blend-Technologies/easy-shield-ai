@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileUp, Loader2, X, FileText, BarChart3, ArrowLeft, ListChecks, ChevronDown, ChevronUp, Badge } from "lucide-react";
+import { FileUp, Loader2, X, FileText, BarChart3, ArrowLeft, ListChecks, ChevronDown, ChevronUp, Badge, Lightbulb } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EvaluatorDashboard, type EvaluationResult } from "@/components/proposal/EvaluatorDashboard";
+import { SolutionDashboard, type SolutionResult } from "@/components/proposal/SolutionDashboard";
 
 type UploadedFile = {
   file: File;
@@ -40,6 +41,8 @@ const ProposalEvaluator = () => {
   const [requirementsExpanded, setRequirementsExpanded] = useState(true);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
+  const [isGeneratingSolution, setIsGeneratingSolution] = useState(false);
+  const [solutionResult, setSolutionResult] = useState<SolutionResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supplementaryFileRef = useRef<HTMLInputElement>(null);
 
@@ -165,6 +168,55 @@ const ProposalEvaluator = () => {
       setIsEvaluating(false);
     }
   }, [files, supplementaryFile, proposalType, toast]);
+
+  const generateSolution = useCallback(async () => {
+    if (files.length === 0) {
+      toast({ title: "Missing documents", description: "Upload at least one RFP document first.", variant: "destructive" });
+      return;
+    }
+
+    setIsGeneratingSolution(true);
+    setSolutionResult(null);
+
+    const rfpDocuments = files
+      .filter((f) => f.status === "done")
+      .map((f) => ({ name: f.file.name, content: f.content.slice(0, 15000) }));
+
+    const supplementaryDocument = supplementaryFile?.status === "done"
+      ? { name: supplementaryFile.file.name, content: supplementaryFile.content.slice(0, 15000) }
+      : null;
+
+    const evaluationSummary = evaluationResult
+      ? `Score: ${evaluationResult.overallScore}/100. ${evaluationResult.summary}`
+      : "";
+
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-solution`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ rfpDocuments, supplementaryDocument, proposalType, evaluationSummary }),
+        }
+      );
+
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.error || "Solution generation failed");
+      }
+
+      const result = await resp.json();
+      setSolutionResult(result);
+      toast({ title: "Solution generated!", description: `Architecture: ${result.solutionTitle}` });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingSolution(false);
+    }
+  }, [files, supplementaryFile, proposalType, evaluationResult, toast]);
 
   return (
     <DashboardLayout>
@@ -331,6 +383,28 @@ const ProposalEvaluator = () => {
                     Generate checklist requirements first before evaluating fit.
                   </p>
                 )}
+
+                {/* Step 3: Generate Solution */}
+                <Button
+                  className="w-full"
+                  size="lg"
+                  variant={solutionResult ? "outline" : "default"}
+                  onClick={generateSolution}
+                  disabled={isGeneratingSolution || !evaluationResult}
+                >
+                  {isGeneratingSolution ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating Solution &amp; Architecture...</>
+                  ) : solutionResult ? (
+                    <><Lightbulb className="w-4 h-4 mr-2" /> Re-generate Solution</>
+                  ) : (
+                    <><Lightbulb className="w-4 h-4 mr-2" /> {proposalType === "government" ? "Step 3: " : ""}Generate Solution &amp; Architecture</>
+                  )}
+                </Button>
+                {!evaluationResult && files.length > 0 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Evaluate fit first before generating a solution.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -409,6 +483,18 @@ const ProposalEvaluator = () => {
                   <p>Upload documents and extract requirements to get started</p>
                 </CardContent>
               </Card>
+            ) : null}
+
+            {/* Solution Result */}
+            {isGeneratingSolution ? (
+              <Card>
+                <CardContent className="py-16 flex flex-col items-center justify-center">
+                  <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                  <p className="text-muted-foreground text-sm">Generating solution architecture and diagram...</p>
+                </CardContent>
+              </Card>
+            ) : solutionResult ? (
+              <SolutionDashboard result={solutionResult} />
             ) : null}
           </div>
         </div>

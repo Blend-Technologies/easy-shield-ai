@@ -349,8 +349,8 @@ const ProposalEvaluator = () => {
                 ))}
               </CardContent>
             </Card>
+          </div>
 
-            {/* Step 1: Generate Checklist Requirements (Government only) */}
             {proposalType === "government" && (
               <>
                 <Card>

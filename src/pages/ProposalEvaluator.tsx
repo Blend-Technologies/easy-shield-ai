@@ -383,6 +383,28 @@ const ProposalEvaluator = () => {
                     Generate checklist requirements first before evaluating fit.
                   </p>
                 )}
+
+                {/* Step 3: Generate Solution */}
+                <Button
+                  className="w-full"
+                  size="lg"
+                  variant={solutionResult ? "outline" : "default"}
+                  onClick={generateSolution}
+                  disabled={isGeneratingSolution || !evaluationResult}
+                >
+                  {isGeneratingSolution ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating Solution &amp; Architecture...</>
+                  ) : solutionResult ? (
+                    <><Lightbulb className="w-4 h-4 mr-2" /> Re-generate Solution</>
+                  ) : (
+                    <><Lightbulb className="w-4 h-4 mr-2" /> {proposalType === "government" ? "Step 3: " : ""}Generate Solution &amp; Architecture</>
+                  )}
+                </Button>
+                {!evaluationResult && files.length > 0 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Evaluate fit first before generating a solution.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>

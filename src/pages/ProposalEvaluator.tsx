@@ -387,6 +387,22 @@ const ProposalEvaluator = () => {
                 )}
 
                 {/* Step 3: Generate Solution */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2 text-sm font-medium">
+                    <Cloud className="w-4 h-4 text-primary" />
+                    Cloud Provider
+                  </Label>
+                  <Select value={cloudProvider} onValueChange={setCloudProvider} disabled={isGeneratingSolution}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="aws">🟠 Amazon Web Services (AWS)</SelectItem>
+                      <SelectItem value="azure">🔵 Microsoft Azure</SelectItem>
+                      <SelectItem value="gcp">🟢 Google Cloud Platform (GCP)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button
                   className="w-full"
                   size="lg"

@@ -31,28 +31,29 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert solution architect. Given an RFP and evaluation results, generate a comprehensive technical solution and an architecture diagram.
 
+${providerConstraint}
+
 You MUST respond by calling the generate_solution tool. Do not respond with plain text.
 
 Solution guidelines:
 - Provide a clear, actionable solution overview (3-5 paragraphs)
-- List key solution components with brief descriptions
+- List key solution components with brief descriptions using ${providerName} services
 - Include implementation approach and timeline considerations
 - Reference specific RFP requirements being addressed
+- All cloudProvider values in keyComponents MUST be "${cloudProvider}"
 
 Architecture diagram guidelines:
-- Generate 5-10 nodes representing the key components of the solution
-- Use realistic cloud service names from AWS, Azure, or GCP as appropriate
-- Each node needs: id, label (service/component name), abbr (2-4 letter abbreviation), description (short), x (position), y (position), color (hex color like "bg-[#FF9900]" for AWS, "bg-[#0078D4]" for Azure, "bg-[#4285F4]" for Google Cloud), textColor (always "text-white")
+- Generate 5-10 nodes representing the key components of the solution using ${providerName} services
+- Use realistic ${providerName} service names (e.g. ${cloudProvider === "aws" ? "EC2, S3, Lambda, RDS, CloudFront, SQS, SNS, DynamoDB" : cloudProvider === "azure" ? "App Service, Blob Storage, Functions, SQL Database, Front Door, Service Bus, Cosmos DB" : "Compute Engine, Cloud Storage, Cloud Functions, Cloud SQL, Cloud CDN, Pub/Sub, Firestore"})
+- Each node needs: id, label (service/component name), abbr (2-4 letter abbreviation), description (short), x (position), y (position), color (hex color), textColor (always "text-white")
 - Space nodes with ~300px horizontal gaps and ~180px vertical gaps
 - Connect nodes logically to show data/request flow
 - Each edge needs: id, source (node id), target (node id), animated (boolean), label (optional flow description)
 - Use animated edges for primary data flows
 
-Common cloud service colors:
-- AWS: bg-[#FF9900] (compute), bg-[#3B48CC] (database), bg-[#E7157B] (analytics), bg-[#7B61FF] (ML/AI), bg-[#1A9C55] (storage)
-- Azure: bg-[#0078D4] (compute), bg-[#50E6FF] (data), bg-[#00BCF2] (networking), bg-[#7FBA00] (DevOps)
-- GCP: bg-[#4285F4] (compute), bg-[#DB4437] (data), bg-[#F4B400] (ML), bg-[#0F9D58] (networking)
-- Generic: bg-[#6366F1] (integration), bg-[#EC4899] (security), bg-[#14B8A6] (monitoring)`;
+Cloud service colors for ${providerName}:
+${cloudProvider === "aws" ? '- bg-[#FF9900] (compute), bg-[#3B48CC] (database), bg-[#E7157B] (analytics), bg-[#7B61FF] (ML/AI), bg-[#1A9C55] (storage), bg-[#DD344C] (security), bg-[#E7157B] (networking)' : cloudProvider === "azure" ? '- bg-[#0078D4] (compute), bg-[#50E6FF] (data), bg-[#00BCF2] (networking), bg-[#7FBA00] (DevOps), bg-[#FF8C00] (AI/ML), bg-[#E81123] (security), bg-[#68217A] (integration)' : '- bg-[#4285F4] (compute), bg-[#DB4437] (data), bg-[#F4B400] (ML/AI), bg-[#0F9D58] (networking), bg-[#185ABC] (security), bg-[#EA4335] (analytics), bg-[#34A853] (storage)'}
+- bg-[#6366F1] (integration), bg-[#EC4899] (security fallback), bg-[#14B8A6] (monitoring)`;
 
     const userPrompt = `Based on the following RFP and evaluation, generate a detailed solution and architecture diagram.
 

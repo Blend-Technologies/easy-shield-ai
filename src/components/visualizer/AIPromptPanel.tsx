@@ -68,7 +68,7 @@ const AIPromptPanel = ({ onSubmit, isLoading = false }: Props) => {
       >
         <Sparkles className="w-4 h-4 text-primary" />
         <span>AI Prompt</span>
-        <span className="text-xs text-muted-foreground/60 ml-1">(optional)</span>
+        <span className="text-xs text-muted-foreground/60 ml-1">(generate or modify)</span>
         {isLoading && <Loader2 className="w-4 h-4 ml-2 animate-spin text-primary" />}
         {expanded ? (
           <ChevronDown className="w-4 h-4 ml-auto" />

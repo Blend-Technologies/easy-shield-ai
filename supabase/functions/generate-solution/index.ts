@@ -12,7 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    const { rfpDocuments, supplementaryDocument, proposalType, evaluationSummary } = await req.json();
+    const { rfpDocuments, supplementaryDocument, proposalType, evaluationSummary, cloudProvider } = await req.json();
+
+    const providerName = cloudProvider === "azure" ? "Microsoft Azure" : cloudProvider === "gcp" ? "Google Cloud Platform (GCP)" : "Amazon Web Services (AWS)";
+    const providerConstraint = `IMPORTANT: The solution MUST use ${providerName} services exclusively. All components, services, and architecture elements should be from ${providerName}. Use the appropriate service names and colors for ${providerName}.`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");

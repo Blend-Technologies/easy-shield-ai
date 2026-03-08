@@ -38,6 +38,7 @@ You MUST respond by calling the generate_solution tool. Do not respond with plai
 Solution guidelines:
 - Provide a clear, actionable solution overview (3-5 paragraphs)
 - List key solution components with brief descriptions using ${providerName} services
+- For EACH key component, extract 1-3 EXACT sentences or phrases from the RFP documents that justify or request that component. These must be direct quotes from the source documents, not paraphrased. Include them in the "rfpQuotes" array for each component.
 - Include implementation approach and timeline considerations
 - Reference specific RFP requirements being addressed
 - All cloudProvider values in keyComponents MUST be "${cloudProvider}"

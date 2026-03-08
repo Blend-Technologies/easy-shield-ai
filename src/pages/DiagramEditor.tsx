@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { ExternalLink } from "lucide-react";
 import { toPng, toSvg } from "html-to-image";
 import { jsPDF } from "jspdf";
 import {

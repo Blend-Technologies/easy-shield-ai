@@ -235,9 +235,9 @@ const ProposalEvaluator = () => {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-5 gap-6">
-          {/* Left: Configuration & Upload */}
-          <div className="lg:col-span-2 space-y-4">
+        <div className="space-y-6">
+          {/* Configuration & Upload */}
+          <div className="grid lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="text-base">Configuration</CardTitle>
@@ -347,27 +347,93 @@ const ProposalEvaluator = () => {
                     </button>
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+          </div>
 
-                {/* Step 1: Generate Checklist Requirements (Government only) */}
-                {proposalType === "government" && (
-                  <Button
-                    className="w-full"
-                    size="lg"
-                    variant={requirementsResult ? "outline" : "default"}
-                    onClick={extractRequirements}
-                    disabled={isExtracting || files.length === 0}
-                  >
-                    {isExtracting ? (
-                      <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating Checklist Requirements...</>
-                    ) : requirementsResult ? (
-                      <><ListChecks className="w-4 h-4 mr-2" /> Re-generate Checklist Requirements</>
-                    ) : (
-                      <><ListChecks className="w-4 h-4 mr-2" /> Step 1: Generate Checklist Requirements</>
+            {/* Step 1: Generate Checklist Requirements (Government only) */}
+            {proposalType === "government" && (
+              <>
+                <Card>
+                  <CardContent className="pt-6 space-y-3">
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      variant={requirementsResult ? "outline" : "default"}
+                      onClick={extractRequirements}
+                      disabled={isExtracting || files.length === 0}
+                    >
+                      {isExtracting ? (
+                        <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating Checklist Requirements...</>
+                      ) : requirementsResult ? (
+                        <><ListChecks className="w-4 h-4 mr-2" /> Re-generate Checklist Requirements</>
+                      ) : (
+                        <><ListChecks className="w-4 h-4 mr-2" /> Step 1: Generate Checklist Requirements</>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Requirements Result */}
+                {isExtracting ? (
+                  <Card>
+                    <CardContent className="py-12 flex flex-col items-center justify-center">
+                      <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                      <p className="text-muted-foreground text-sm">Extracting Shall &amp; Must requirements from RFP...</p>
+                    </CardContent>
+                  </Card>
+                ) : requirementsResult ? (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <ListChecks className="w-5 h-5 text-primary" />
+                          <CardTitle className="text-base">Shall &amp; Must Requirements</CardTitle>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-2 text-xs">
+                            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                              {requirementsResult.totalShall} Shall
+                            </span>
+                            <span className="bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium">
+                              {requirementsResult.totalMust} Must
+                            </span>
+                          </div>
+                          <button onClick={() => setRequirementsExpanded(!requirementsExpanded)} className="text-muted-foreground hover:text-foreground">
+                            {requirementsExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{requirementsResult.summary}</p>
+                    </CardHeader>
+                    {requirementsExpanded && (
+                      <CardContent className="pt-0">
+                        <div className="max-h-[400px] overflow-y-auto space-y-2 pr-1">
+                          {requirementsResult.requirements.map((req) => (
+                            <div key={req.id} className="flex gap-3 p-2.5 rounded-lg bg-muted/40 text-sm">
+                              <span className="text-xs font-mono text-muted-foreground shrink-0 mt-0.5">{req.id}</span>
+                              <span className={`text-xs font-semibold uppercase shrink-0 mt-0.5 ${req.type === "must" ? "text-destructive" : "text-primary"}`}>
+                                {req.type}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-foreground">{req.text}</p>
+                                {req.section && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">Section: {req.section}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
                     )}
-                  </Button>
-                )}
+                  </Card>
+                ) : null}
+              </>
+            )}
 
-                {/* Evaluate Fit */}
+            {/* Step 2: Evaluate Fit */}
+            <Card>
+              <CardContent className="pt-6 space-y-3">
                 <Button
                   className="w-full"
                   size="lg"
@@ -385,8 +451,31 @@ const ProposalEvaluator = () => {
                     Generate checklist requirements first before evaluating fit.
                   </p>
                 )}
+              </CardContent>
+            </Card>
 
-                {/* Step 3: Generate Solution */}
+            {/* Evaluation Result */}
+            {isEvaluating ? (
+              <Card>
+                <CardContent className="py-16 flex flex-col items-center justify-center">
+                  <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                  <p className="text-muted-foreground text-sm">Analyzing RFP match with your qualifications...</p>
+                </CardContent>
+              </Card>
+            ) : evaluationResult ? (
+              <EvaluatorDashboard result={evaluationResult} />
+            ) : !requirementsResult && !isExtracting ? (
+              <Card>
+                <CardContent className="py-16 flex flex-col items-center justify-center text-muted-foreground">
+                  <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>Upload documents and extract requirements to get started</p>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {/* Step 3: Generate Solution */}
+            <Card>
+              <CardContent className="pt-6 space-y-3">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-sm font-medium">
                     <Cloud className="w-4 h-4 text-primary" />
@@ -425,83 +514,6 @@ const ProposalEvaluator = () => {
                 )}
               </CardContent>
             </Card>
-          </div>
-
-          {/* Right: Results */}
-          <div className="lg:col-span-3 space-y-4">
-            {/* Requirements Result */}
-            {isExtracting ? (
-              <Card>
-                <CardContent className="py-12 flex flex-col items-center justify-center">
-                  <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-                  <p className="text-muted-foreground text-sm">Extracting Shall &amp; Must requirements from RFP...</p>
-                </CardContent>
-              </Card>
-            ) : requirementsResult ? (
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <ListChecks className="w-5 h-5 text-primary" />
-                      <CardTitle className="text-base">Shall &amp; Must Requirements</CardTitle>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex gap-2 text-xs">
-                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-                          {requirementsResult.totalShall} Shall
-                        </span>
-                        <span className="bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium">
-                          {requirementsResult.totalMust} Must
-                        </span>
-                      </div>
-                      <button onClick={() => setRequirementsExpanded(!requirementsExpanded)} className="text-muted-foreground hover:text-foreground">
-                        {requirementsExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">{requirementsResult.summary}</p>
-                </CardHeader>
-                {requirementsExpanded && (
-                  <CardContent className="pt-0">
-                    <div className="max-h-[400px] overflow-y-auto space-y-2 pr-1">
-                      {requirementsResult.requirements.map((req) => (
-                        <div key={req.id} className="flex gap-3 p-2.5 rounded-lg bg-muted/40 text-sm">
-                          <span className="text-xs font-mono text-muted-foreground shrink-0 mt-0.5">{req.id}</span>
-                          <span className={`text-xs font-semibold uppercase shrink-0 mt-0.5 ${req.type === "must" ? "text-destructive" : "text-primary"}`}>
-                            {req.type}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-foreground">{req.text}</p>
-                            {req.section && (
-                              <p className="text-xs text-muted-foreground mt-0.5">Section: {req.section}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-            ) : null}
-
-            {/* Evaluation Result */}
-            {isEvaluating ? (
-              <Card>
-                <CardContent className="py-16 flex flex-col items-center justify-center">
-                  <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-                  <p className="text-muted-foreground text-sm">Analyzing RFP match with your qualifications...</p>
-                </CardContent>
-              </Card>
-            ) : evaluationResult ? (
-              <EvaluatorDashboard result={evaluationResult} />
-            ) : !requirementsResult && !isExtracting ? (
-              <Card>
-                <CardContent className="py-16 flex flex-col items-center justify-center text-muted-foreground">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>Upload documents and extract requirements to get started</p>
-                </CardContent>
-              </Card>
-            ) : null}
 
             {/* Solution Result */}
             {isGeneratingSolution ? (
@@ -514,7 +526,6 @@ const ProposalEvaluator = () => {
             ) : solutionResult ? (
               <SolutionDashboard result={solutionResult} />
             ) : null}
-          </div>
         </div>
       </div>
     </DashboardLayout>

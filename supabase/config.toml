@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.extract-requirements]
 verify_jwt = false
+
+[functions.generate-solution]
+verify_jwt = false

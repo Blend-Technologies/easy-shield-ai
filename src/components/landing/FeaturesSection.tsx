@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Shield, Search, BookOpen, Eye, Plug, ArrowRight, FileEdit, Sparkles } from "lucide-react";
+import { Shield, Search, BookOpen, Eye, Plug, ArrowRight, FileEdit, Sparkles, Users, MessageSquare, Star, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const sparkSteps = [

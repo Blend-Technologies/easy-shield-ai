@@ -148,9 +148,22 @@ export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResul
       {/* Architecture Diagram */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Cloud className="w-5 h-5 text-primary" />
-            <CardTitle className="text-base">Solution Architecture Diagram</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cloud className="w-5 h-5 text-primary" />
+              <CardTitle className="text-base">Solution Architecture Diagram</CardTitle>
+            </div>
+            {diagramId && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => navigate(`/dashboard/diagram/${diagramId}`)}
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                Expand &amp; Edit
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">

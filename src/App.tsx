@@ -45,6 +45,7 @@ const App = () => (
           <Route path="/dashboard/:projectName/work-items" element={<WorkItems />} />
           <Route path="/dashboard/:projectName/analytics" element={<AnalyticsDashboard />} />
           <Route path="/dashboard/:projectName/boards" element={<KanbanBoard />} />
+          <Route path="/dashboard/diagram/:diagramId" element={<DiagramEditor />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

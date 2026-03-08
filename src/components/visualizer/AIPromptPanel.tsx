@@ -18,7 +18,7 @@ type Props = {
 };
 
 const AIPromptPanel = ({ onSubmit, isLoading = false }: Props) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [prompt, setPrompt] = useState("");
   const [files, setFiles] = useState<FilePreview[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);

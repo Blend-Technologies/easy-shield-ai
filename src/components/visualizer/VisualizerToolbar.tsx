@@ -41,7 +41,7 @@ const VisualizerToolbar = ({
           variant="ghost"
           size="icon"
           className="h-8 w-8"
-          onClick={() => navigate("/dashboard/spark")}
+          onClick={() => navigate(-1)}
           title="Back to S.P.A.R.K.™ Framework"
         >
           <ArrowLeft className="w-4 h-4" />

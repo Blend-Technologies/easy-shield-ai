@@ -1,7 +1,9 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Cpu, Cloud, Layers, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Cpu, Cloud, Layers, ArrowRight, Maximize2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import {
   ReactFlow,
@@ -56,7 +58,8 @@ const providerLabel = (provider: string) => {
 
 const nodeTypes = { custom: CustomNode };
 
-export const SolutionDashboard = ({ result }: { result: SolutionResult }) => {
+export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResult; diagramId?: string }) => {
+  const navigate = useNavigate();
   const flowNodes: Node[] = useMemo(
     () =>
       result.nodes.map((n) => ({
@@ -145,9 +148,22 @@ export const SolutionDashboard = ({ result }: { result: SolutionResult }) => {
       {/* Architecture Diagram */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Cloud className="w-5 h-5 text-primary" />
-            <CardTitle className="text-base">Solution Architecture Diagram</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cloud className="w-5 h-5 text-primary" />
+              <CardTitle className="text-base">Solution Architecture Diagram</CardTitle>
+            </div>
+            {diagramId && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => navigate(`/dashboard/diagram/${diagramId}`)}
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                Expand &amp; Edit
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">

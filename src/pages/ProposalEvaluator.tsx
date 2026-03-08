@@ -218,7 +218,7 @@ const ProposalEvaluator = () => {
     } finally {
       setIsGeneratingSolution(false);
     }
-  }, [files, supplementaryFile, proposalType, evaluationResult, toast]);
+  }, [files, supplementaryFile, proposalType, evaluationResult, cloudProvider, toast]);
 
   return (
     <DashboardLayout>

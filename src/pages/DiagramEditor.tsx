@@ -227,8 +227,30 @@ const DiagramEditorInner = () => {
     async (prompt: string, imageDataUrls: string[]) => {
       setIsGenerating(true);
       try {
+        const existingNodes = nodes.map((n) => ({
+          id: n.id,
+          label: (n.data as any)?.label,
+          abbr: (n.data as any)?.icon,
+          description: (n.data as any)?.description,
+          x: n.position.x,
+          y: n.position.y,
+          color: (n.data as any)?.color,
+          textColor: (n.data as any)?.textColor,
+        }));
+        const existingEdges = edges.map((e) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          animated: e.animated,
+        }));
+
         const { data, error } = await supabase.functions.invoke("generate-diagram", {
-          body: { prompt, imageDataUrls },
+          body: {
+            prompt,
+            imageDataUrls,
+            existingNodes: existingNodes.length > 0 ? existingNodes : undefined,
+            existingEdges: existingEdges.length > 0 ? existingEdges : undefined,
+          },
         });
 
         if (error) {

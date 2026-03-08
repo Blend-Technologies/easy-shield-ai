@@ -68,7 +68,7 @@ const AIPromptPanel = ({ onSubmit, isLoading = false }: Props) => {
       >
         <Sparkles className="w-4 h-4 text-primary" />
         <span>AI Prompt</span>
-        <span className="text-xs text-muted-foreground/60 ml-1">(optional)</span>
+        <span className="text-xs text-muted-foreground/60 ml-1">(generate or modify)</span>
         {isLoading && <Loader2 className="w-4 h-4 ml-2 animate-spin text-primary" />}
         {expanded ? (
           <ChevronDown className="w-4 h-4 ml-auto" />
@@ -86,7 +86,7 @@ const AIPromptPanel = ({ onSubmit, isLoading = false }: Props) => {
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe the architecture you want to build, e.g. 'Create a 3-tier web app with API Gateway, Lambda, and DynamoDB...'"
+            placeholder="Describe changes: 'Add a Redis cache between API and DB' or generate new: 'Create a 3-tier web app...'"
             className="min-h-[80px] resize-none bg-muted/40 text-sm"
             disabled={isLoading}
           />

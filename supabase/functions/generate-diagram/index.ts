@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, imageDataUrls } = await req.json();
+    const { prompt, imageDataUrls, existingNodes, existingEdges } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -35,6 +35,16 @@ serve(async (req) => {
       }
     }
 
+    const hasExisting = existingNodes && existingNodes.length > 0;
+
+    const existingContext = hasExisting
+      ? `\n\nCURRENT DIAGRAM STATE (modify this based on user instructions):
+Nodes: ${JSON.stringify(existingNodes)}
+Edges: ${JSON.stringify(existingEdges)}
+
+The user wants to MODIFY the existing diagram. Keep existing nodes/edges unless the user asks to remove or replace them. Add, move, rename, recolor, or reconnect nodes as requested. Preserve node IDs for unchanged nodes.`
+      : "";
+
     const systemPrompt = `You are an expert cloud architecture diagram generator. Given a user's description (and optionally reference images), generate a list of nodes and edges for a React Flow diagram.
 
 You MUST respond by calling the generate_diagram tool. Do not respond with plain text.
@@ -50,7 +60,7 @@ Edge guidelines:
 - Each edge needs: id, source (node id), target (node id), animated (boolean)
 - Use animated edges for primary data flows
 
-Generate 4-8 nodes and appropriate edges to represent the architecture described.`;
+${hasExisting ? "Modify the existing diagram based on the user's instructions. Return the COMPLETE updated diagram (all nodes and edges, not just changes)." : "Generate 4-8 nodes and appropriate edges to represent the architecture described."}${existingContext}`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",

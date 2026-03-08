@@ -17,6 +17,7 @@ import SparkFramework from "./pages/SparkFramework";
 import WorkItems from "./pages/WorkItems";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import KanbanBoard from "./pages/KanbanBoard";
+import DiagramEditor from "./pages/DiagramEditor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

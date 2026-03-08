@@ -98,8 +98,13 @@ Generate a solution that addresses the RFP requirements with a practical archite
                         name: { type: "string" },
                         description: { type: "string" },
                         cloudProvider: { type: "string", description: "aws, azure, gcp, or generic" },
+                        rfpQuotes: {
+                          type: "array",
+                          items: { type: "string" },
+                          description: "1-3 exact sentences or phrases extracted verbatim from the RFP documents that justify or request this component"
+                        },
                       },
-                      required: ["name", "description", "cloudProvider"],
+                      required: ["name", "description", "cloudProvider", "rfpQuotes"],
                       additionalProperties: false,
                     },
                   },

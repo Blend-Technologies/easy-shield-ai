@@ -126,6 +126,15 @@ export const SolutionDashboard = ({ result }: { result: SolutionResult }) => {
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">{comp.description}</p>
+                  {comp.rfpQuotes && comp.rfpQuotes.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {comp.rfpQuotes.map((quote, qi) => (
+                        <blockquote key={qi} className="border-l-2 border-primary/40 pl-2 text-[11px] italic text-muted-foreground leading-relaxed">
+                          "{quote}"
+                        </blockquote>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

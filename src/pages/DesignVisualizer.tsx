@@ -241,6 +241,17 @@ const DesignVisualizerInner = () => {
             fitView
             className="bg-muted/30"
             defaultEdgeOptions={{ type: "smoothstep" }}
+            panOnScroll
+            panOnDrag
+            zoomOnScroll
+            zoomOnPinch
+            zoomOnDoubleClick
+            nodesDraggable
+            nodesConnectable
+            minZoom={0.1}
+            maxZoom={4}
+            translateExtent={[[-Infinity, -Infinity], [Infinity, Infinity]]}
+            nodeExtent={[[-Infinity, -Infinity], [Infinity, Infinity]]}
           >
             <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="hsl(var(--muted-foreground) / 0.15)" />
             <MiniMap

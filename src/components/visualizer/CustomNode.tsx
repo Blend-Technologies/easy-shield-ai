@@ -17,13 +17,19 @@ const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData 
     <div
       className={`
         bg-background border-2 rounded-xl px-4 py-3 min-w-[160px] shadow-md
-        transition-all duration-200
+        transition-all duration-200 cursor-grab active:cursor-grabbing
         ${selected ? "border-electric-sapphire-400 shadow-electric-sapphire-400/20 shadow-lg" : "border-border hover:border-electric-sapphire-300/50"}
       `}
     >
       <Handle
         type="target"
+        position={Position.Top}
+        className="!w-3 !h-3 !bg-sky-aqua-400 !border-2 !border-background"
+      />
+      <Handle
+        type="target"
         position={Position.Left}
+        id="left"
         className="!w-3 !h-3 !bg-sky-aqua-400 !border-2 !border-background"
       />
       <div className="flex items-center gap-2.5">
@@ -43,7 +49,13 @@ const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData 
       </div>
       <Handle
         type="source"
+        position={Position.Bottom}
+        className="!w-3 !h-3 !bg-neon-pink-400 !border-2 !border-background"
+      />
+      <Handle
+        type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-neon-pink-400 !border-2 !border-background"
       />
     </div>

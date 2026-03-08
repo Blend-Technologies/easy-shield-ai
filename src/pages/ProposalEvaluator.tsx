@@ -214,6 +214,53 @@ const ProposalEvaluator = () => {
 
       const result = await resp.json();
       setSolutionResult(result);
+
+      // Save diagram to database
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user) {
+          const diagramNodes = (result.nodes || []).map((n: any) => ({
+            id: n.id,
+            type: "custom",
+            position: { x: n.x, y: n.y },
+            data: {
+              label: n.label,
+              icon: n.abbr,
+              description: n.description,
+              color: n.color,
+              textColor: n.textColor,
+            },
+          }));
+          const diagramEdges = (result.edges || []).map((e: any) => ({
+            id: e.id,
+            source: e.source,
+            target: e.target,
+            animated: e.animated,
+            style: { stroke: "hsl(196 86% 62%)" },
+            type: "smoothstep",
+            label: e.label,
+          }));
+
+          const { data: diagramData, error: diagramError } = await supabase
+            .from("diagrams")
+            .insert({
+              user_id: userData.user.id,
+              title: result.solutionTitle || "Solution Architecture",
+              nodes: diagramNodes as any,
+              edges: diagramEdges as any,
+              source: "proposal-evaluator",
+            })
+            .select("id")
+            .single();
+
+          if (!diagramError && diagramData) {
+            setDiagramId(diagramData.id);
+          }
+        }
+      } catch (saveErr) {
+        console.error("Failed to save diagram:", saveErr);
+      }
+
       toast({ title: "Solution generated!", description: `Architecture: ${result.solutionTitle}` });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });

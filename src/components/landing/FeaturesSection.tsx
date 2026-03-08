@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Shield, Search, BookOpen, Eye, Plug, ArrowRight, FileEdit, Sparkles } from "lucide-react";
+import { Shield, Search, BookOpen, Eye, Plug, ArrowRight, FileEdit, Sparkles, Users, MessageSquare, Star, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const sparkSteps = [
@@ -171,6 +171,74 @@ const FeaturesSection = () => {
                       </span>
                       <span className="text-muted-foreground text-[11px] leading-snug">
                         {step.description}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Community Hero Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-10"
+        >
+          <div className="group relative rounded-2xl p-[1px] bg-gradient-to-r from-sky-aqua-400 via-electric-sapphire-400 to-indigo-bloom-400 cursor-pointer overflow-hidden">
+            <div className="relative rounded-2xl bg-card/95 backdrop-blur-xl p-8 md:p-10 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-sky-aqua-400/5 via-transparent to-indigo-bloom-400/5" />
+
+              <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-start">
+                {/* Left: Branding */}
+                <div className="flex-shrink-0 lg:w-2/5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-aqua-400/20 to-indigo-bloom-400/20 flex items-center justify-center border border-sky-aqua-400/30">
+                      <Users className="w-7 h-7 text-sky-aqua-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-bold text-2xl text-foreground tracking-tight">
+                        Create a Community
+                      </h3>
+                      <p className="text-xs font-semibold tracking-[0.25em] uppercase text-muted-foreground">
+                        Collaborate & Grow Together
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed text-sm mb-4 max-w-md">
+                    Build and grow a collaborative network of professionals, share knowledge, validate solutions, and accelerate delivery through collective intelligence.
+                  </p>
+                  <div className="flex items-center gap-1 text-sm font-medium text-primary group-hover:translate-x-1 transition-transform duration-300">
+                    Join the community <ArrowRight className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Right: Community pillars */}
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3 w-full">
+                  {[
+                    { icon: MessageSquare, label: "Open Discussions", desc: "Engage in real-time threads with peers and experts.", color: "text-sky-aqua-400", bg: "bg-sky-aqua-400/15" },
+                    { icon: Star, label: "Curated Resources", desc: "Access expert-vetted templates, guides and playbooks.", color: "text-neon-pink-400", bg: "bg-neon-pink-400/15" },
+                    { icon: Globe, label: "Global Network", desc: "Connect with practitioners across industries worldwide.", color: "text-indigo-bloom-300", bg: "bg-indigo-bloom-400/15" },
+                    { icon: Shield, label: "Trust & Safety", desc: "Verified members and moderated, secure spaces.", color: "text-electric-sapphire-300", bg: "bg-electric-sapphire-400/15" },
+                  ].map((item, i) => (
+                    <motion.div
+                      key={item.label}
+                      initial={{ opacity: 0, y: 15 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.15 + i * 0.08 }}
+                      className="flex flex-col items-center text-center p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-colors duration-200"
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${item.bg}`}>
+                        <item.icon className={`w-5 h-5 ${item.color}`} />
+                      </div>
+                      <span className="font-heading font-semibold text-xs text-foreground mb-1 leading-tight">
+                        {item.label}
+                      </span>
+                      <span className="text-muted-foreground text-[11px] leading-snug">
+                        {item.desc}
                       </span>
                     </motion.div>
                   ))}

@@ -58,7 +58,8 @@ const providerLabel = (provider: string) => {
 
 const nodeTypes = { custom: CustomNode };
 
-export const SolutionDashboard = ({ result }: { result: SolutionResult }) => {
+export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResult; diagramId?: string }) => {
+  const navigate = useNavigate();
   const flowNodes: Node[] = useMemo(
     () =>
       result.nodes.map((n) => ({

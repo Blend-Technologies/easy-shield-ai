@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileUp, Loader2, X, FileText, BarChart3, ArrowLeft, ListChecks, ChevronDown, ChevronUp, Badge, Lightbulb } from "lucide-react";
+import { FileUp, Loader2, X, FileText, BarChart3, ArrowLeft, ListChecks, ChevronDown, ChevronUp, Badge, Lightbulb, Cloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EvaluatorDashboard, type EvaluationResult } from "@/components/proposal/EvaluatorDashboard";
 import { SolutionDashboard, type SolutionResult } from "@/components/proposal/SolutionDashboard";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type UploadedFile = {
   file: File;
@@ -43,6 +44,7 @@ const ProposalEvaluator = () => {
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
   const [isGeneratingSolution, setIsGeneratingSolution] = useState(false);
   const [solutionResult, setSolutionResult] = useState<SolutionResult | null>(null);
+  const [cloudProvider, setCloudProvider] = useState<string>("aws");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supplementaryFileRef = useRef<HTMLInputElement>(null);
 
@@ -199,7 +201,7 @@ const ProposalEvaluator = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ rfpDocuments, supplementaryDocument, proposalType, evaluationSummary }),
+          body: JSON.stringify({ rfpDocuments, supplementaryDocument, proposalType, evaluationSummary, cloudProvider }),
         }
       );
 
@@ -216,7 +218,7 @@ const ProposalEvaluator = () => {
     } finally {
       setIsGeneratingSolution(false);
     }
-  }, [files, supplementaryFile, proposalType, evaluationResult, toast]);
+  }, [files, supplementaryFile, proposalType, evaluationResult, cloudProvider, toast]);
 
   return (
     <DashboardLayout>
@@ -385,6 +387,22 @@ const ProposalEvaluator = () => {
                 )}
 
                 {/* Step 3: Generate Solution */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2 text-sm font-medium">
+                    <Cloud className="w-4 h-4 text-primary" />
+                    Cloud Provider
+                  </Label>
+                  <Select value={cloudProvider} onValueChange={setCloudProvider} disabled={isGeneratingSolution}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="aws">🟠 Amazon Web Services (AWS)</SelectItem>
+                      <SelectItem value="azure">🔵 Microsoft Azure</SelectItem>
+                      <SelectItem value="gcp">🟢 Google Cloud Platform (GCP)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button
                   className="w-full"
                   size="lg"

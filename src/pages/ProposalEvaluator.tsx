@@ -573,7 +573,7 @@ const ProposalEvaluator = () => {
                 </CardContent>
               </Card>
             ) : solutionResult ? (
-              <SolutionDashboard result={solutionResult} />
+              <SolutionDashboard result={solutionResult} diagramId={diagramId ?? undefined} />
             ) : null}
         </div>
       </div>

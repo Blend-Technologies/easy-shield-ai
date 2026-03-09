@@ -1,4 +1,4 @@
-import { Search, Sparkles, Bell, CalendarDays, Grid3X3, Plus, ChevronDown } from "lucide-react";
+import { Search, Sparkles, Bell, CalendarDays, Grid3X3, Plus, ChevronDown, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
@@ -46,6 +46,13 @@ const SparkTopNav = ({ userName }: Props) => {
           New
         </Button>
         <div className="flex items-center gap-0.5 ml-1">
+          <button
+            onClick={() => navigate("/")}
+            className="p-1.5 rounded-md hover:bg-white/10 text-spark-nav-foreground/70"
+            title="Home"
+          >
+            <Home className="w-4 h-4" />
+          </button>
           <button className="p-1.5 rounded-md hover:bg-white/10 text-spark-nav-foreground/70">
             <CalendarDays className="w-4 h-4" />
           </button>

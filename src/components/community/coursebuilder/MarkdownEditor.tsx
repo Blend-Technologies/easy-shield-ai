@@ -30,7 +30,7 @@ const TOOLBAR_ACTIONS = [
   { icon: Image, label: "Image", prefix: "![alt](", suffix: ")", placeholder: "image-url" },
 ] as const;
 
-type ToolbarItem = (typeof TOOLBAR_ACTIONS)[number];
+type ToolbarItem = { icon: any; label: string; prefix: string; suffix: string; placeholder: string; line?: boolean } | { type: "separator" };
 
 const MarkdownEditor = ({ value, onChange, placeholder }: MarkdownEditorProps) => {
   const [mode, setMode] = useState<"write" | "preview">("write");

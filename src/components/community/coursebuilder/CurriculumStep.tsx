@@ -93,6 +93,7 @@ const SortableItem = ({
   updateItemMediaType,
   uploadVideo,
   uploadArticle,
+  updateItemContent,
   expandedItemIds,
   toggleItemExpanded,
 }: SortableItemProps) => {

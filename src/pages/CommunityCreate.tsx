@@ -37,7 +37,6 @@ const CommunityCreate = () => {
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = "Community name is required.";
-    if (!form.tagline.trim()) errs.tagline = "Tagline is required.";
     if (!form.category) errs.category = "Please select a category.";
     setErrors(errs);
     return Object.keys(errs).length === 0;

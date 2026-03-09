@@ -9,6 +9,7 @@ type Props = {
 };
 
 const SparkTopNav = ({ userName }: Props) => {
+  const navigate = useNavigate();
   const initials = userName
     .split(" ")
     .map((n) => n[0])

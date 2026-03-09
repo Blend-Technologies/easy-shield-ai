@@ -71,6 +71,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
           media_type: i.media_type as MediaType | null,
           video_url: i.video_url as string | null,
           article_url: (i as any).article_url as string | null,
+          content: ((i as any).content as string) || "",
           position: i.position,
         })),
     }));

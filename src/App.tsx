@@ -53,6 +53,7 @@ const App = () => (
           <Route path="/community/create" element={<CommunityCreate />} />
           <Route path="/community/hub" element={<CommunityHub />} />
           <Route path="/community/course-builder/:courseId" element={<CourseBuilder />} />
+          <Route path="/community/course/:courseId" element={<CoursePlayer />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

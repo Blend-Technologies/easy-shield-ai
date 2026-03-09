@@ -109,166 +109,180 @@ const SortableItem = ({
   const isItemExpanded = expandedItemIds.has(item.id);
 
   return (
-    <div ref={setNodeRef} style={style} className="space-y-0">
-      <div
-        className={`flex items-center gap-2 border border-border bg-background px-3 py-2.5 group ${
-          isItemExpanded ? "rounded-t-md" : "rounded-md"
-        }`}
-      >
-        <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </button>
-        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-        <span className="text-sm text-foreground font-medium">
-          {CONTENT_TYPES.find((c) => c.type === item.type)?.label ?? "Lecture"} {index + 1}:
-        </span>
-        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-        {editingId === item.id ? (
-          <Input
-            autoFocus
-            value={editingValue}
-            onChange={(e) => setEditingValue(e.target.value)}
-            onBlur={commitEdit}
-            onKeyDown={(e) => e.key === "Enter" && commitEdit()}
-            className="h-7 text-sm flex-1"
-          />
-        ) : (
-          <span
-            className="text-sm text-foreground flex-1 cursor-text"
-            onClick={() => startEdit(item.id, item.title)}
-          >
-            {item.title}
-          </span>
-        )}
-        <button
-          onClick={() => deleteItem(item.id)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded text-destructive"
-          title="Delete item"
+    <>
+      {/* keep the file input mounted so selecting "Video" can open the picker immediately */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          // allow re-selecting the same file
+          e.currentTarget.value = "";
+          if (!file) return;
+
+          try {
+            setUploading(true);
+            await uploadVideo(item.id, file);
+          } catch (err) {
+            // uploadVideo shows a toast on known failures; this ensures we don't silently swallow unexpected ones
+            console.error("Video upload failed", err);
+          } finally {
+            setUploading(false);
+          }
+        }}
+      />
+
+      <div ref={setNodeRef} style={style} className="space-y-0">
+        <div
+          className={`flex items-center gap-2 border border-border bg-background px-3 py-2.5 group ${
+            isItemExpanded ? "rounded-t-md" : "rounded-md"
+          }`}
         >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-        {showingPicker ? (
-          <button
-            className="flex items-center gap-1 text-sm font-medium text-foreground"
-            onClick={() => setContentPickerItemId(null)}
-          >
-            Select content type <X className="h-4 w-4" />
+          <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
           </button>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="border-primary text-primary hover:bg-primary/5 h-8 px-3"
-            onClick={() => setContentPickerItemId(item.id)}
+          <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm text-foreground font-medium">
+            {CONTENT_TYPES.find((c) => c.type === item.type)?.label ?? "Lecture"} {index + 1}:
+          </span>
+          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+          {editingId === item.id ? (
+            <Input
+              autoFocus
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              onBlur={commitEdit}
+              onKeyDown={(e) => e.key === "Enter" && commitEdit()}
+              className="h-7 text-sm flex-1"
+            />
+          ) : (
+            <span
+              className="text-sm text-foreground flex-1 cursor-text"
+              onClick={() => startEdit(item.id, item.title)}
+            >
+              {item.title}
+            </span>
+          )}
+          <button
+            onClick={() => deleteItem(item.id)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded text-destructive"
+            title="Delete item"
           >
-            <Plus className="h-3.5 w-3.5 mr-1" />
-            Content
-          </Button>
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+          {showingPicker ? (
+            <button
+              className="flex items-center gap-1 text-sm font-medium text-foreground"
+              onClick={() => setContentPickerItemId(null)}
+            >
+              Select content type <X className="h-4 w-4" />
+            </button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-primary text-primary hover:bg-primary/5 h-8 px-3"
+              onClick={() => setContentPickerItemId(item.id)}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Content
+            </Button>
+          )}
+          <button onClick={() => toggleItemExpanded(item.id)} className="p-1 hover:bg-muted rounded transition-colors">
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isItemExpanded ? "rotate-180" : ""}`}
+            />
+          </button>
+        </div>
+
+        {/* Content type picker */}
+        {showingPicker && (
+          <div className="border border-t-0 border-border rounded-b-md bg-background px-4 py-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Select the main type of content. Files and links can be added as resources.{" "}
+              <a href="#" className="text-primary underline">
+                Learn about content types.
+              </a>
+            </p>
+            <div className="flex gap-4">
+              {([
+                { key: "video" as MediaType, label: "Video", icon: <Play className="h-6 w-6" /> },
+                {
+                  key: "mashup" as MediaType,
+                  label: "Video & Slide Mashup",
+                  icon: (
+                    <>
+                      <Play className="h-5 w-5" />
+                      <FileText className="h-4 w-4 -ml-1" />
+                    </>
+                  ),
+                },
+                { key: "article" as MediaType, label: "Article", icon: <FileText className="h-6 w-6" /> },
+              ]).map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => {
+                    updateItemMediaType(item.id, opt.key);
+                    setContentPickerItemId(null);
+
+                    // For video-based content, open the file picker immediately (what you asked for).
+                    if (opt.key !== "article") {
+                      if (!isItemExpanded) toggleItemExpanded(item.id);
+                      fileInputRef.current?.click();
+                    }
+                  }}
+                  className={`flex flex-col items-center gap-2 border rounded-lg p-4 w-28 transition-colors ${
+                    item.media_type === opt.key
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                  }`}
+                >
+                  <div className="flex items-center justify-center h-10 w-10 rounded bg-muted">{opt.icon}</div>
+                  <span className="text-xs font-medium text-center leading-tight">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
-        <button onClick={() => toggleItemExpanded(item.id)} className="p-1 hover:bg-muted rounded transition-colors">
-          <ChevronDown
-            className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isItemExpanded ? "rotate-180" : ""}`}
-          />
-        </button>
+
+        {/* Expanded item details */}
+        {isItemExpanded && !showingPicker && (
+          <div className="border border-t-0 border-border rounded-b-md bg-muted/30 px-4 py-4">
+            <div className="text-sm text-muted-foreground">
+              {item.media_type ? (
+                <div className="space-y-3">
+                  <p className="font-medium text-foreground">
+                    Content type:{" "}
+                    <span className="capitalize">{item.media_type === "mashup" ? "Video & Slide Mashup" : item.media_type}</span>
+                  </p>
+                  {item.media_type === "article" ? (
+                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background">
+                      <p>Add your article content here...</p>
+                    </div>
+                  ) : item.video_url ? (
+                    <video src={item.video_url} controls className="w-full max-w-2xl mx-auto rounded-lg" />
+                  ) : (
+                    <div
+                      className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background cursor-pointer hover:border-primary/50 transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm">{uploading ? "Uploading..." : "Click to upload video"}</p>
+                      <p className="text-xs mt-1 text-muted-foreground">MP4, WebM, MOV</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p>Click "+ Content" to select a content type for this item.</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Content type picker */}
-      {showingPicker && (
-        <div className="border border-t-0 border-border rounded-b-md bg-background px-4 py-4">
-          <p className="text-sm text-muted-foreground mb-4">
-            Select the main type of content. Files and links can be added as resources.{" "}
-            <a href="#" className="text-primary underline">
-              Learn about content types.
-            </a>
-          </p>
-          <div className="flex gap-4">
-            {([
-              { key: "video" as MediaType, label: "Video", icon: <Play className="h-6 w-6" /> },
-              {
-                key: "mashup" as MediaType,
-                label: "Video & Slide Mashup",
-                icon: (
-                  <>
-                    <Play className="h-5 w-5" />
-                    <FileText className="h-4 w-4 -ml-1" />
-                  </>
-                ),
-              },
-              { key: "article" as MediaType, label: "Article", icon: <FileText className="h-6 w-6" /> },
-            ]).map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => {
-                  updateItemMediaType(item.id, opt.key);
-                  setContentPickerItemId(null);
-                }}
-                className={`flex flex-col items-center gap-2 border rounded-lg p-4 w-28 transition-colors ${
-                  item.media_type === opt.key
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-border text-muted-foreground hover:border-primary hover:text-primary"
-                }`}
-              >
-                <div className="flex items-center justify-center h-10 w-10 rounded bg-muted">{opt.icon}</div>
-                <span className="text-xs font-medium text-center leading-tight">{opt.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Expanded item details */}
-      {isItemExpanded && !showingPicker && (
-        <div className="border border-t-0 border-border rounded-b-md bg-muted/30 px-4 py-4">
-          <div className="text-sm text-muted-foreground">
-            {item.media_type ? (
-              <div className="space-y-3">
-                <p className="font-medium text-foreground">
-                  Content type:{" "}
-                  <span className="capitalize">{item.media_type === "mashup" ? "Video & Slide Mashup" : item.media_type}</span>
-                </p>
-                {item.media_type === "article" ? (
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background">
-                    <p>Add your article content here...</p>
-                  </div>
-                ) : item.video_url ? (
-                  <video
-                    src={item.video_url}
-                    controls
-                    className="w-full max-w-2xl mx-auto rounded-lg"
-                  />
-                ) : (
-                  <div
-                    className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background cursor-pointer hover:border-primary/50 transition-colors"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="video/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setUploading(true);
-                          await uploadVideo(item.id, file);
-                          setUploading(false);
-                        }
-                      }}
-                    />
-                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm">{uploading ? "Uploading..." : "Click to upload video"}</p>
-                    <p className="text-xs mt-1 text-muted-foreground">MP4, WebM, MOV</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p>Click "+ Content" to select a content type for this item.</p>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 

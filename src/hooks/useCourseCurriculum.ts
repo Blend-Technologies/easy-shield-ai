@@ -11,6 +11,7 @@ export interface CourseItem {
   title: string;
   type: ContentType;
   media_type: MediaType | null;
+  video_url: string | null;
   position: number;
 }
 

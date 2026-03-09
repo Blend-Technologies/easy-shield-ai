@@ -1,17 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  X,
-  Maximize2,
-  Copy,
-  PlusCircle,
-  Globe,
-  Paperclip,
-  Play,
-  Image,
-  Smile,
-  BarChart2,
-  Mic,
-  ChevronDown,
+  X, Maximize2, Copy, PlusCircle, Globe, Paperclip,
+  Play, Image, Smile, BarChart2, Mic, ChevronDown, Loader2,
 } from "lucide-react";
 
 const SPACES = ["Community", "Course", "Events", "Insights"];
@@ -19,32 +9,33 @@ const SPACES = ["Community", "Course", "Events", "Insights"];
 interface CreatePostModalProps {
   open: boolean;
   onClose: () => void;
+  onPublish: (title: string, body: string, channel: string) => Promise<void>;
 }
 
-const CreatePostModal = ({ open, onClose }: CreatePostModalProps) => {
+const CreatePostModal = ({ open, onClose, onPublish }: CreatePostModalProps) => {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [space, setSpace] = useState("");
+  const [space, setSpace] = useState("Community");
   const [spaceOpen, setSpaceOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const spaceDropdownRef = useRef<HTMLDivElement>(null);
 
-  const canPublish = body.trim().length > 0;
+  const canPublish = body.trim().length > 0 && !publishing;
 
-  // Auto-focus body when modal opens
   useEffect(() => {
     if (open) {
       setTimeout(() => bodyRef.current?.focus(), 80);
     } else {
       setTitle("");
       setBody("");
-      setSpace("");
+      setSpace("Community");
       setExpanded(false);
+      setPublishing(false);
     }
   }, [open]);
 
-  // Close space dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (spaceDropdownRef.current && !spaceDropdownRef.current.contains(e.target as Node)) {
@@ -55,16 +46,20 @@ const CreatePostModal = ({ open, onClose }: CreatePostModalProps) => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
   if (!open) return null;
+
+  const handlePublish = async () => {
+    if (!canPublish) return;
+    setPublishing(true);
+    await onPublish(title, body, space);
+    setPublishing(false);
+  };
 
   const modalHeight = expanded ? "h-screen max-h-screen rounded-none" : "max-h-[750px] rounded-xl";
   const modalWidth = expanded ? "w-screen" : "w-full max-w-[930px]";
@@ -118,7 +113,6 @@ const CreatePostModal = ({ open, onClose }: CreatePostModalProps) => {
 
         {/* Body */}
         <div className="flex-1 flex flex-col overflow-y-auto px-6 pt-5 pb-2 gap-3">
-          {/* Title input */}
           <input
             type="text"
             placeholder="Title (optional)"
@@ -126,8 +120,6 @@ const CreatePostModal = ({ open, onClose }: CreatePostModalProps) => {
             onChange={(e) => setTitle(e.target.value)}
             className="w-full text-2xl font-semibold text-gray-900 placeholder:text-gray-300 placeholder:font-semibold outline-none bg-transparent border-none"
           />
-
-          {/* Body textarea */}
           <textarea
             ref={bodyRef}
             placeholder="Write something…"
@@ -151,8 +143,6 @@ const CreatePostModal = ({ open, onClose }: CreatePostModalProps) => {
                 <Icon className="w-[18px] h-[18px]" />
               </button>
             ))}
-
-            {/* GIF text button */}
             <button
               title="GIF"
               className="h-8 px-1.5 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-xs font-bold tracking-tight"
@@ -163,13 +153,12 @@ const CreatePostModal = ({ open, onClose }: CreatePostModalProps) => {
 
           {/* Right side: space selector + publish */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Space dropdown */}
             <div className="relative" ref={spaceDropdownRef}>
               <button
                 onClick={() => setSpaceOpen(!spaceOpen)}
                 className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap"
               >
-                {space || "Choose a space to post in"}
+                {space}
                 <ChevronDown className="w-3.5 h-3.5" />
               </button>
               {spaceOpen && (
@@ -189,17 +178,17 @@ const CreatePostModal = ({ open, onClose }: CreatePostModalProps) => {
               )}
             </div>
 
-            {/* Publish button */}
             <button
               disabled={!canPublish}
-              onClick={onClose}
-              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+              onClick={handlePublish}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
                 canPublish
                   ? "bg-[#1a2b5e] hover:bg-[#16275a] text-white cursor-pointer shadow-sm"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
             >
-              Publish
+              {publishing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {publishing ? "Publishing…" : "Publish"}
             </button>
           </div>
         </div>

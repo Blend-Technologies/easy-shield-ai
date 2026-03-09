@@ -606,6 +606,7 @@ const CurriculumStep = ({ courseId }: Props) => {
                             setContentPickerItemId={setContentPickerItemId}
                             updateItemMediaType={updateItemMediaType}
                             uploadVideo={uploadVideo}
+                            uploadArticle={uploadArticle}
                             expandedItemIds={expandedItemIds}
                             toggleItemExpanded={toggleItemExpanded}
                           />

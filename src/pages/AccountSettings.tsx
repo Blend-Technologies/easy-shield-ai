@@ -112,7 +112,7 @@ const AccountSettings = () => {
         </div>
 
         {/* Nav Sections */}
-        {SIDEBAR_ITEMS.map((section) => (
+        {sidebarItems.map((section) => (
           <div key={section.section} className="px-4 mb-4">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">{section.section}</p>
             <div className="flex flex-col gap-0.5">

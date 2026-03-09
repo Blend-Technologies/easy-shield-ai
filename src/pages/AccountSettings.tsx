@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 
 const SIDEBAR_ITEMS = [
   {
-    section: "User Settings",
+    section: "Admin Settings",
     items: [
       { label: "My Account", icon: User, id: "account" },
       { label: "Notifications", icon: Bell, id: "notifications" },

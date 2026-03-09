@@ -235,11 +235,11 @@ const CurriculumStep = () => {
                     className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2.5 group"
                   >
                     <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
-                    <div className="h-2.5 w-2.5 rounded-full bg-foreground shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                     <span className="text-sm text-foreground font-medium">
                       {CONTENT_TYPES.find((c) => c.type === item.type)?.label ?? "Lecture"} {iIdx + 1}:
                     </span>
-                    <div className="h-2.5 w-2.5 rounded-full bg-foreground shrink-0" />
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                     {editingId === item.id ? (
                       <Input
                         autoFocus
@@ -257,49 +257,29 @@ const CurriculumStep = () => {
                         {item.title}
                       </span>
                     )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-primary text-primary hover:bg-primary/5 h-8 px-3"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      Content
+                    </Button>
                     <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                   </div>
                 ))}
 
-                {/* Add content row */}
-                {section.showAddRow ? (
-                  <div className="flex items-center gap-1 flex-wrap pt-1">
-                    <button
-                      className="text-muted-foreground hover:text-foreground mr-1"
-                      onClick={() => toggleAddRow(section.id, false)}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                    {CONTENT_TYPES.map((ct) => (
-                      <button
-                        key={ct.type}
-                        disabled={ct.muted}
-                        className={`flex items-center gap-1 text-sm px-2 py-1 rounded transition-colors ${
-                          ct.muted
-                            ? "text-muted-foreground/50 cursor-not-allowed"
-                            : "text-[#7C3AED] hover:bg-[#7C3AED]/5"
-                        }`}
-                        onClick={() => !ct.muted && addItem(section.id, ct.type)}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        {ct.label}
-                        {ct.badge && (
-                          <Badge className="bg-emerald-500 text-white border-0 text-[10px] px-1.5 py-0 h-4">
-                            {ct.badge}
-                          </Badge>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <button
-                    className="flex items-center gap-1 text-sm text-[#7C3AED] hover:bg-[#7C3AED]/5 px-2 py-1 rounded mt-1"
-                    onClick={() => toggleAddRow(section.id, true)}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Add content
-                  </button>
-                )}
+                {/* Add curriculum item button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary/5 gap-1 mt-2"
+                  onClick={() => addItem(section.id, "lecture")}
+                >
+                  <Plus className="h-4 w-4" />
+                  Curriculum item
+                </Button>
               </div>
             )}
           </div>

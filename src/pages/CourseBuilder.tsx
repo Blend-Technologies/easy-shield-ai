@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +78,7 @@ const PlaceholderStep = ({ label }: { label: string }) => (
 
 const CourseBuilder = () => {
   const navigate = useNavigate();
+  const { courseId } = useParams<{ courseId: string }>();
   const { isAdmin, loading } = useIsAdmin();
   const [activeStep, setActiveStep] = useState<StepId>("intended-learners");
   const [completed, setCompleted] = useState(INITIAL_COMPLETED);
@@ -101,7 +102,7 @@ const CourseBuilder = () => {
       case "intended-learners":
         return <IntendedLearnersStep objectives={objectives} onChange={setObjectives} />;
       case "curriculum":
-        return <CurriculumStep />;
+        return courseId ? <CurriculumStep courseId={courseId} /> : <PlaceholderStep label="No course selected" />;
       default:
         return <PlaceholderStep label={activeLabel} />;
     }

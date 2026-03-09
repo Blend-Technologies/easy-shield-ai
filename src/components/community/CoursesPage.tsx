@@ -329,7 +329,18 @@ const CoursesPage = () => {
         <div className="flex items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-bold text-foreground">Courses</h1>
           {!adminLoading && isAdmin ? (
-            <Button type="button" onClick={() => navigate("/community/course-builder")} className="gap-2">
+            <Button type="button" onClick={async () => {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) return;
+              const { data, error } = await supabase
+                .from("courses")
+                .insert({ title: "Untitled Course", created_by: user.id })
+                .select()
+                .single();
+              if (data && !error) {
+                navigate(`/community/course-builder/${data.id}`);
+              }
+            }} className="gap-2">
               <Plus className="h-4 w-4" />
               Add course
             </Button>
@@ -375,7 +386,7 @@ const CoursesPage = () => {
                 progress={0}
                 hasAccess={hasAccess}
                 isAdmin={!adminLoading && isAdmin}
-                onEdit={() => openEdit(course)}
+                onEdit={() => navigate(`/community/course-builder/${course.id}`)}
                 onDelete={() => deleteCourse(course.id)}
               />
             );

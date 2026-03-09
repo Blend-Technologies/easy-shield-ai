@@ -8,6 +8,7 @@ import {
   Info,
   Play,
   Plus,
+  Trash2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,25 +20,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-type ContentType = "lecture" | "quiz" | "coding-exercise" | "practice-test" | "assignment" | "role-play";
-
-type MediaType = "video" | "mashup" | "article";
-
-interface LectureItem {
-  id: string;
-  title: string;
-  type: ContentType;
-  mediaType?: MediaType;
-}
-
-interface Section {
-  id: string;
-  title: string;
-  expanded: boolean;
-  showAddRow: boolean;
-  items: LectureItem[];
-}
+import {
+  useCourseCurriculum,
+  type ContentType,
+  type MediaType,
+} from "@/hooks/useCourseCurriculum";
 
 const CONTENT_TYPES: { type: ContentType; label: string; badge?: string; muted?: boolean }[] = [
   { type: "lecture", label: "Lecture", badge: "With lab" },
@@ -48,28 +35,23 @@ const CONTENT_TYPES: { type: ContentType; label: string; badge?: string; muted?:
   { type: "role-play", label: "Role Play" },
 ];
 
-const INITIAL_SECTIONS: Section[] = [
-  {
-    id: "s1",
-    title: "Introduction",
-    expanded: true,
-    showAddRow: true,
-    items: [{ id: "l1", title: "Introduction", type: "lecture" }],
-  },
-  {
-    id: "s2",
-    title: "What are AI Agents?",
-    expanded: true,
-    showAddRow: false,
-    items: [{ id: "l2", title: "What are AI Agents?", type: "lecture" }],
-  },
-];
+interface Props {
+  courseId: string;
+}
 
-let nextId = 100;
-const genId = () => `item-${nextId++}`;
+const CurriculumStep = ({ courseId }: Props) => {
+  const {
+    sections,
+    loading,
+    addSection,
+    updateSectionTitle,
+    deleteSection,
+    addItem,
+    updateItemTitle,
+    updateItemMediaType,
+    deleteItem,
+  } = useCourseCurriculum(courseId);
 
-const CurriculumStep = () => {
-  const [sections, setSections] = useState<Section[]>(INITIAL_SECTIONS);
   const [infoBannerVisible, setInfoBannerVisible] = useState(true);
   const [newBannerVisible, setNewBannerVisible] = useState(true);
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -77,58 +59,35 @@ const CurriculumStep = () => {
   const [editingValue, setEditingValue] = useState("");
   const [contentPickerItemId, setContentPickerItemId] = useState<string | null>(null);
   const [expandedItemIds, setExpandedItemIds] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [showAddRowSections, setShowAddRowSections] = useState<Set<string>>(new Set());
 
   const toggleItemExpanded = (itemId: string) => {
     setExpandedItemIds((prev) => {
       const next = new Set(prev);
-      if (next.has(itemId)) {
-        next.delete(itemId);
-      } else {
-        next.add(itemId);
-      }
+      next.has(itemId) ? next.delete(itemId) : next.add(itemId);
       return next;
     });
   };
 
-  const setMediaType = (sectionId: string, itemId: string, media: MediaType) => {
-    setSections((prev) =>
-      prev.map((s) =>
-        s.id === sectionId
-          ? { ...s, items: s.items.map((it) => (it.id === itemId ? { ...it, mediaType: media } : it)) }
-          : s
-      )
-    );
+  const toggleSectionExpanded = (sectionId: string) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      next.has(sectionId) ? next.delete(sectionId) : next.add(sectionId);
+      return next;
+    });
   };
 
-  const updateSection = (sectionId: string, updater: (s: Section) => Section) => {
-    setSections((prev) => prev.map((s) => (s.id === sectionId ? updater(s) : s)));
-  };
+  const isSectionExpanded = (sectionId: string) =>
+    !expandedSections.has(sectionId); // expanded by default
 
-  const toggleExpand = (sectionId: string) =>
-    updateSection(sectionId, (s) => ({ ...s, expanded: !s.expanded }));
-
-  const toggleAddRow = (sectionId: string, show?: boolean) =>
-    updateSection(sectionId, (s) => ({ ...s, showAddRow: show ?? !s.showAddRow }));
-
-  const addItem = (sectionId: string, type: ContentType) => {
-    const label = CONTENT_TYPES.find((c) => c.type === type)?.label ?? "Item";
-    updateSection(sectionId, (s) => ({
-      ...s,
-      items: [...s.items, { id: genId(), title: `New ${label}`, type }],
-    }));
-  };
-
-  const addSection = () => {
-    setSections((prev) => [
-      ...prev,
-      {
-        id: genId(),
-        title: "New Section",
-        expanded: true,
-        showAddRow: false,
-        items: [],
-      },
-    ]);
+  const toggleAddRow = (sectionId: string, show?: boolean) => {
+    setShowAddRowSections((prev) => {
+      const next = new Set(prev);
+      const shouldShow = show ?? !next.has(sectionId);
+      shouldShow ? next.add(sectionId) : next.delete(sectionId);
+      return next;
+    });
   };
 
   const startEdit = (id: string, currentTitle: string) => {
@@ -136,20 +95,33 @@ const CurriculumStep = () => {
     setEditingValue(currentTitle);
   };
 
-  const commitEdit = () => {
+  const commitEdit = async () => {
     if (!editingId) return;
     const val = editingValue.trim() || "Untitled";
-    setSections((prev) =>
-      prev.map((s) => {
-        if (s.id === editingId) return { ...s, title: val };
-        return {
-          ...s,
-          items: s.items.map((it) => (it.id === editingId ? { ...it, title: val } : it)),
-        };
-      })
-    );
+    // Check if it's a section or item
+    const isSection = sections.some((s) => s.id === editingId);
+    if (isSection) {
+      await updateSectionTitle(editingId, val);
+    } else {
+      await updateItemTitle(editingId, val);
+    }
     setEditingId(null);
   };
+
+  const handleAddItem = async (sectionId: string, type: ContentType) => {
+    const label = CONTENT_TYPES.find((c) => c.type === type)?.label ?? "Item";
+    await addItem(sectionId, type, `New ${label}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl">
+        <h1 className="text-2xl font-bold text-foreground">Curriculum</h1>
+        <div className="border-b border-border my-4" />
+        <p className="text-muted-foreground text-sm">Loading curriculum...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl">
@@ -159,7 +131,7 @@ const CurriculumStep = () => {
         <Button
           type="button"
           variant="outline"
-          className="border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/5"
+          className="border-primary text-primary hover:bg-primary/5"
           onClick={() => setBulkOpen(true)}
         >
           Bulk Uploader
@@ -179,7 +151,7 @@ const CurriculumStep = () => {
               type="button"
               variant="outline"
               size="sm"
-              className="mt-2 border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/5"
+              className="mt-2 border-primary text-primary hover:bg-primary/5"
               onClick={() => setInfoBannerVisible(false)}
             >
               Dismiss
@@ -194,7 +166,7 @@ const CurriculumStep = () => {
         <a href="#" className="text-primary underline">quizzes, coding exercises and assignments</a>
         ). Use your{" "}
         <a href="#" className="text-primary underline">course outline</a>{" "}
-        to structure your content and label your sections and lectures clearly. If you're intending to offer your course for free, the total length of video content must be less than 2 hours.
+        to structure your content and label your sections and lectures clearly.
       </p>
 
       {/* New feature banner */}
@@ -217,223 +189,239 @@ const CurriculumStep = () => {
 
       {/* Sections */}
       <div className="space-y-4">
-        {sections.map((section, sIdx) => (
-          <div key={section.id} className="rounded-lg border border-border bg-card overflow-hidden">
-            {/* Section header */}
-            <button
-              className="w-full flex items-center gap-2 px-4 py-3 hover:bg-muted/30 group text-left"
-              onClick={() => toggleExpand(section.id)}
-            >
-              <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
-              {section.expanded ? (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              )}
-              <span className="font-bold text-sm text-foreground">Section {sIdx + 1}:</span>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              {editingId === section.id ? (
-                <Input
-                  autoFocus
-                  value={editingValue}
-                  onChange={(e) => setEditingValue(e.target.value)}
-                  onBlur={commitEdit}
-                  onKeyDown={(e) => e.key === "Enter" && commitEdit()}
-                  onClick={(e) => e.stopPropagation()}
-                  className="h-7 text-sm max-w-xs"
-                />
-              ) : (
-                <span
-                  className="text-sm text-foreground cursor-text"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    startEdit(section.id, section.title);
-                  }}
-                >
-                  {section.title}
-                </span>
-              )}
-            </button>
-
-            {/* Lectures */}
-            {section.expanded && (
-              <div className="px-4 pb-3 space-y-2">
-                {section.items.map((item, iIdx) => {
-                  const showingPicker = contentPickerItemId === item.id;
-                  const isExpanded = expandedItemIds.has(item.id);
-                  return (
-                    <div key={item.id} className="space-y-0">
-                      <div className={`flex items-center gap-2 border border-border bg-background px-3 py-2.5 group ${isExpanded ? "rounded-t-md" : "rounded-md"}`}>
-                        <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                        <span className="text-sm text-foreground font-medium">
-                          {CONTENT_TYPES.find((c) => c.type === item.type)?.label ?? "Lecture"} {iIdx + 1}:
-                        </span>
-                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                        {editingId === item.id ? (
-                          <Input
-                            autoFocus
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            onBlur={commitEdit}
-                            onKeyDown={(e) => e.key === "Enter" && commitEdit()}
-                            className="h-7 text-sm flex-1"
-                          />
-                        ) : (
-                          <span
-                            className="text-sm text-foreground flex-1 cursor-text"
-                            onClick={() => startEdit(item.id, item.title)}
-                          >
-                            {item.title}
-                          </span>
-                        )}
-                        {showingPicker ? (
-                          <button
-                            className="flex items-center gap-1 text-sm font-medium text-foreground"
-                            onClick={() => setContentPickerItemId(null)}
-                          >
-                            Select content type <X className="h-4 w-4" />
-                          </button>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="border-primary text-primary hover:bg-primary/5 h-8 px-3"
-                            onClick={() => setContentPickerItemId(item.id)}
-                          >
-                            <Plus className="h-3.5 w-3.5 mr-1" />
-                            Content
-                          </Button>
-                        )}
-                        <button
-                          onClick={() => toggleItemExpanded(item.id)}
-                          className="p-1 hover:bg-muted rounded transition-colors"
-                        >
-                          <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                        </button>
-                      </div>
-
-                      {/* Content type picker */}
-                      {showingPicker && (
-                        <div className="border border-t-0 border-border rounded-b-md bg-background px-4 py-4">
-                          <p className="text-sm text-muted-foreground mb-4">
-                            Select the main type of content. Files and links can be added as resources.{" "}
-                            <a href="#" className="text-primary underline">Learn about content types.</a>
-                          </p>
-                          <div className="flex gap-4">
-                            {[
-                              { key: "video" as MediaType, label: "Video", icon: <Play className="h-6 w-6" /> },
-                              { key: "mashup" as MediaType, label: "Video & Slide Mashup", icon: <><Play className="h-5 w-5" /><FileText className="h-4 w-4 -ml-1" /></> },
-                              { key: "article" as MediaType, label: "Article", icon: <FileText className="h-6 w-6" /> },
-                            ].map((opt) => (
-                              <button
-                                key={opt.key}
-                                onClick={() => {
-                                  setMediaType(section.id, item.id, opt.key);
-                                  setContentPickerItemId(null);
-                                }}
-                                className={`flex flex-col items-center gap-2 border rounded-lg p-4 w-28 transition-colors ${
-                                  item.mediaType === opt.key
-                                    ? "border-primary bg-primary/5 text-primary"
-                                    : "border-border text-muted-foreground hover:border-primary hover:text-primary"
-                                }`}
-                              >
-                                <div className="flex items-center justify-center h-10 w-10 rounded bg-muted">
-                                  {opt.icon}
-                                </div>
-                                <span className="text-xs font-medium text-center leading-tight">{opt.label}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Expanded item details */}
-                      {isExpanded && !showingPicker && (
-                        <div className="border border-t-0 border-border rounded-b-md bg-muted/30 px-4 py-4">
-                          <div className="text-sm text-muted-foreground">
-                            {item.mediaType ? (
-                              <div className="space-y-3">
-                                <p className="font-medium text-foreground">
-                                  Content type: <span className="capitalize">{item.mediaType === "mashup" ? "Video & Slide Mashup" : item.mediaType}</span>
-                                </p>
-                                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background">
-                                  {item.mediaType === "article" ? (
-                                    <p>Add your article content here...</p>
-                                  ) : (
-                                    <p>Drag and drop your video file here, or click to browse.</p>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <p>Click "+ Content" to select a content type for this item.</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Add curriculum item row */}
-                {section.showAddRow ? (
-                  <div className="flex items-center gap-1 flex-wrap pt-1 border border-dashed border-border rounded-md px-3 py-2.5">
-                    <button
-                      className="text-muted-foreground hover:text-foreground mr-1"
-                      onClick={() => toggleAddRow(section.id, false)}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                    {CONTENT_TYPES.map((ct) => (
-                      <button
-                        key={ct.type}
-                        disabled={ct.muted}
-                        className={`flex items-center gap-1 text-sm px-2 py-1 rounded transition-colors font-medium ${
-                          ct.muted
-                            ? "text-muted-foreground/50 cursor-not-allowed"
-                            : "text-primary hover:bg-primary/5"
-                        }`}
-                        onClick={() => {
-                          if (!ct.muted) {
-                            addItem(section.id, ct.type);
-                            toggleAddRow(section.id, false);
-                          }
-                        }}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        {ct.label}
-                        {ct.badge && (
-                          <Badge className="bg-emerald-500 text-white border-0 text-[10px] px-1.5 py-0 h-4">
-                            {ct.badge}
-                          </Badge>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+        {sections.map((section, sIdx) => {
+          const expanded = isSectionExpanded(section.id);
+          return (
+            <div key={section.id} className="rounded-lg border border-border bg-card overflow-hidden">
+              {/* Section header */}
+              <div className="w-full flex items-center gap-2 px-4 py-3 hover:bg-muted/30 group text-left">
+                <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+                <button onClick={() => toggleSectionExpanded(section.id)}>
+                  {expanded ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+                <span className="font-bold text-sm text-foreground">Section {sIdx + 1}:</span>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                {editingId === section.id ? (
+                  <Input
+                    autoFocus
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    onBlur={commitEdit}
+                    onKeyDown={(e) => e.key === "Enter" && commitEdit()}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-7 text-sm max-w-xs"
+                  />
                 ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-primary text-primary hover:bg-primary/5 gap-1 mt-2"
-                    onClick={() => toggleAddRow(section.id, true)}
+                  <span
+                    className="text-sm text-foreground cursor-text flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEdit(section.id, section.title);
+                    }}
                   >
-                    <Plus className="h-4 w-4" />
-                    Curriculum item
-                  </Button>
+                    {section.title}
+                  </span>
                 )}
+                <button
+                  onClick={() => deleteSection(section.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded text-destructive"
+                  title="Delete section"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Items */}
+              {expanded && (
+                <div className="px-4 pb-3 space-y-2">
+                  {section.items.map((item, iIdx) => {
+                    const showingPicker = contentPickerItemId === item.id;
+                    const isItemExpanded = expandedItemIds.has(item.id);
+                    return (
+                      <div key={item.id} className="space-y-0">
+                        <div className={`flex items-center gap-2 border border-border bg-background px-3 py-2.5 group ${isItemExpanded ? "rounded-t-md" : "rounded-md"}`}>
+                          <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+                          <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                          <span className="text-sm text-foreground font-medium">
+                            {CONTENT_TYPES.find((c) => c.type === item.type)?.label ?? "Lecture"} {iIdx + 1}:
+                          </span>
+                          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                          {editingId === item.id ? (
+                            <Input
+                              autoFocus
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              onBlur={commitEdit}
+                              onKeyDown={(e) => e.key === "Enter" && commitEdit()}
+                              className="h-7 text-sm flex-1"
+                            />
+                          ) : (
+                            <span
+                              className="text-sm text-foreground flex-1 cursor-text"
+                              onClick={() => startEdit(item.id, item.title)}
+                            >
+                              {item.title}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => deleteItem(item.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded text-destructive"
+                            title="Delete item"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                          {showingPicker ? (
+                            <button
+                              className="flex items-center gap-1 text-sm font-medium text-foreground"
+                              onClick={() => setContentPickerItemId(null)}
+                            >
+                              Select content type <X className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="border-primary text-primary hover:bg-primary/5 h-8 px-3"
+                              onClick={() => setContentPickerItemId(item.id)}
+                            >
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              Content
+                            </Button>
+                          )}
+                          <button
+                            onClick={() => toggleItemExpanded(item.id)}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                          >
+                            <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isItemExpanded ? "rotate-180" : ""}`} />
+                          </button>
+                        </div>
+
+                        {/* Content type picker */}
+                        {showingPicker && (
+                          <div className="border border-t-0 border-border rounded-b-md bg-background px-4 py-4">
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Select the main type of content. Files and links can be added as resources.{" "}
+                              <a href="#" className="text-primary underline">Learn about content types.</a>
+                            </p>
+                            <div className="flex gap-4">
+                              {([
+                                { key: "video" as MediaType, label: "Video", icon: <Play className="h-6 w-6" /> },
+                                { key: "mashup" as MediaType, label: "Video & Slide Mashup", icon: <><Play className="h-5 w-5" /><FileText className="h-4 w-4 -ml-1" /></> },
+                                { key: "article" as MediaType, label: "Article", icon: <FileText className="h-6 w-6" /> },
+                              ]).map((opt) => (
+                                <button
+                                  key={opt.key}
+                                  onClick={() => {
+                                    updateItemMediaType(item.id, opt.key);
+                                    setContentPickerItemId(null);
+                                  }}
+                                  className={`flex flex-col items-center gap-2 border rounded-lg p-4 w-28 transition-colors ${
+                                    item.media_type === opt.key
+                                      ? "border-primary bg-primary/5 text-primary"
+                                      : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-center h-10 w-10 rounded bg-muted">
+                                    {opt.icon}
+                                  </div>
+                                  <span className="text-xs font-medium text-center leading-tight">{opt.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Expanded item details */}
+                        {isItemExpanded && !showingPicker && (
+                          <div className="border border-t-0 border-border rounded-b-md bg-muted/30 px-4 py-4">
+                            <div className="text-sm text-muted-foreground">
+                              {item.media_type ? (
+                                <div className="space-y-3">
+                                  <p className="font-medium text-foreground">
+                                    Content type: <span className="capitalize">{item.media_type === "mashup" ? "Video & Slide Mashup" : item.media_type}</span>
+                                  </p>
+                                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background">
+                                    {item.media_type === "article" ? (
+                                      <p>Add your article content here...</p>
+                                    ) : (
+                                      <p>Drag and drop your video file here, or click to browse.</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <p>Click "+ Content" to select a content type for this item.</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Add curriculum item row */}
+                  {showAddRowSections.has(section.id) ? (
+                    <div className="flex items-center gap-1 flex-wrap pt-1 border border-dashed border-border rounded-md px-3 py-2.5">
+                      <button
+                        className="text-muted-foreground hover:text-foreground mr-1"
+                        onClick={() => toggleAddRow(section.id, false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      {CONTENT_TYPES.map((ct) => (
+                        <button
+                          key={ct.type}
+                          disabled={ct.muted}
+                          className={`flex items-center gap-1 text-sm px-2 py-1 rounded transition-colors font-medium ${
+                            ct.muted
+                              ? "text-muted-foreground/50 cursor-not-allowed"
+                              : "text-primary hover:bg-primary/5"
+                          }`}
+                          onClick={() => {
+                            if (!ct.muted) {
+                              handleAddItem(section.id, ct.type);
+                              toggleAddRow(section.id, false);
+                            }
+                          }}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          {ct.label}
+                          {ct.badge && (
+                            <Badge className="bg-emerald-500 text-white border-0 text-[10px] px-1.5 py-0 h-4">
+                              {ct.badge}
+                            </Badge>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-primary text-primary hover:bg-primary/5 gap-1 mt-2"
+                      onClick={() => toggleAddRow(section.id, true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Curriculum item
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Add section */}
       <Button
         type="button"
         variant="outline"
-        className="mt-4 border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/5 gap-1"
-        onClick={addSection}
+        className="mt-4 border-primary text-primary hover:bg-primary/5 gap-1"
+        onClick={() => addSection()}
       >
         <Plus className="h-4 w-4" />
         Section

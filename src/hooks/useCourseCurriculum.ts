@@ -67,6 +67,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
           title: i.title,
           type: i.type as ContentType,
           media_type: i.media_type as MediaType | null,
+          video_url: i.video_url as string | null,
           position: i.position,
         })),
     }));

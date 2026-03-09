@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, MessageCircle, Bookmark, Search, X, ArrowLeft } from "lucide-react";
+import { Bell, MessageCircle, Bookmark, Search, X, ArrowLeft, Settings, LogOut } from "lucide-react";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 interface CommunityTopNavProps {
   communityName: string;

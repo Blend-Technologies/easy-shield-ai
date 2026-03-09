@@ -1,4 +1,5 @@
 import { Lock, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -200,6 +201,7 @@ const CourseCard = ({
 );
 
 const CoursesPage = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
 
@@ -327,7 +329,7 @@ const CoursesPage = () => {
         <div className="flex items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-bold text-foreground">Courses</h1>
           {!adminLoading && isAdmin ? (
-            <Button type="button" onClick={openCreate} className="gap-2">
+            <Button type="button" onClick={() => navigate("/community/course-builder")} className="gap-2">
               <Plus className="h-4 w-4" />
               Add course
             </Button>

@@ -21,6 +21,7 @@ import DiagramEditor from "./pages/DiagramEditor";
 import NotFound from "./pages/NotFound";
 import CommunityCreate from "./pages/CommunityCreate";
 import CommunityHub from "./pages/CommunityHub";
+import CourseBuilder from "./pages/CourseBuilder";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
           <Route path="/dashboard/diagram/:diagramId" element={<DiagramEditor />} />
           <Route path="/community/create" element={<CommunityCreate />} />
           <Route path="/community/hub" element={<CommunityHub />} />
+          <Route path="/community/course-builder" element={<CourseBuilder />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

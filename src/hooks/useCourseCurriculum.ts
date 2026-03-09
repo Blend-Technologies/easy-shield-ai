@@ -181,6 +181,45 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
     );
   };
 
+  const reorderSections = async (oldIndex: number, newIndex: number) => {
+    const reordered = [...sections];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+    
+    // Update positions
+    const updates = reordered.map((s, idx) => ({ id: s.id, position: idx }));
+    setSections(reordered.map((s, idx) => ({ ...s, position: idx })));
+    
+    // Persist to database
+    for (const { id, position } of updates) {
+      await supabase.from("course_sections").update({ position }).eq("id", id);
+    }
+  };
+
+  const reorderItems = async (sectionId: string, oldIndex: number, newIndex: number) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== sectionId) return s;
+        const items = [...s.items];
+        const [moved] = items.splice(oldIndex, 1);
+        items.splice(newIndex, 0, moved);
+        return { ...s, items: items.map((item, idx) => ({ ...item, position: idx })) };
+      })
+    );
+
+    // Get updated items for this section
+    const section = sections.find((s) => s.id === sectionId);
+    if (!section) return;
+    const items = [...section.items];
+    const [moved] = items.splice(oldIndex, 1);
+    items.splice(newIndex, 0, moved);
+    
+    // Persist to database
+    for (let i = 0; i < items.length; i++) {
+      await supabase.from("course_items").update({ position: i }).eq("id", items[i].id);
+    }
+  };
+
   return {
     sections,
     loading,
@@ -191,6 +230,8 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
     updateItemTitle,
     updateItemMediaType,
     deleteItem,
+    reorderSections,
+    reorderItems,
     refetch: fetchCurriculum,
   };
 };

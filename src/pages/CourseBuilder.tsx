@@ -29,7 +29,7 @@ const makeSections = (completed: Record<StepId, boolean>) => [
   {
     title: "Create your content",
     items: [
-      { id: "film-edit" as StepId, label: "Film & edit", completed: completed["film-edit"] },
+      { id: "curriculum" as StepId, label: "Curriculum", completed: completed["curriculum"] },
       { id: "curriculum" as StepId, label: "Curriculum", completed: completed["curriculum"] },
       { id: "captions" as StepId, label: "Captions", optional: true, completed: completed["captions"] },
       { id: "accessibility" as StepId, label: "Accessibility", optional: true, completed: completed["accessibility"] },
@@ -62,7 +62,6 @@ const INITIAL_COMPLETED: Record<StepId, boolean> = {
 
 const REQUIRED_STEPS: StepId[] = [
   "intended-learners",
-  "film-edit",
   "curriculum",
   "landing-page",
   "pricing",

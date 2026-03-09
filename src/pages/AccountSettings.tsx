@@ -42,6 +42,8 @@ const ADMIN_SIDEBAR_ITEMS = [
 ];
 
 const AccountSettings = () => {
+  const { isAdmin } = useIsAdmin();
+  const sidebarItems = isAdmin ? ADMIN_SIDEBAR_ITEMS : USER_SIDEBAR_ITEMS;
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState("account");
   const [activeTab, setActiveTab] = useState("security");

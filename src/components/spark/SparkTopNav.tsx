@@ -1,6 +1,7 @@
 import { Search, Sparkles, Bell, CalendarDays, Grid3X3, Plus, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.jpeg";
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
 };
 
 const SparkTopNav = ({ userName }: Props) => {
+  const navigate = useNavigate();
   const initials = userName
     .split(" ")
     .map((n) => n[0])
@@ -18,7 +20,7 @@ const SparkTopNav = ({ userName }: Props) => {
   return (
     <header className="h-12 bg-spark-nav flex items-center px-4 gap-3 flex-shrink-0">
       {/* Logo */}
-      <div className="flex items-center gap-2 mr-4">
+      <div className="flex items-center gap-2 mr-4 cursor-pointer" onClick={() => navigate("/dashboard")}>
         <img src={logo} alt="EZShield+AI" className="h-7 w-7 rounded-md" />
       </div>
 

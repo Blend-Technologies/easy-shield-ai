@@ -134,7 +134,7 @@ const CommunityCreate = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="tagline">Tagline <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="tagline">Tagline <span className="text-muted-foreground text-xs">(optional)</span></Label>
                     <Input
                       id="tagline"
                       className="mt-1.5"
@@ -142,7 +142,6 @@ const CommunityCreate = () => {
                       value={form.tagline}
                       onChange={(e) => setForm({ ...form, tagline: e.target.value })}
                     />
-                    {errors.tagline && <p className="text-destructive text-xs mt-1">{errors.tagline}</p>}
                   </div>
 
                   <div>

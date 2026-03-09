@@ -1,14 +1,34 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Search, User, Bell, RefreshCw, CreditCard, Pencil, Eye, EyeOff } from "lucide-react";
+import { X, Search, User, Bell, RefreshCw, CreditCard, Pencil, Eye, EyeOff, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import MembersManagementPanel from "@/components/settings/MembersManagementPanel";
 
-const SIDEBAR_ITEMS = [
+const USER_SIDEBAR_ITEMS = [
+  {
+    section: "User Settings",
+    items: [
+      { label: "My Account", icon: User, id: "account" },
+      { label: "Notifications", icon: Bell, id: "notifications" },
+    ],
+  },
+  {
+    section: "Billing Settings",
+    items: [
+      { label: "Subscriptions", icon: RefreshCw, id: "subscriptions" },
+      { label: "Billing", icon: CreditCard, id: "billing" },
+    ],
+  },
+];
+
+const ADMIN_SIDEBAR_ITEMS = [
   {
     section: "Admin Settings",
     items: [
       { label: "My Account", icon: User, id: "account" },
+      { label: "Members", icon: Users, id: "members" },
       { label: "Notifications", icon: Bell, id: "notifications" },
     ],
   },

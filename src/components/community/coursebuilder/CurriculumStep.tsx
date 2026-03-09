@@ -228,7 +228,9 @@ const SortableItem = ({
                   <span className="capitalize">{item.media_type === "mashup" ? "Video & Slide Mashup" : item.media_type}</span>
                 </p>
                 {item.media_type === "article" ? (
-                  <p>Add your article content here...</p>
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background">
+                    <p>Add your article content here...</p>
+                  </div>
                 ) : item.video_url ? (
                   <video
                     src={item.video_url}
@@ -237,7 +239,7 @@ const SortableItem = ({
                   />
                 ) : (
                   <div
-                    className="cursor-pointer"
+                    className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background cursor-pointer hover:border-primary/50 transition-colors"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <input
@@ -255,8 +257,8 @@ const SortableItem = ({
                       }}
                     />
                     <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p>{uploading ? "Uploading..." : "Click to upload video, or drag and drop"}</p>
-                    <p className="text-xs mt-1">MP4, WebM, MOV up to 100MB</p>
+                    <p className="text-sm">{uploading ? "Uploading..." : "Click to upload video"}</p>
+                    <p className="text-xs mt-1 text-muted-foreground">MP4, WebM, MOV</p>
                   </div>
                 )}
               </div>

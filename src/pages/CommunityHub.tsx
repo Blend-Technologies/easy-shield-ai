@@ -81,12 +81,12 @@ const CommunityHub = () => {
         />
 
         {/* Main content */}
-        <main className={`ml-[260px] ${activeSidebarItem === "Events" ? "" : "mr-[260px]"} flex-1 min-w-0 py-8 px-6`}>
+        <main className={`ml-[260px] ${activeSidebarItem === "Community" ? "mr-[260px]" : ""} flex-1 min-w-0 py-8 px-6`}>
           {renderContent()}
         </main>
 
-        {/* Right sidebar — hidden on Events page */}
-        {activeSidebarItem !== "Events" && <CommunityRightSidebar />}
+        {/* Right sidebar — only on Community tab */}
+        {activeSidebarItem === "Community" && <CommunityRightSidebar />}
       </div>
     </div>
   );

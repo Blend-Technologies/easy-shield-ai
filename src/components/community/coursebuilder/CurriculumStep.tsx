@@ -73,6 +73,7 @@ interface SortableItemProps {
   setContentPickerItemId: (id: string | null) => void;
   updateItemMediaType: (itemId: string, mediaType: MediaType) => void;
   uploadVideo: (itemId: string, file: File) => Promise<void>;
+  uploadArticle: (itemId: string, file: File) => Promise<void>;
   expandedItemIds: Set<string>;
   toggleItemExpanded: (id: string) => void;
 }
@@ -90,11 +91,14 @@ const SortableItem = ({
   setContentPickerItemId,
   updateItemMediaType,
   uploadVideo,
+  uploadArticle,
   expandedItemIds,
   toggleItemExpanded,
 }: SortableItemProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const articleInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingArticle, setUploadingArticle] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
   });
@@ -227,10 +231,12 @@ const SortableItem = ({
                   onClick={() => {
                     updateItemMediaType(item.id, opt.key);
                     setContentPickerItemId(null);
+                    if (!isItemExpanded) toggleItemExpanded(item.id);
 
-                    // For video-based content, open the file picker immediately (what you asked for).
-                    if (opt.key !== "article") {
-                      if (!isItemExpanded) toggleItemExpanded(item.id);
+                    // Open the appropriate file picker immediately
+                    if (opt.key === "article") {
+                      articleInputRef.current?.click();
+                    } else {
                       fileInputRef.current?.click();
                     }
                   }}
@@ -259,9 +265,33 @@ const SortableItem = ({
                     <span className="capitalize">{item.media_type === "mashup" ? "Video & Slide Mashup" : item.media_type}</span>
                   </p>
                   {item.media_type === "article" ? (
-                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background">
-                      <p>Add your article content here...</p>
-                    </div>
+                    item.article_url ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 p-3 border border-border rounded-lg bg-background">
+                          <FileText className="h-5 w-5 text-primary shrink-0" />
+                          <span className="text-sm text-foreground truncate flex-1">
+                            {item.article_url.split('/').pop()}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => articleInputRef.current?.click()}
+                          >
+                            Replace
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background cursor-pointer hover:border-primary/50 transition-colors"
+                        onClick={() => articleInputRef.current?.click()}
+                      >
+                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm">{uploadingArticle ? "Uploading..." : "Click to upload article file"}</p>
+                        <p className="text-xs mt-1 text-muted-foreground">.ipynb (Jupyter Notebook), .md (Markdown)</p>
+                      </div>
+                    )
                   ) : item.video_url ? (
                     <video src={item.video_url} controls className="w-full max-w-2xl mx-auto rounded-lg" />
                   ) : (
@@ -390,6 +420,7 @@ const CurriculumStep = ({ courseId }: Props) => {
     reorderSections,
     reorderItems,
     uploadVideo,
+    uploadArticle,
   } = useCourseCurriculum(courseId);
 
   const [infoBannerVisible, setInfoBannerVisible] = useState(true);
@@ -602,6 +633,7 @@ const CurriculumStep = ({ courseId }: Props) => {
                             setContentPickerItemId={setContentPickerItemId}
                             updateItemMediaType={updateItemMediaType}
                             uploadVideo={uploadVideo}
+                            uploadArticle={uploadArticle}
                             expandedItemIds={expandedItemIds}
                             toggleItemExpanded={toggleItemExpanded}
                           />

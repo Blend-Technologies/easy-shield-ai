@@ -75,8 +75,17 @@ const CurriculumStep = () => {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
+  const [contentPickerItemId, setContentPickerItemId] = useState<string | null>(null);
 
-  const updateSection = (sectionId: string, updater: (s: Section) => Section) => {
+  const setMediaType = (sectionId: string, itemId: string, media: MediaType) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === sectionId
+          ? { ...s, items: s.items.map((it) => (it.id === itemId ? { ...it, mediaType: media } : it)) }
+          : s
+      )
+    );
+  };
     setSections((prev) => prev.map((s) => (s.id === sectionId ? updater(s) : s)));
   };
 

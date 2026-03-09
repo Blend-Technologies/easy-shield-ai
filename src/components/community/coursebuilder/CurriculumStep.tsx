@@ -227,13 +227,38 @@ const SortableItem = ({
                   Content type:{" "}
                   <span className="capitalize">{item.media_type === "mashup" ? "Video & Slide Mashup" : item.media_type}</span>
                 </p>
-                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background">
-                  {item.media_type === "article" ? (
-                    <p>Add your article content here...</p>
-                  ) : (
-                    <p>Drag and drop your video file here, or click to browse.</p>
-                  )}
-                </div>
+                {item.media_type === "article" ? (
+                  <p>Add your article content here...</p>
+                ) : item.video_url ? (
+                  <video
+                    src={item.video_url}
+                    controls
+                    className="w-full max-w-2xl mx-auto rounded-lg"
+                  />
+                ) : (
+                  <div
+                    className="cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setUploading(true);
+                          await uploadVideo(item.id, file);
+                          setUploading(false);
+                        }
+                      }}
+                    />
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p>{uploading ? "Uploading..." : "Click to upload video, or drag and drop"}</p>
+                    <p className="text-xs mt-1">MP4, WebM, MOV up to 100MB</p>
+                  </div>
+                )}
               </div>
             ) : (
               <p>Click "+ Content" to select a content type for this item.</p>

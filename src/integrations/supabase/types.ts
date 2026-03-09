@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      community_events: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          end_date: string
+          event_date: string
+          id: string
+          image_url: string | null
+          max_attendees: number | null
+          meeting_link: string | null
+          meeting_platform: string | null
+          organizer_name: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_date: string
+          event_date: string
+          id?: string
+          image_url?: string | null
+          max_attendees?: number | null
+          meeting_link?: string | null
+          meeting_platform?: string | null
+          organizer_name?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string
+          event_date?: string
+          id?: string
+          image_url?: string | null
+          max_attendees?: number | null
+          meeting_link?: string | null
+          meeting_platform?: string | null
+          organizer_name?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       community_posts: {
         Row: {
           body: string
@@ -247,6 +295,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      event_rsvps: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "community_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_bookmarks: {
         Row: {

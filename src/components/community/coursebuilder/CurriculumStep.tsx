@@ -45,6 +45,7 @@ import {
   type CourseSection,
   type CourseItem,
 } from "@/hooks/useCourseCurriculum";
+import MarkdownEditor from "./MarkdownEditor";
 
 const CONTENT_TYPES: { type: ContentType; label: string; badge?: string; muted?: boolean }[] = [
   { type: "lecture", label: "Lecture", badge: "With lab" },

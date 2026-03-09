@@ -278,6 +278,8 @@ const AccountSettings = () => {
           </div>
         )}
 
+        {activeItem === "members" && isAdmin && <MembersManagementPanel />}
+
         {activeItem === "notifications" && (
           <div className="max-w-3xl mx-auto py-8 px-6">
             <h1 className="text-xl font-bold text-gray-900 mb-4">Notifications</h1>

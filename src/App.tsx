@@ -19,6 +19,8 @@ import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import KanbanBoard from "./pages/KanbanBoard";
 import DiagramEditor from "./pages/DiagramEditor";
 import NotFound from "./pages/NotFound";
+import CommunityCreate from "./pages/CommunityCreate";
+import CommunityHub from "./pages/CommunityHub";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,8 @@ const App = () => (
           <Route path="/dashboard/:projectName/analytics" element={<AnalyticsDashboard />} />
           <Route path="/dashboard/:projectName/boards" element={<KanbanBoard />} />
           <Route path="/dashboard/diagram/:diagramId" element={<DiagramEditor />} />
+          <Route path="/community/create" element={<CommunityCreate />} />
+          <Route path="/community/hub" element={<CommunityHub />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

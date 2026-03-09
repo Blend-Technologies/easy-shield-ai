@@ -187,7 +187,7 @@ const FeaturesSection = () => {
           viewport={{ once: true }}
           className="mb-10"
         >
-          <div className="group relative rounded-2xl p-[1px] bg-gradient-to-r from-sky-aqua-400 via-electric-sapphire-400 to-indigo-bloom-400 cursor-pointer overflow-hidden">
+          <div className="group relative rounded-2xl p-[1px] bg-gradient-to-r from-sky-aqua-400 via-electric-sapphire-400 to-indigo-bloom-400 cursor-pointer overflow-hidden" onClick={() => navigate("/community/create")}>
             <div className="relative rounded-2xl bg-card/95 backdrop-blur-xl p-8 md:p-10 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-sky-aqua-400/5 via-transparent to-indigo-bloom-400/5" />
 

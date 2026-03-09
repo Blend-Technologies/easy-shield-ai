@@ -96,7 +96,9 @@ const SortableItem = ({
   toggleItemExpanded,
 }: SortableItemProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const articleInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingArticle, setUploadingArticle] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
   });

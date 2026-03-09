@@ -26,6 +26,7 @@ import {
   Play,
   Plus,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

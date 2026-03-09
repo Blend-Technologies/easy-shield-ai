@@ -4,8 +4,9 @@ import { ArrowLeft, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import CourseBuilderSidebar, { type StepId, type StepItem } from "@/components/community/CourseBuilderSidebar";
+import CourseBuilderSidebar, { type StepId } from "@/components/community/CourseBuilderSidebar";
 import IntendedLearnersStep from "@/components/community/coursebuilder/IntendedLearnersStep";
+import CurriculumStep from "@/components/community/coursebuilder/CurriculumStep";
 
 const DEFAULT_OBJECTIVES = [
   "Understand the concepts of AI Agents",
@@ -29,7 +30,6 @@ const makeSections = (completed: Record<StepId, boolean>) => [
   {
     title: "Create your content",
     items: [
-      { id: "curriculum" as StepId, label: "Curriculum", completed: completed["curriculum"] },
       { id: "curriculum" as StepId, label: "Curriculum", completed: completed["curriculum"] },
       { id: "captions" as StepId, label: "Captions", optional: true, completed: completed["captions"] },
       { id: "accessibility" as StepId, label: "Accessibility", optional: true, completed: completed["accessibility"] },
@@ -96,6 +96,17 @@ const CourseBuilder = () => {
   const activeLabel =
     sections.flatMap((s) => s.items).find((i) => i.id === activeStep)?.label ?? "";
 
+  const renderStep = () => {
+    switch (activeStep) {
+      case "intended-learners":
+        return <IntendedLearnersStep objectives={objectives} onChange={setObjectives} />;
+      case "curriculum":
+        return <CurriculumStep />;
+      default:
+        return <PlaceholderStep label={activeLabel} />;
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col bg-muted/30">
       {/* Top bar */}
@@ -144,11 +155,7 @@ const CourseBuilder = () => {
         />
 
         <main className="flex-1 overflow-y-auto p-8">
-          {activeStep === "intended-learners" ? (
-            <IntendedLearnersStep objectives={objectives} onChange={setObjectives} />
-          ) : (
-            <PlaceholderStep label={activeLabel} />
-          )}
+          {renderStep()}
         </main>
       </div>
     </div>

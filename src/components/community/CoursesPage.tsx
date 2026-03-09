@@ -201,6 +201,7 @@ const CourseCard = ({
 );
 
 const CoursesPage = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
 

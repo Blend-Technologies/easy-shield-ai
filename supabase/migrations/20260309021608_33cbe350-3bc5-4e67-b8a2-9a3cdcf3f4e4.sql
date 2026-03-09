@@ -1,0 +1,1 @@
+ALTER TABLE public.course_items ADD COLUMN IF NOT EXISTS content text DEFAULT '';

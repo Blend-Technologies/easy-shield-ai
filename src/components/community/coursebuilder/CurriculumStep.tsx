@@ -45,6 +45,7 @@ import {
   type CourseSection,
   type CourseItem,
 } from "@/hooks/useCourseCurriculum";
+import MarkdownEditor from "./MarkdownEditor";
 
 const CONTENT_TYPES: { type: ContentType; label: string; badge?: string; muted?: boolean }[] = [
   { type: "lecture", label: "Lecture", badge: "With lab" },
@@ -74,6 +75,7 @@ interface SortableItemProps {
   updateItemMediaType: (itemId: string, mediaType: MediaType) => void;
   uploadVideo: (itemId: string, file: File) => Promise<void>;
   uploadArticle: (itemId: string, file: File) => Promise<void>;
+  updateItemContent: (itemId: string, content: string) => void;
   expandedItemIds: Set<string>;
   toggleItemExpanded: (id: string) => void;
 }
@@ -92,6 +94,7 @@ const SortableItem = ({
   updateItemMediaType,
   uploadVideo,
   uploadArticle,
+  updateItemContent,
   expandedItemIds,
   toggleItemExpanded,
 }: SortableItemProps) => {
@@ -308,6 +311,16 @@ const SortableItem = ({
               ) : (
                 <p>Click "+ Content" to select a content type for this item.</p>
               )}
+
+              {/* Markdown editor for lecture content */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="font-medium text-foreground mb-2">Lecture Notes / Content</p>
+                <MarkdownEditor
+                  value={item.content}
+                  onChange={(val) => updateItemContent(item.id, val)}
+                  placeholder={"Write your lecture content using Markdown...\n\nSupports **bold**, _italic_, `code`, code blocks with syntax highlighting, lists, and more."}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -421,6 +434,7 @@ const CurriculumStep = ({ courseId }: Props) => {
     reorderItems,
     uploadVideo,
     uploadArticle,
+    updateItemContent,
   } = useCourseCurriculum(courseId);
 
   const [infoBannerVisible, setInfoBannerVisible] = useState(true);
@@ -634,6 +648,7 @@ const CurriculumStep = ({ courseId }: Props) => {
                             updateItemMediaType={updateItemMediaType}
                             uploadVideo={uploadVideo}
                             uploadArticle={uploadArticle}
+                            updateItemContent={updateItemContent}
                             expandedItemIds={expandedItemIds}
                             toggleItemExpanded={toggleItemExpanded}
                           />

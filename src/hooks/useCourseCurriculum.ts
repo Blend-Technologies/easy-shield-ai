@@ -13,6 +13,7 @@ export interface CourseItem {
   media_type: MediaType | null;
   video_url: string | null;
   article_url: string | null;
+  content: string;
   position: number;
 }
 
@@ -70,6 +71,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
           media_type: i.media_type as MediaType | null,
           video_url: i.video_url as string | null,
           article_url: (i as any).article_url as string | null,
+          content: ((i as any).content as string) || "",
           position: i.position,
         })),
     }));
@@ -138,6 +140,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
       media_type: data.media_type as MediaType | null,
       video_url: data.video_url as string | null,
       article_url: (data as any).article_url as string | null,
+      content: ((data as any).content as string) || "",
       position: data.position,
     };
     setSections((prev) =>
@@ -171,6 +174,22 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
         items: s.items.map((i) => (i.id === itemId ? { ...i, media_type: mediaType } : i)),
       }))
     );
+  };
+
+  const updateItemContent = async (itemId: string, content: string) => {
+    setSections((prev) =>
+      prev.map((s) => ({
+        ...s,
+        items: s.items.map((i) => (i.id === itemId ? { ...i, content } : i)),
+      }))
+    );
+    const { error } = await supabase
+      .from("course_items")
+      .update({ content } as any)
+      .eq("id", itemId);
+    if (error) {
+      toast({ title: "Error saving content", description: error.message, variant: "destructive" });
+    }
   };
 
   const deleteItem = async (itemId: string) => {
@@ -309,6 +328,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
     addItem,
     updateItemTitle,
     updateItemMediaType,
+    updateItemContent,
     deleteItem,
     reorderSections,
     reorderItems,

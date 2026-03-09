@@ -78,6 +78,7 @@ const PlaceholderStep = ({ label }: { label: string }) => (
 
 const CourseBuilder = () => {
   const navigate = useNavigate();
+  const { courseId } = useParams<{ courseId: string }>();
   const { isAdmin, loading } = useIsAdmin();
   const [activeStep, setActiveStep] = useState<StepId>("intended-learners");
   const [completed, setCompleted] = useState(INITIAL_COMPLETED);

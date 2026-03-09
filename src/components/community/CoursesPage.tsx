@@ -386,7 +386,7 @@ const CoursesPage = () => {
                 progress={0}
                 hasAccess={hasAccess}
                 isAdmin={!adminLoading && isAdmin}
-                onEdit={() => openEdit(course)}
+                onEdit={() => navigate(`/community/course-builder/${course.id}`)}
                 onDelete={() => deleteCourse(course.id)}
               />
             );

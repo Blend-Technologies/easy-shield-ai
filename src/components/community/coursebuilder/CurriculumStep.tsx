@@ -648,6 +648,7 @@ const CurriculumStep = ({ courseId }: Props) => {
                             updateItemMediaType={updateItemMediaType}
                             uploadVideo={uploadVideo}
                             uploadArticle={uploadArticle}
+                            updateItemContent={updateItemContent}
                             expandedItemIds={expandedItemIds}
                             toggleItemExpanded={toggleItemExpanded}
                           />

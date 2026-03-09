@@ -21,6 +21,7 @@ import DiagramEditor from "./pages/DiagramEditor";
 import NotFound from "./pages/NotFound";
 import CommunityCreate from "./pages/CommunityCreate";
 import CommunityHub from "./pages/CommunityHub";
+import CourseBuilder from "./pages/CourseBuilder";
 
 const queryClient = new QueryClient();
 

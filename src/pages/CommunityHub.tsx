@@ -8,6 +8,7 @@ import UpdatesFeed from "@/components/community/UpdatesFeed";
 import CoursesPage from "@/components/community/CoursesPage";
 import EventsPage from "@/components/community/EventsPage";
 import CalendarPage from "@/components/community/CalendarPage";
+import MembersPage from "@/components/community/MembersPage";
 
 interface CommunityState {
   name: string;

@@ -1,6 +1,7 @@
 import { Search, Sparkles, Bell, CalendarDays, Grid3X3, Plus, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.jpeg";
 
 type Props = {

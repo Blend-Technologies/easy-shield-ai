@@ -231,10 +231,12 @@ const SortableItem = ({
                   onClick={() => {
                     updateItemMediaType(item.id, opt.key);
                     setContentPickerItemId(null);
+                    if (!isItemExpanded) toggleItemExpanded(item.id);
 
-                    // For video-based content, open the file picker immediately (what you asked for).
-                    if (opt.key !== "article") {
-                      if (!isItemExpanded) toggleItemExpanded(item.id);
+                    // Open the appropriate file picker immediately
+                    if (opt.key === "article") {
+                      articleInputRef.current?.click();
+                    } else {
                       fileInputRef.current?.click();
                     }
                   }}

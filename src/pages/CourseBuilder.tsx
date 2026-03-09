@@ -176,9 +176,24 @@ const CourseBuilder = () => {
         </button>
 
         <div className="flex-1 flex items-center justify-center gap-3 min-w-0">
-          <span className="text-background font-semibold text-sm truncate max-w-md">
-            {courseTitle}
-          </span>
+          {editingTitle ? (
+            <Input
+              autoFocus
+              value={courseTitle}
+              onChange={(e) => setCourseTitle(e.target.value)}
+              onBlur={() => { setEditingTitle(false); handleSave(); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { setEditingTitle(false); handleSave(); } }}
+              className="h-8 text-sm font-semibold max-w-md bg-background/10 border-muted-foreground/30 text-background"
+            />
+          ) : (
+            <button
+              onClick={() => setEditingTitle(true)}
+              className="flex items-center gap-2 text-background font-semibold text-sm truncate max-w-md hover:opacity-80 transition-opacity"
+            >
+              {courseTitle}
+              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          )}
           <Badge variant="secondary" className="bg-muted-foreground/20 text-muted-foreground text-[10px] uppercase tracking-wider shrink-0">
             Draft
           </Badge>

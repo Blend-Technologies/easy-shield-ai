@@ -22,6 +22,7 @@ import NotFound from "./pages/NotFound";
 import CommunityCreate from "./pages/CommunityCreate";
 import CommunityHub from "./pages/CommunityHub";
 import CourseBuilder from "./pages/CourseBuilder";
+import CoursePlayer from "./pages/CoursePlayer";
 
 const queryClient = new QueryClient();
 

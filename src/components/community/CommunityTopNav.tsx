@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, MessageCircle, Bookmark, Search, X, ArrowLeft } from "lucide-react";
+import { Bell, MessageCircle, Bookmark, Search, X, ArrowLeft, Settings, LogOut } from "lucide-react";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 interface CommunityTopNavProps {
   communityName: string;
@@ -15,6 +16,19 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const { isAdmin } = useIsAdmin();
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(e.target as Node)) {
+        setAvatarMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-4">
@@ -100,12 +114,35 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
           <Bookmark className="w-4 h-4" />
         </button>
 
-        {/* Avatar */}
-        <img
-          src="https://ui-avatars.com/api/?name=Me&background=2563EB&color=fff&size=32"
-          alt="avatar"
-          className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
-        />
+        {/* Avatar with dropdown */}
+        <div className="relative" ref={avatarMenuRef}>
+          <img
+            src="https://ui-avatars.com/api/?name=Me&background=2563EB&color=fff&size=32"
+            alt="avatar"
+            className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+            onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
+          />
+          {avatarMenuOpen && (
+            <div className="absolute right-0 top-10 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+              {isAdmin && (
+                <button
+                  onClick={() => { setAvatarMenuOpen(false); navigate("/community/settings"); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Settings className="w-4 h-4" />
+                  Account Settings
+                </button>
+              )}
+              <button
+                onClick={() => setAvatarMenuOpen(false)}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

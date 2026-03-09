@@ -23,6 +23,7 @@ import CommunityCreate from "./pages/CommunityCreate";
 import CommunityHub from "./pages/CommunityHub";
 import CourseBuilder from "./pages/CourseBuilder";
 import CoursePlayer from "./pages/CoursePlayer";
+import AccountSettings from "./pages/AccountSettings";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const App = () => (
           <Route path="/community/hub" element={<CommunityHub />} />
           <Route path="/community/course-builder/:courseId" element={<CourseBuilder />} />
           <Route path="/community/course/:courseId" element={<CoursePlayer />} />
+          <Route path="/community/settings" element={<AccountSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

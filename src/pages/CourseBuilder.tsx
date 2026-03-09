@@ -78,7 +78,7 @@ const CourseBuilder = () => {
   const [courseTitle, setCourseTitle] = useState("Untitled Course");
   const [objectives, setObjectives] = useState<string[]>([""]);
   const [savingObjectives, setSavingObjectives] = useState(false);
-
+  const [editingTitle, setEditingTitle] = useState(false);
   // Load course data
   const loadCourse = useCallback(async () => {
     if (!courseId) return;

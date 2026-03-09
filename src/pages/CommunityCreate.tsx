@@ -37,7 +37,6 @@ const CommunityCreate = () => {
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = "Community name is required.";
-    if (!form.tagline.trim()) errs.tagline = "Tagline is required.";
     if (!form.category) errs.category = "Please select a category.";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -135,7 +134,7 @@ const CommunityCreate = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="tagline">Tagline <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="tagline">Tagline <span className="text-muted-foreground text-xs">(optional)</span></Label>
                     <Input
                       id="tagline"
                       className="mt-1.5"
@@ -143,7 +142,6 @@ const CommunityCreate = () => {
                       value={form.tagline}
                       onChange={(e) => setForm({ ...form, tagline: e.target.value })}
                     />
-                    {errors.tagline && <p className="text-destructive text-xs mt-1">{errors.tagline}</p>}
                   </div>
 
                   <div>

@@ -628,7 +628,6 @@ const CurriculumStep = ({ courseId }: Props) => {
                             onClick={() => {
                               if (!ct.muted) {
                                 handleAddItem(section.id, ct.type);
-                                toggleAddRow(section.id, false);
                               }
                             }}
                           >

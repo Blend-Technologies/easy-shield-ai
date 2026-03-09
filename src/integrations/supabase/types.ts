@@ -82,6 +82,82 @@ export type Database = {
           },
         ]
       }
+      course_items: {
+        Row: {
+          created_at: string
+          id: string
+          media_type: string | null
+          position: number
+          section_id: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_type?: string | null
+          position?: number
+          section_id: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_type?: string | null
+          position?: number
+          section_id?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_items_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "course_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_sections: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          position: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          position?: number
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          position?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_sections_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string

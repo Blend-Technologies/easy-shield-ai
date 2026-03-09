@@ -379,6 +379,12 @@ const CurriculumStep = () => {
                 {/* Add curriculum item row */}
                 {section.showAddRow ? (
                   <div className="flex items-center gap-1 flex-wrap pt-1 border border-dashed border-border rounded-md px-3 py-2.5">
+                    <button
+                      className="text-muted-foreground hover:text-foreground mr-1"
+                      onClick={() => toggleAddRow(section.id, false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                     {CONTENT_TYPES.map((ct) => (
                       <button
                         key={ct.type}

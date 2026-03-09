@@ -24,8 +24,6 @@ const makeSections = (completed: Record<StepId, boolean>) => [
     title: "Plan your course",
     items: [
       { id: "intended-learners" as StepId, label: "Intended learners", completed: completed["intended-learners"] },
-      { id: "course-structure" as StepId, label: "Course structure", completed: completed["course-structure"] },
-      { id: "setup-test-video" as StepId, label: "Setup & test video", completed: completed["setup-test-video"] },
     ],
   },
   {

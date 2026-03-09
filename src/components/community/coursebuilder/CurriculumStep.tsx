@@ -91,6 +91,7 @@ const SortableItem = ({
   setContentPickerItemId,
   updateItemMediaType,
   uploadVideo,
+  uploadArticle,
   expandedItemIds,
   toggleItemExpanded,
 }: SortableItemProps) => {

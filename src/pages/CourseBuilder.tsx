@@ -62,7 +62,6 @@ const INITIAL_COMPLETED: Record<StepId, boolean> = {
 
 const REQUIRED_STEPS: StepId[] = [
   "intended-learners",
-  "film-edit",
   "curriculum",
   "landing-page",
   "pricing",

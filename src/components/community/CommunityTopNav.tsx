@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Bell, MessageCircle, Bookmark, Search, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, MessageCircle, Bookmark, Search, X, ArrowLeft } from "lucide-react";
 
 interface CommunityTopNavProps {
   communityName: string;

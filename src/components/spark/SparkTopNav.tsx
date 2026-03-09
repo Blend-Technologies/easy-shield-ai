@@ -20,7 +20,7 @@ const SparkTopNav = ({ userName }: Props) => {
   return (
     <header className="h-12 bg-spark-nav flex items-center px-4 gap-3 flex-shrink-0">
       {/* Logo */}
-      <div className="flex items-center gap-2 mr-4">
+      <div className="flex items-center gap-2 mr-4 cursor-pointer" onClick={() => navigate("/dashboard")}>
         <img src={logo} alt="EZShield+AI" className="h-7 w-7 rounded-md" />
       </div>
 

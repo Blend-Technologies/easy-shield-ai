@@ -86,6 +86,8 @@ const CurriculumStep = () => {
       )
     );
   };
+
+  const updateSection = (sectionId: string, updater: (s: Section) => Section) => {
     setSections((prev) => prev.map((s) => (s.id === sectionId ? updater(s) : s)));
   };
 

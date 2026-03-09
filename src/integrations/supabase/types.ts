@@ -163,34 +163,49 @@ export type Database = {
       }
       courses: {
         Row: {
+          category: string | null
           created_at: string
           created_by: string
+          description: string | null
           id: string
           is_private: boolean
           lesson_count: number
+          logo_url: string | null
+          objectives: Json | null
           subtitle: string
           title: string
           updated_at: string
+          website: string | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
           created_by: string
+          description?: string | null
           id?: string
           is_private?: boolean
           lesson_count?: number
+          logo_url?: string | null
+          objectives?: Json | null
           subtitle?: string
           title: string
           updated_at?: string
+          website?: string | null
         }
         Update: {
+          category?: string | null
           created_at?: string
           created_by?: string
+          description?: string | null
           id?: string
           is_private?: boolean
           lesson_count?: number
+          logo_url?: string | null
+          objectives?: Json | null
           subtitle?: string
           title?: string
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }

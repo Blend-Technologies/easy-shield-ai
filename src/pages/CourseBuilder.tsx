@@ -1,24 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import CourseBuilderSidebar, { type StepId } from "@/components/community/CourseBuilderSidebar";
 import IntendedLearnersStep from "@/components/community/coursebuilder/IntendedLearnersStep";
 import CurriculumStep from "@/components/community/coursebuilder/CurriculumStep";
-
-const DEFAULT_OBJECTIVES = [
-  "Understand the concepts of AI Agents",
-  "Understand how to use Semantic Kernel in combination with Azure AI Agents",
-  "Create Azure AI with Single Agents",
-  "Create Azure AI with Multiple Agents",
-  "Using FastAPI to build AI Agent Endpoints",
-  "Create an Enterprise Full Stack AI Agent Application with FastAPI and Next.JS",
-  "Deploying your Multi-Agent application in Azure with Azure Web Apps",
-  "Monitor and Trace your AI Agents",
-  "",
-];
 
 const makeSections = (completed: Record<StepId, boolean>) => [
   {
@@ -47,7 +37,7 @@ const makeSections = (completed: Record<StepId, boolean>) => [
 ];
 
 const INITIAL_COMPLETED: Record<StepId, boolean> = {
-  "intended-learners": true,
+  "intended-learners": false,
   "course-structure": true,
   "setup-test-video": true,
   "film-edit": true,
@@ -82,11 +72,75 @@ const CourseBuilder = () => {
   const { isAdmin, loading } = useIsAdmin();
   const [activeStep, setActiveStep] = useState<StepId>("intended-learners");
   const [completed, setCompleted] = useState(INITIAL_COMPLETED);
-  const [objectives, setObjectives] = useState(DEFAULT_OBJECTIVES);
+
+  // Course data from DB
+  const [courseTitle, setCourseTitle] = useState("Untitled Course");
+  const [objectives, setObjectives] = useState<string[]>([""]);
+  const [savingObjectives, setSavingObjectives] = useState(false);
+
+  // Load course data
+  const loadCourse = useCallback(async () => {
+    if (!courseId) return;
+    const { data, error } = await supabase
+      .from("courses")
+      .select("*")
+      .eq("id", courseId)
+      .single();
+    if (error || !data) return;
+    setCourseTitle(data.title);
+    // Load objectives from DB
+    const obj = (data as any).objectives;
+    if (Array.isArray(obj) && obj.length > 0) {
+      setObjectives(obj as string[]);
+      setCompleted((prev) => ({ ...prev, "intended-learners": true }));
+    }
+  }, [courseId]);
+
+  useEffect(() => {
+    loadCourse();
+  }, [loadCourse]);
 
   useEffect(() => {
     if (!loading && !isAdmin) navigate("/community/hub", { replace: true });
   }, [loading, isAdmin, navigate]);
+
+  // Save objectives to DB
+  const handleObjectivesChange = useCallback(
+    async (newObjectives: string[]) => {
+      setObjectives(newObjectives);
+      if (!courseId) return;
+
+      // Mark completed if at least 4 non-empty objectives
+      const filled = newObjectives.filter((o) => o.trim().length > 0);
+      setCompleted((prev) => ({ ...prev, "intended-learners": filled.length >= 4 }));
+
+      // Debounced save
+      setSavingObjectives(true);
+      const { error } = await supabase
+        .from("courses")
+        .update({ objectives: newObjectives } as any)
+        .eq("id", courseId);
+      setSavingObjectives(false);
+      if (error) {
+        toast({ title: "Error saving objectives", description: error.message, variant: "destructive" });
+      }
+    },
+    [courseId]
+  );
+
+  // Save course title
+  const handleSave = async () => {
+    if (!courseId) return;
+    const { error } = await supabase
+      .from("courses")
+      .update({ title: courseTitle } as any)
+      .eq("id", courseId);
+    if (error) {
+      toast({ title: "Error saving", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Course saved!" });
+    }
+  };
 
   if (loading) return null;
   if (!isAdmin) return null;
@@ -100,7 +154,7 @@ const CourseBuilder = () => {
   const renderStep = () => {
     switch (activeStep) {
       case "intended-learners":
-        return <IntendedLearnersStep objectives={objectives} onChange={setObjectives} />;
+        return <IntendedLearnersStep objectives={objectives} onChange={handleObjectivesChange} />;
       case "curriculum":
         return courseId ? <CurriculumStep courseId={courseId} /> : <PlaceholderStep label="No course selected" />;
       default:
@@ -122,14 +176,14 @@ const CourseBuilder = () => {
 
         <div className="flex-1 flex items-center justify-center gap-3 min-w-0">
           <span className="text-background font-semibold text-sm truncate max-w-md">
-            Building AI Agents in Azure with SK | Azure AI Agents | Next.JS
+            {courseTitle}
           </span>
           <Badge variant="secondary" className="bg-muted-foreground/20 text-muted-foreground text-[10px] uppercase tracking-wider shrink-0">
             Draft
           </Badge>
-          <span className="text-muted-foreground text-xs shrink-0 hidden md:inline">
-            39min of video content uploaded
-          </span>
+          {savingObjectives && (
+            <span className="text-muted-foreground text-xs shrink-0">Saving…</span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -137,6 +191,7 @@ const CourseBuilder = () => {
             type="button"
             size="sm"
             className="bg-muted-foreground/30 hover:bg-muted-foreground/40 text-background border-0 rounded-full px-5"
+            onClick={handleSave}
           >
             Save
           </Button>

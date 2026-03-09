@@ -102,7 +102,7 @@ const CourseBuilder = () => {
       case "intended-learners":
         return <IntendedLearnersStep objectives={objectives} onChange={setObjectives} />;
       case "curriculum":
-        return <CurriculumStep />;
+        return courseId ? <CurriculumStep courseId={courseId} /> : <PlaceholderStep label="No course selected" />;
       default:
         return <PlaceholderStep label={activeLabel} />;
     }

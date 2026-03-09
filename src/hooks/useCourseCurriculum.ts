@@ -137,6 +137,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
       type: data.type as ContentType,
       media_type: data.media_type as MediaType | null,
       video_url: data.video_url as string | null,
+      article_url: (data as any).article_url as string | null,
       position: data.position,
     };
     setSections((prev) =>

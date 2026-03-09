@@ -176,6 +176,22 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
     );
   };
 
+  const updateItemContent = async (itemId: string, content: string) => {
+    setSections((prev) =>
+      prev.map((s) => ({
+        ...s,
+        items: s.items.map((i) => (i.id === itemId ? { ...i, content } : i)),
+      }))
+    );
+    const { error } = await supabase
+      .from("course_items")
+      .update({ content } as any)
+      .eq("id", itemId);
+    if (error) {
+      toast({ title: "Error saving content", description: error.message, variant: "destructive" });
+    }
+  };
+
   const deleteItem = async (itemId: string) => {
     const { error } = await supabase.from("course_items").delete().eq("id", itemId);
     if (error) {

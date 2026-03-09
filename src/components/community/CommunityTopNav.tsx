@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Bell, MessageCircle, Bookmark, Search, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, MessageCircle, Bookmark, Search, X, ArrowLeft } from "lucide-react";
 
 interface CommunityTopNavProps {
   communityName: string;
@@ -11,6 +12,7 @@ interface CommunityTopNavProps {
 const NAV_TABS = ["Home", "Courses", "Calendar", "Members"];
 
 const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: CommunityTopNavProps) => {
+  const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -18,16 +20,23 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
     <header className="fixed top-0 left-0 right-0 z-40 h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-4">
       {/* Logo + name */}
       <div className="flex items-center gap-2.5 w-[240px] flex-shrink-0">
-        <div className="w-8 h-8 rounded-lg overflow-hidden bg-blue-600 flex items-center justify-center">
+        <button
+          onClick={() => navigate("/community/create")}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          title="Back to communities"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="w-8 h-8 rounded-lg overflow-hidden bg-primary flex items-center justify-center">
           {logo ? (
             <img src={logo} alt="logo" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-white text-xs font-bold">
+            <span className="text-primary-foreground text-xs font-bold">
               {communityName.charAt(0).toUpperCase()}
             </span>
           )}
         </div>
-        <span className="font-semibold text-gray-900 text-sm truncate max-w-[160px]">
+        <span className="font-semibold text-foreground text-sm truncate max-w-[160px]">
           {communityName}
         </span>
       </div>

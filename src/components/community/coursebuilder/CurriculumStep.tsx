@@ -74,6 +74,7 @@ interface SortableItemProps {
   updateItemMediaType: (itemId: string, mediaType: MediaType) => void;
   uploadVideo: (itemId: string, file: File) => Promise<void>;
   uploadArticle: (itemId: string, file: File) => Promise<void>;
+  updateItemContent: (itemId: string, content: string) => void;
   expandedItemIds: Set<string>;
   toggleItemExpanded: (id: string) => void;
 }

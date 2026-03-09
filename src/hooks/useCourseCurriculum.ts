@@ -328,6 +328,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
     addItem,
     updateItemTitle,
     updateItemMediaType,
+    updateItemContent,
     deleteItem,
     reorderSections,
     reorderItems,

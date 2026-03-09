@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const CATEGORIES = [
   "Technology", "Business", "Education", "Health & Wellness",
@@ -22,15 +24,18 @@ const CommunityCreate = () => {
     category: "",
     website: "",
   });
-  const [logo, setLogo] = useState<string | null>(null);
+  const [logo, setLogo] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setLogo(file);
     const reader = new FileReader();
-    reader.onload = (ev) => setLogo(ev.target?.result as string);
+    reader.onload = (ev) => setLogoPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
   };
 
@@ -46,10 +51,55 @@ const CommunityCreate = () => {
     if (validate()) setStep(2);
   };
 
-  const handleCreate = () => {
-    navigate("/community/hub", {
-      state: { community: { ...form, logo } },
-    });
+  const handleCreate = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: "You must be logged in", variant: "destructive" });
+        return;
+      }
+
+      // Upload logo if provided
+      let logoUrl: string | null = null;
+      if (logo) {
+        const ext = logo.name.split(".").pop();
+        const path = `logos/${crypto.randomUUID()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("course-videos")
+          .upload(path, logo, { upsert: true });
+        if (!uploadErr) {
+          const { data: { publicUrl } } = supabase.storage
+            .from("course-videos")
+            .getPublicUrl(path);
+          logoUrl = publicUrl;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from("courses")
+        .insert({
+          title: form.name,
+          subtitle: form.tagline || "Data Freelancer",
+          description: form.description,
+          category: form.category,
+          website: form.website,
+          logo_url: logoUrl,
+          created_by: user.id,
+        } as any)
+        .select()
+        .single();
+
+      if (error) {
+        toast({ title: "Error creating community", description: error.message, variant: "destructive" });
+        return;
+      }
+
+      toast({ title: "Community created!" });
+      navigate(`/community/course-builder/${data.id}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -99,8 +149,8 @@ const CommunityCreate = () => {
                     onClick={() => fileRef.current?.click()}
                     className="w-20 h-20 rounded-2xl border-2 border-dashed border-border hover:border-primary/60 bg-muted/40 flex flex-col items-center justify-center transition-colors cursor-pointer overflow-hidden"
                   >
-                    {logo ? (
-                      <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
                     ) : (
                       <>
                         <Upload className="w-5 h-5 text-muted-foreground mb-1" />
@@ -112,8 +162,8 @@ const CommunityCreate = () => {
                   <div className="text-sm text-muted-foreground">
                     <p className="font-medium text-foreground mb-1">Community logo</p>
                     <p>PNG, JPG or SVG · Max 2MB</p>
-                    {logo && (
-                      <button onClick={() => setLogo(null)} className="text-destructive text-xs mt-1 hover:underline">
+                    {logoPreview && (
+                      <button onClick={() => { setLogo(null); setLogoPreview(null); }} className="text-destructive text-xs mt-1 hover:underline">
                         Remove
                       </button>
                     )}
@@ -200,8 +250,8 @@ const CommunityCreate = () => {
                 {/* Preview card */}
                 <div className="mt-6 rounded-xl border border-border bg-muted/30 p-4 flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl overflow-hidden bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    {logo ? (
-                      <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
                     ) : (
                       <Sparkles className="w-5 h-5 text-primary" />
                     )}
@@ -219,8 +269,8 @@ const CommunityCreate = () => {
                   <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
                     Back
                   </Button>
-                  <Button className="flex-1" onClick={handleCreate}>
-                    Create community 🎉
+                  <Button className="flex-1" onClick={handleCreate} disabled={saving}>
+                    {saving ? "Creating…" : "Create community 🎉"}
                   </Button>
                 </div>
               </>

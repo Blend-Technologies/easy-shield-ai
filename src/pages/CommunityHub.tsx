@@ -36,6 +36,8 @@ const CommunityHub = () => {
     switch (activeSidebarItem) {
       case "Updates":
         return <UpdatesFeed />;
+      case "Events":
+        return <EventsPage />;
       default:
         return <CommunityFeed />;
     }

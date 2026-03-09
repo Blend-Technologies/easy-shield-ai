@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Search, User, Bell, RefreshCw, CreditCard, Pencil, Eye, EyeOff } from "lucide-react";
+import { X, Search, User, Bell, RefreshCw, CreditCard, Pencil, Eye, EyeOff, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import MembersManagementPanel from "@/components/settings/MembersManagementPanel";
 
-const SIDEBAR_ITEMS = [
+const USER_SIDEBAR_ITEMS = [
   {
-    section: "Admin Settings",
+    section: "User Settings",
     items: [
       { label: "My Account", icon: User, id: "account" },
       { label: "Notifications", icon: Bell, id: "notifications" },
@@ -21,7 +23,27 @@ const SIDEBAR_ITEMS = [
   },
 ];
 
+const ADMIN_SIDEBAR_ITEMS = [
+  {
+    section: "Admin Settings",
+    items: [
+      { label: "My Account", icon: User, id: "account" },
+      { label: "Members", icon: Users, id: "members" },
+      { label: "Notifications", icon: Bell, id: "notifications" },
+    ],
+  },
+  {
+    section: "Billing Settings",
+    items: [
+      { label: "Subscriptions", icon: RefreshCw, id: "subscriptions" },
+      { label: "Billing", icon: CreditCard, id: "billing" },
+    ],
+  },
+];
+
 const AccountSettings = () => {
+  const { isAdmin } = useIsAdmin();
+  const sidebarItems = isAdmin ? ADMIN_SIDEBAR_ITEMS : USER_SIDEBAR_ITEMS;
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState("account");
   const [activeTab, setActiveTab] = useState("security");
@@ -90,7 +112,7 @@ const AccountSettings = () => {
         </div>
 
         {/* Nav Sections */}
-        {SIDEBAR_ITEMS.map((section) => (
+        {sidebarItems.map((section) => (
           <div key={section.section} className="px-4 mb-4">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">{section.section}</p>
             <div className="flex flex-col gap-0.5">
@@ -255,6 +277,8 @@ const AccountSettings = () => {
             )}
           </div>
         )}
+
+        {activeItem === "members" && isAdmin && <MembersManagementPanel />}
 
         {activeItem === "notifications" && (
           <div className="max-w-3xl mx-auto py-8 px-6">

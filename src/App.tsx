@@ -19,6 +19,8 @@ import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import KanbanBoard from "./pages/KanbanBoard";
 import DiagramEditor from "./pages/DiagramEditor";
 import NotFound from "./pages/NotFound";
+import CommunityCreate from "./pages/CommunityCreate";
+import CommunityHub from "./pages/CommunityHub";
 
 const queryClient = new QueryClient();
 

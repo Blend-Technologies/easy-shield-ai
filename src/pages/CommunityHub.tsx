@@ -4,6 +4,7 @@ import CommunityTopNav from "@/components/community/CommunityTopNav";
 import CommunityLeftSidebar from "@/components/community/CommunityLeftSidebar";
 import CommunityRightSidebar from "@/components/community/CommunityRightSidebar";
 import CommunityFeed from "@/components/community/CommunityFeed";
+import UpdatesFeed from "@/components/community/UpdatesFeed";
 
 interface CommunityState {
   name: string;
@@ -29,6 +30,15 @@ const CommunityHub = () => {
   const [activeTab, setActiveTab] = useState("Home");
   const [activeSidebarItem, setActiveSidebarItem] = useState("Community");
 
+  const renderContent = () => {
+    switch (activeSidebarItem) {
+      case "Updates":
+        return <UpdatesFeed />;
+      default:
+        return <CommunityFeed />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <CommunityTopNav
@@ -47,7 +57,7 @@ const CommunityHub = () => {
 
         {/* Main content */}
         <main className="ml-[260px] mr-[260px] flex-1 min-w-0 py-8 px-6">
-          <CommunityFeed />
+          {renderContent()}
         </main>
 
         {/* Right sidebar */}

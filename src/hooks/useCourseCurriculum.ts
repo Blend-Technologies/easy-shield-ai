@@ -140,6 +140,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
       media_type: data.media_type as MediaType | null,
       video_url: data.video_url as string | null,
       article_url: (data as any).article_url as string | null,
+      content: ((data as any).content as string) || "",
       position: data.position,
     };
     setSections((prev) =>

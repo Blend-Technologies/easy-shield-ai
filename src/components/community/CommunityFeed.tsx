@@ -116,10 +116,12 @@ const PostCard = ({ post }: { post: Post }) => {
 const CommunityFeed = () => {
   const [sortOpen, setSortOpen] = useState(false);
   const [sort, setSort] = useState("Latest");
-  const [postText, setPostText] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <div className="space-y-4">
+      <CreatePostModal open={modalOpen} onClose={() => setModalOpen(false)} />
+
       {/* Feed header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">Feed</h2>
@@ -150,31 +152,31 @@ const CommunityFeed = () => {
             )}
           </div>
 
-          <button className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
+          <button
+            onClick={() => setModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-1.5 rounded-full transition-colors"
+          >
             New post
           </button>
         </div>
       </div>
 
       {/* Post composer */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center gap-3">
+      <div
+        className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center gap-3 cursor-pointer group"
+        onClick={() => setModalOpen(true)}
+      >
         <img
           src="https://ui-avatars.com/api/?name=Me&background=2563EB&color=fff&size=40"
           alt="me"
           className="w-10 h-10 rounded-full flex-shrink-0"
         />
-        <input
-          type="text"
-          placeholder="Start a post…"
-          value={postText}
-          onChange={(e) => setPostText(e.target.value)}
-          className="flex-1 text-sm text-gray-700 placeholder:text-gray-400 outline-none bg-transparent"
-        />
-        <div className="flex items-center gap-1">
-          <button className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
-            <ImageIcon className="w-4 h-4" />
-          </button>
-          <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+        <span className="flex-1 text-sm text-gray-400 select-none">Start a post…</span>
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+          >
             <Plus className="w-4 h-4" />
           </button>
         </div>

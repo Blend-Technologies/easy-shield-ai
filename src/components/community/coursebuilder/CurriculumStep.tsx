@@ -434,6 +434,7 @@ const CurriculumStep = ({ courseId }: Props) => {
     reorderItems,
     uploadVideo,
     uploadArticle,
+    updateItemContent,
   } = useCourseCurriculum(courseId);
 
   const [infoBannerVisible, setInfoBannerVisible] = useState(true);

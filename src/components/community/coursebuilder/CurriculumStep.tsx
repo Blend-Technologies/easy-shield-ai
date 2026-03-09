@@ -389,7 +389,7 @@ const CurriculumStep = ({ courseId }: Props) => {
   const [showAddRowSections, setShowAddRowSections] = useState<Set<string>>(new Set());
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 

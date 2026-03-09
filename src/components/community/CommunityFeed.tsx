@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Bookmark, MoreHorizontal, Plus, ChevronDown, ImageIcon } from "lucide-react";
+import CreatePostModal from "./CreatePostModal";
 
 const POSTS = [
   {

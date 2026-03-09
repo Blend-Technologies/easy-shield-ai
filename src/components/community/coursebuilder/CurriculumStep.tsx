@@ -22,10 +22,13 @@ import {
 
 type ContentType = "lecture" | "quiz" | "coding-exercise" | "practice-test" | "assignment" | "role-play";
 
+type MediaType = "video" | "mashup" | "article";
+
 interface LectureItem {
   id: string;
   title: string;
   type: ContentType;
+  mediaType?: MediaType;
 }
 
 interface Section {

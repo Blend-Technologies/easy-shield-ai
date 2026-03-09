@@ -263,9 +263,33 @@ const SortableItem = ({
                     <span className="capitalize">{item.media_type === "mashup" ? "Video & Slide Mashup" : item.media_type}</span>
                   </p>
                   {item.media_type === "article" ? (
-                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background">
-                      <p>Add your article content here...</p>
-                    </div>
+                    item.article_url ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 p-3 border border-border rounded-lg bg-background">
+                          <FileText className="h-5 w-5 text-primary shrink-0" />
+                          <span className="text-sm text-foreground truncate flex-1">
+                            {item.article_url.split('/').pop()}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => articleInputRef.current?.click()}
+                          >
+                            Replace
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background cursor-pointer hover:border-primary/50 transition-colors"
+                        onClick={() => articleInputRef.current?.click()}
+                      >
+                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm">{uploadingArticle ? "Uploading..." : "Click to upload article file"}</p>
+                        <p className="text-xs mt-1 text-muted-foreground">.ipynb (Jupyter Notebook), .md (Markdown)</p>
+                      </div>
+                    )
                   ) : item.video_url ? (
                     <video src={item.video_url} controls className="w-full max-w-2xl mx-auto rounded-lg" />
                   ) : (

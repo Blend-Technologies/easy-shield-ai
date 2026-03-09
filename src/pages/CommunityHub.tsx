@@ -6,6 +6,7 @@ import CommunityRightSidebar from "@/components/community/CommunityRightSidebar"
 import CommunityFeed from "@/components/community/CommunityFeed";
 import UpdatesFeed from "@/components/community/UpdatesFeed";
 import CoursesPage from "@/components/community/CoursesPage";
+import EventsPage from "@/components/community/EventsPage";
 
 interface CommunityState {
   name: string;
@@ -35,6 +36,8 @@ const CommunityHub = () => {
     switch (activeSidebarItem) {
       case "Updates":
         return <UpdatesFeed />;
+      case "Events":
+        return <EventsPage />;
       default:
         return <CommunityFeed />;
     }

@@ -114,12 +114,35 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
           <Bookmark className="w-4 h-4" />
         </button>
 
-        {/* Avatar */}
-        <img
-          src="https://ui-avatars.com/api/?name=Me&background=2563EB&color=fff&size=32"
-          alt="avatar"
-          className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
-        />
+        {/* Avatar with dropdown */}
+        <div className="relative" ref={avatarMenuRef}>
+          <img
+            src="https://ui-avatars.com/api/?name=Me&background=2563EB&color=fff&size=32"
+            alt="avatar"
+            className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+            onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
+          />
+          {avatarMenuOpen && (
+            <div className="absolute right-0 top-10 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+              {isAdmin && (
+                <button
+                  onClick={() => { setAvatarMenuOpen(false); navigate("/community/settings"); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Settings className="w-4 h-4" />
+                  Account Settings
+                </button>
+              )}
+              <button
+                onClick={() => setAvatarMenuOpen(false)}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

@@ -12,6 +12,7 @@ interface CommunityTopNavProps {
 const NAV_TABS = ["Home", "Courses", "Calendar", "Members"];
 
 const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: CommunityTopNavProps) => {
+  const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 

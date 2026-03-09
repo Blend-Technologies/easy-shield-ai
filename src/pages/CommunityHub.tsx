@@ -5,6 +5,7 @@ import CommunityLeftSidebar from "@/components/community/CommunityLeftSidebar";
 import CommunityRightSidebar from "@/components/community/CommunityRightSidebar";
 import CommunityFeed from "@/components/community/CommunityFeed";
 import UpdatesFeed from "@/components/community/UpdatesFeed";
+import CoursesPage from "@/components/community/CoursesPage";
 
 interface CommunityState {
   name: string;
@@ -38,6 +39,21 @@ const CommunityHub = () => {
         return <CommunityFeed />;
     }
   };
+
+  // Courses tab uses full-width layout without sidebars
+  if (activeTab === "Courses") {
+    return (
+      <div className="min-h-screen bg-[#F5F6F8]">
+        <CommunityTopNav
+          communityName={community.name}
+          logo={community.logo}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        <CoursesPage />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

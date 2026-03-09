@@ -23,6 +23,7 @@ import CommunityCreate from "./pages/CommunityCreate";
 import CommunityHub from "./pages/CommunityHub";
 import CourseBuilder from "./pages/CourseBuilder";
 import CoursePlayer from "./pages/CoursePlayer";
+import AccountSettings from "./pages/AccountSettings";
 
 const queryClient = new QueryClient();
 

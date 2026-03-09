@@ -263,6 +263,43 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
     toast({ title: "Video uploaded successfully" });
   };
 
+  const uploadArticle = async (itemId: string, file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const filePath = `articles/${itemId}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('course-videos')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: "Error uploading file", description: uploadError.message, variant: "destructive" });
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('course-videos')
+      .getPublicUrl(filePath);
+
+    const { error } = await supabase
+      .from("course_items")
+      .update({ article_url: publicUrl } as any)
+      .eq("id", itemId);
+
+    if (error) {
+      toast({ title: "Error saving article URL", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setSections((prev) =>
+      prev.map((s) => ({
+        ...s,
+        items: s.items.map((i) => (i.id === itemId ? { ...i, article_url: publicUrl } : i)),
+      }))
+    );
+
+    toast({ title: "File uploaded successfully" });
+  };
+
   return {
     sections,
     loading,
@@ -276,6 +313,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
     reorderSections,
     reorderItems,
     uploadVideo,
+    uploadArticle,
     refetch: fetchCurriculum,
   };
 };

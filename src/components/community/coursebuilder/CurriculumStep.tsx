@@ -311,6 +311,16 @@ const SortableItem = ({
               ) : (
                 <p>Click "+ Content" to select a content type for this item.</p>
               )}
+
+              {/* Markdown editor for lecture content */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="font-medium text-foreground mb-2">Lecture Notes / Content</p>
+                <MarkdownEditor
+                  value={item.content}
+                  onChange={(val) => updateItemContent(item.id, val)}
+                  placeholder={"Write your lecture content using Markdown...\n\nSupports **bold**, _italic_, `code`, code blocks with syntax highlighting, lists, and more."}
+                />
+              </div>
             </div>
           </div>
         )}

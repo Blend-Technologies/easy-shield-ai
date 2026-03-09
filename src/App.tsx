@@ -48,6 +48,8 @@ const App = () => (
           <Route path="/dashboard/:projectName/analytics" element={<AnalyticsDashboard />} />
           <Route path="/dashboard/:projectName/boards" element={<KanbanBoard />} />
           <Route path="/dashboard/diagram/:diagramId" element={<DiagramEditor />} />
+          <Route path="/community/create" element={<CommunityCreate />} />
+          <Route path="/community/hub" element={<CommunityHub />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

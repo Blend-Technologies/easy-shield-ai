@@ -333,16 +333,46 @@ const CurriculumStep = () => {
                   );
                 })}
 
-                {/* Add curriculum item button */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-primary text-primary hover:bg-primary/5 gap-1 mt-2"
-                  onClick={() => addItem(section.id, "lecture")}
-                >
-                  <Plus className="h-4 w-4" />
-                  Curriculum item
-                </Button>
+                {/* Add curriculum item row */}
+                {section.showAddRow ? (
+                  <div className="flex items-center gap-1 flex-wrap pt-1 border border-dashed border-border rounded-md px-3 py-2.5">
+                    {CONTENT_TYPES.map((ct) => (
+                      <button
+                        key={ct.type}
+                        disabled={ct.muted}
+                        className={`flex items-center gap-1 text-sm px-2 py-1 rounded transition-colors font-medium ${
+                          ct.muted
+                            ? "text-muted-foreground/50 cursor-not-allowed"
+                            : "text-primary hover:bg-primary/5"
+                        }`}
+                        onClick={() => {
+                          if (!ct.muted) {
+                            addItem(section.id, ct.type);
+                            toggleAddRow(section.id, false);
+                          }
+                        }}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        {ct.label}
+                        {ct.badge && (
+                          <Badge className="bg-emerald-500 text-white border-0 text-[10px] px-1.5 py-0 h-4">
+                            {ct.badge}
+                          </Badge>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-primary text-primary hover:bg-primary/5 gap-1 mt-2"
+                    onClick={() => toggleAddRow(section.id, true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Curriculum item
+                  </Button>
+                )}
               </div>
             )}
           </div>

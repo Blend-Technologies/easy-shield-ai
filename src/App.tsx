@@ -51,6 +51,7 @@ const App = () => (
           <Route path="/dashboard/diagram/:diagramId" element={<DiagramEditor />} />
           <Route path="/community/create" element={<CommunityCreate />} />
           <Route path="/community/hub" element={<CommunityHub />} />
+          <Route path="/community/course-builder" element={<CourseBuilder />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -260,9 +260,10 @@ const CurriculumStep = () => {
               <div className="px-4 pb-3 space-y-2">
                 {section.items.map((item, iIdx) => {
                   const showingPicker = contentPickerItemId === item.id;
+                  const isExpanded = expandedItemIds.has(item.id);
                   return (
                     <div key={item.id} className="space-y-0">
-                      <div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2.5 group">
+                      <div className={`flex items-center gap-2 border border-border bg-background px-3 py-2.5 group ${isExpanded ? "rounded-t-md" : "rounded-md"}`}>
                         <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
                         <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                         <span className="text-sm text-foreground font-medium">
@@ -305,7 +306,12 @@ const CurriculumStep = () => {
                             Content
                           </Button>
                         )}
-                        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <button
+                          onClick={() => toggleItemExpanded(item.id)}
+                          className="p-1 hover:bg-muted rounded transition-colors"
+                        >
+                          <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                        </button>
                       </div>
 
                       {/* Content type picker */}
@@ -339,6 +345,30 @@ const CurriculumStep = () => {
                                 <span className="text-xs font-medium text-center leading-tight">{opt.label}</span>
                               </button>
                             ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Expanded item details */}
+                      {isExpanded && !showingPicker && (
+                        <div className="border border-t-0 border-border rounded-b-md bg-muted/30 px-4 py-4">
+                          <div className="text-sm text-muted-foreground">
+                            {item.mediaType ? (
+                              <div className="space-y-3">
+                                <p className="font-medium text-foreground">
+                                  Content type: <span className="capitalize">{item.mediaType === "mashup" ? "Video & Slide Mashup" : item.mediaType}</span>
+                                </p>
+                                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background">
+                                  {item.mediaType === "article" ? (
+                                    <p>Add your article content here...</p>
+                                  ) : (
+                                    <p>Drag and drop your video file here, or click to browse.</p>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <p>Click "+ Content" to select a content type for this item.</p>
+                            )}
                           </div>
                         </div>
                       )}

@@ -21,7 +21,6 @@ const GROUPS: SidebarGroup[] = [
     items: [
       { label: "Community", icon: Users, badge: 62, active: true },
       { label: "Updates", icon: Megaphone },
-      { label: "FAQ", icon: HelpCircle },
     ],
   },
   {

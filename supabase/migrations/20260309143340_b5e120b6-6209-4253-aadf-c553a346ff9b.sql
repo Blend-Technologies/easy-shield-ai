@@ -1,0 +1,7 @@
+
+ALTER TABLE public.profiles 
+  ADD COLUMN IF NOT EXISTS title text DEFAULT '',
+  ADD COLUMN IF NOT EXISTS location text DEFAULT '',
+  ADD COLUMN IF NOT EXISTS bio text DEFAULT '',
+  ADD COLUMN IF NOT EXISTS avatar_url text DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS online boolean DEFAULT false;

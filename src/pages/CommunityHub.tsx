@@ -46,7 +46,7 @@ const CommunityHub = () => {
   };
 
   // Full-width tabs without sidebars
-  if (activeTab === "Courses" || activeTab === "Calendar") {
+  if (activeTab === "Courses" || activeTab === "Calendar" || activeTab === "Members") {
     return (
       <div className="min-h-screen bg-background">
         <CommunityTopNav
@@ -56,7 +56,9 @@ const CommunityHub = () => {
           onTabChange={setActiveTab}
         />
         <div className="pt-14">
-          {activeTab === "Courses" ? <CoursesPage /> : <CalendarPage />}
+          {activeTab === "Courses" && <CoursesPage />}
+          {activeTab === "Calendar" && <CalendarPage />}
+          {activeTab === "Members" && <MembersPage />}
         </div>
       </div>
     );

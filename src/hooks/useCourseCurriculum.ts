@@ -11,6 +11,7 @@ export interface CourseItem {
   title: string;
   type: ContentType;
   media_type: MediaType | null;
+  video_url: string | null;
   position: number;
 }
 
@@ -66,6 +67,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
           title: i.title,
           type: i.type as ContentType,
           media_type: i.media_type as MediaType | null,
+          video_url: i.video_url as string | null,
           position: i.position,
         })),
     }));
@@ -132,6 +134,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
       title: data.title,
       type: data.type as ContentType,
       media_type: data.media_type as MediaType | null,
+      video_url: data.video_url as string | null,
       position: data.position,
     };
     setSections((prev) =>
@@ -220,6 +223,43 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
     }
   };
 
+  const uploadVideo = async (itemId: string, file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${itemId}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('course-videos')
+      .upload(filePath, file, { upsert: true });
+    
+    if (uploadError) {
+      toast({ title: "Error uploading video", description: uploadError.message, variant: "destructive" });
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('course-videos')
+      .getPublicUrl(filePath);
+
+    const { error } = await supabase
+      .from("course_items")
+      .update({ video_url: publicUrl })
+      .eq("id", itemId);
+
+    if (error) {
+      toast({ title: "Error saving video URL", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setSections((prev) =>
+      prev.map((s) => ({
+        ...s,
+        items: s.items.map((i) => (i.id === itemId ? { ...i, video_url: publicUrl } : i)),
+      }))
+    );
+
+    toast({ title: "Video uploaded successfully" });
+  };
+
   return {
     sections,
     loading,
@@ -232,6 +272,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
     deleteItem,
     reorderSections,
     reorderItems,
+    uploadVideo,
     refetch: fetchCurriculum,
   };
 };

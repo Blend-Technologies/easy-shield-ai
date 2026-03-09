@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -26,6 +26,7 @@ import {
   Play,
   Plus,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,7 @@ interface SortableItemProps {
   contentPickerItemId: string | null;
   setContentPickerItemId: (id: string | null) => void;
   updateItemMediaType: (itemId: string, mediaType: MediaType) => void;
+  uploadVideo: (itemId: string, file: File) => Promise<void>;
   expandedItemIds: Set<string>;
   toggleItemExpanded: (id: string) => void;
 }
@@ -87,9 +89,12 @@ const SortableItem = ({
   contentPickerItemId,
   setContentPickerItemId,
   updateItemMediaType,
+  uploadVideo,
   expandedItemIds,
   toggleItemExpanded,
 }: SortableItemProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
   });
@@ -222,13 +227,40 @@ const SortableItem = ({
                   Content type:{" "}
                   <span className="capitalize">{item.media_type === "mashup" ? "Video & Slide Mashup" : item.media_type}</span>
                 </p>
-                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background">
-                  {item.media_type === "article" ? (
+                {item.media_type === "article" ? (
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background">
                     <p>Add your article content here...</p>
-                  ) : (
-                    <p>Drag and drop your video file here, or click to browse.</p>
-                  )}
-                </div>
+                  </div>
+                ) : item.video_url ? (
+                  <video
+                    src={item.video_url}
+                    controls
+                    className="w-full max-w-2xl mx-auto rounded-lg"
+                  />
+                ) : (
+                  <div
+                    className="border-2 border-dashed border-border rounded-lg p-8 text-center bg-background cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setUploading(true);
+                          await uploadVideo(item.id, file);
+                          setUploading(false);
+                        }
+                      }}
+                    />
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm">{uploading ? "Uploading..." : "Click to upload video"}</p>
+                    <p className="text-xs mt-1 text-muted-foreground">MP4, WebM, MOV</p>
+                  </div>
+                )}
               </div>
             ) : (
               <p>Click "+ Content" to select a content type for this item.</p>
@@ -343,6 +375,7 @@ const CurriculumStep = ({ courseId }: Props) => {
     deleteItem,
     reorderSections,
     reorderItems,
+    uploadVideo,
   } = useCourseCurriculum(courseId);
 
   const [infoBannerVisible, setInfoBannerVisible] = useState(true);
@@ -554,6 +587,7 @@ const CurriculumStep = ({ courseId }: Props) => {
                             contentPickerItemId={contentPickerItemId}
                             setContentPickerItemId={setContentPickerItemId}
                             updateItemMediaType={updateItemMediaType}
+                            uploadVideo={uploadVideo}
                             expandedItemIds={expandedItemIds}
                             toggleItemExpanded={toggleItemExpanded}
                           />

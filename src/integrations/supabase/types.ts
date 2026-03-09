@@ -85,6 +85,7 @@ export type Database = {
       course_items: {
         Row: {
           article_url: string | null
+          content: string | null
           created_at: string
           id: string
           media_type: string | null
@@ -97,6 +98,7 @@ export type Database = {
         }
         Insert: {
           article_url?: string | null
+          content?: string | null
           created_at?: string
           id?: string
           media_type?: string | null
@@ -109,6 +111,7 @@ export type Database = {
         }
         Update: {
           article_url?: string | null
+          content?: string | null
           created_at?: string
           id?: string
           media_type?: string | null

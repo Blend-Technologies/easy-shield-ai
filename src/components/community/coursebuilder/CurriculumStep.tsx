@@ -1,12 +1,12 @@
 import { useState } from "react";
 import {
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
   FileText,
   GripVertical,
   Info,
   Plus,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

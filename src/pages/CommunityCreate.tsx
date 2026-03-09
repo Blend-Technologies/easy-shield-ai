@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, Sparkles, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,37 +15,36 @@ const CommunityCreate = () => {
   const [joinedCommunities, setJoinedCommunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
 
-      const { data: all } = await supabase
-        .from("courses")
-        .select("id, title, subtitle, description, category, logo_url, created_at, created_by")
-        .order("created_at", { ascending: false });
+    const { data: all } = await supabase
+      .from("courses")
+      .select("id, title, subtitle, description, category, logo_url, created_at, created_by")
+      .order("created_at", { ascending: false });
 
-      setAllCommunities(all || []);
+    setAllCommunities(all || []);
 
-      if (user) {
-        setMyCommunities((all || []).filter((c) => c.created_by === user.id));
+    if (user) {
+      setMyCommunities((all || []).filter((c) => c.created_by === user.id));
 
-        const { data: enrollments } = await supabase
-          .from("course_enrollments")
-          .select("course_id")
-          .eq("user_id", user.id);
+      const { data: enrollments } = await supabase
+        .from("course_enrollments")
+        .select("course_id")
+        .eq("user_id", user.id);
 
-        const enrolledIds = new Set((enrollments || []).map((e) => e.course_id));
-        setJoinedCommunities((all || []).filter((c) => enrolledIds.has(c.id)));
-      }
+      const enrolledIds = new Set((enrollments || []).map((e) => e.course_id));
+      setJoinedCommunities((all || []).filter((c) => enrolledIds.has(c.id)));
+    }
 
-      setLoading(false);
-    };
-    fetchAll();
+    setLoading(false);
   }, []);
 
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
   if (view === "create") {
-    return <CommunityCreateForm onBack={() => setView("list")} />;
+    return <CommunityCreateForm onBack={() => { setView("list"); fetchAll(); }} />;
   }
 
   const EmptyState = ({ message }: { message: string }) => (
@@ -55,7 +54,7 @@ const CommunityCreate = () => {
     </div>
   );
 
-  const renderList = (communities: any[], emptyMsg: string) =>
+  const renderList = (communities: any[], emptyMsg: string, showActions = false) =>
     loading ? (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -63,7 +62,7 @@ const CommunityCreate = () => {
     ) : communities.length === 0 ? (
       <EmptyState message={emptyMsg} />
     ) : (
-      <CommunityList communities={communities} />
+      <CommunityList communities={communities} onRefresh={fetchAll} showActions={showActions} />
     );
 
   return (
@@ -97,7 +96,7 @@ const CommunityCreate = () => {
             {renderList(allCommunities, "No communities yet")}
           </TabsContent>
           <TabsContent value="mine">
-            {renderList(myCommunities, "You haven't created any communities yet")}
+            {renderList(myCommunities, "You haven't created any communities yet", true)}
           </TabsContent>
           <TabsContent value="joined">
             {renderList(joinedCommunities, "You haven't joined any communities yet")}

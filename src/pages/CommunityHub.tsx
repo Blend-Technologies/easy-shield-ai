@@ -43,7 +43,7 @@ const CommunityHub = () => {
   // Courses tab uses full-width layout without sidebars
   if (activeTab === "Courses") {
     return (
-      <div className="min-h-screen bg-[#F5F6F8]">
+      <div className="min-h-screen bg-background">
         <CommunityTopNav
           communityName={community.name}
           logo={community.logo}
@@ -56,7 +56,7 @@ const CommunityHub = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted/30">
       <CommunityTopNav
         communityName={community.name}
         logo={community.logo}

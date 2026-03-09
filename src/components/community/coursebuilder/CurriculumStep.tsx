@@ -89,9 +89,12 @@ const SortableItem = ({
   contentPickerItemId,
   setContentPickerItemId,
   updateItemMediaType,
+  uploadVideo,
   expandedItemIds,
   toggleItemExpanded,
 }: SortableItemProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
   });

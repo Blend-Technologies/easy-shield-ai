@@ -38,7 +38,6 @@ type Props = {
 };
 
 const navItems = [
-  { icon: Users, label: "Teams" },
   { icon: LayoutDashboard, label: "Dashboards" },
   { icon: Pencil, label: "Whiteboards" },
   { icon: Target, label: "Goals" },

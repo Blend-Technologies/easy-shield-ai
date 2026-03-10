@@ -756,6 +756,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_team_member_or_creator: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "member"

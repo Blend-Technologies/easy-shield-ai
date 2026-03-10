@@ -12,7 +12,7 @@ const plans = [
     features: [
       "Request for Proposal (RFP) Evaluator",
       "Capability Statement match",
-      "Diagram Generator",
+      "Architecture Diagram Generator",
       "1 platform connection",
       "5 scans per month",
       "Basic best practices",

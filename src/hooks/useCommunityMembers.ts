@@ -12,6 +12,7 @@ export interface MemberProfile {
   avatar_url: string | null;
   online: boolean | null;
   created_at: string;
+  roles: string[];
 }
 
 export function useCommunityMembers() {
@@ -20,12 +21,27 @@ export function useCommunityMembers() {
   const membersQuery = useQuery({
     queryKey: ["community-members"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: profiles, error } = await supabase
         .from("profiles")
         .select("id, full_name, company, title, location, bio, avatar_url, online, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as MemberProfile[];
+
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      const rolesMap = new Map<string, string[]>();
+      (roles ?? []).forEach((r) => {
+        const existing = rolesMap.get(r.user_id) ?? [];
+        existing.push(r.role);
+        rolesMap.set(r.user_id, existing);
+      });
+
+      return (profiles ?? []).map((p) => ({
+        ...p,
+        roles: rolesMap.get(p.id) ?? ["member"],
+      })) as MemberProfile[];
     },
   });
 

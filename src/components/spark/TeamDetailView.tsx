@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,8 +44,10 @@ const TeamDetailView = ({ team, onBack }: Props) => {
   const [savingDesc, setSavingDesc] = useState(false);
 
   const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [newMemberEmail, setNewMemberEmail] = useState("");
-  const [newMemberRole, setNewMemberRole] = useState("member");
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [newMemberRole, setNewMemberRole] = useState("Project Manager");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ id: string; full_name: string | null }[]>([]);
 
   const handleSaveDescription = async () => {
     setSavingDesc(true);
@@ -63,31 +65,39 @@ const TeamDetailView = ({ team, onBack }: Props) => {
     }
   };
 
-  const handleAddMember = async () => {
-    if (!newMemberEmail.trim()) return;
-
-    // Look up user by email via profiles — we need to find by auth email
-    // Since we can't query auth.users, we'll search profiles by full_name as fallback
-    // Best approach: use the email to find profile id
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .ilike("full_name", `%${newMemberEmail.trim()}%`)
-      .limit(5);
-
-    if (!profiles || profiles.length === 0) {
-      toast({ title: "User not found", description: "No user found with that name. They must have an account first.", variant: "destructive" });
+  // Search profiles as user types
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) {
+      setSearchResults([]);
       return;
     }
+    const timeout = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .ilike("full_name", `%${searchQuery.trim()}%`)
+        .limit(10);
+      // Filter out users already in the team
+      const memberIds = members.map((m) => m.user_id);
+      setSearchResults((data || []).filter((p) => !memberIds.includes(p.id)));
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchQuery, members]);
 
-    // Use first match
+  const handleAddMember = () => {
+    if (!selectedUserId) {
+      toast({ title: "Select a user", description: "Please select a user from the search results.", variant: "destructive" });
+      return;
+    }
     addMember.mutate(
-      { userId: profiles[0].id, role: newMemberRole },
+      { userId: selectedUserId, role: newMemberRole },
       {
         onSuccess: () => {
           setAddMemberOpen(false);
-          setNewMemberEmail("");
-          setNewMemberRole("member");
+          setSelectedUserId("");
+          setSearchQuery("");
+          setNewMemberRole("Project Manager");
+          setSearchResults([]);
         },
       }
     );
@@ -228,11 +238,30 @@ const TeamDetailView = ({ team, onBack }: Props) => {
             <div className="space-y-2">
               <Label>Search by name</Label>
               <Input
-                value={newMemberEmail}
-                onChange={(e) => setNewMemberEmail(e.target.value)}
-                placeholder="Enter member's name..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setSelectedUserId(""); }}
+                placeholder="Type a name to search..."
                 autoFocus
               />
+              {searchResults.length > 0 && (
+                <div className="border border-border rounded-md max-h-32 overflow-auto">
+                  {searchResults.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => { setSelectedUserId(user.id); setSearchQuery(user.full_name || ""); setSearchResults([]); }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                        selectedUserId === user.id ? "bg-accent font-medium" : ""
+                      }`}
+                    >
+                      {user.full_name || "Unnamed User"}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searchQuery.length >= 2 && searchResults.length === 0 && !selectedUserId && (
+                <p className="text-xs text-muted-foreground">No users found</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Role</Label>
@@ -242,9 +271,7 @@ const TeamDetailView = ({ team, onBack }: Props) => {
                 </SelectTrigger>
                 <SelectContent>
                   {ROLES.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {r.charAt(0).toUpperCase() + r.slice(1)}
-                    </SelectItem>
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -252,7 +279,7 @@ const TeamDetailView = ({ team, onBack }: Props) => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddMemberOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddMember} disabled={!newMemberEmail.trim() || addMember.isPending}>
+            <Button onClick={handleAddMember} disabled={!selectedUserId || addMember.isPending}>
               {addMember.isPending ? "Adding..." : "Add Member"}
             </Button>
           </DialogFooter>

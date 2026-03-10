@@ -12,6 +12,7 @@ const plans = [
     features: [
       "Request for Proposal (RFP) Evaluator",
       "Capability Statement match",
+      "Diagram Generator",
       "1 platform connection",
       "5 scans per month",
       "Basic best practices",
@@ -29,6 +30,7 @@ const plans = [
     features: [
       "Request for Proposal (RFP) Evaluator",
       "Capability Statement match",
+      "Diagram Generator",
       "5 platform connections",
       "Unlimited scans",
       "Advanced AI recommendations",
@@ -47,6 +49,7 @@ const plans = [
     features: [
       "Request for Proposal (RFP) Evaluator",
       "Capability Statement match",
+      "Diagram Generator",
       "Unlimited connections",
       "Unlimited scans",
       "Custom AI training",

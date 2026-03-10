@@ -12,6 +12,7 @@ export interface MemberProfile {
   avatar_url: string | null;
   online: boolean | null;
   created_at: string;
+  roles: string[];
 }
 
 export function useCommunityMembers() {

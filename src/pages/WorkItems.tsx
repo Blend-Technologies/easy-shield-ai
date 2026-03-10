@@ -346,6 +346,7 @@ const WorkItems = () => {
         onUpdate={updateItem}
         sprints={sprints}
         onCreateSprint={addSprint}
+        projectMembers={projectMembers}
       />
 
       {/* Sprint Creation Dialog */}

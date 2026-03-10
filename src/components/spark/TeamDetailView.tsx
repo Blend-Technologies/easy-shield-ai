@@ -224,7 +224,12 @@ const TeamDetailView = ({ team, onBack }: Props) => {
           ) : (
             <div className="space-y-2 max-w-2xl">
               {members.map((member) => (
-                <MemberRow key={member.id} member={member} onRemove={() => removeMember.mutate(member.id)} />
+                <MemberRow
+                  key={member.id}
+                  member={member}
+                  onRemove={() => removeMember.mutate(member.id)}
+                  onEdit={() => { setEditMember(member); setEditRole(member.role); }}
+                />
               ))}
             </div>
           )}

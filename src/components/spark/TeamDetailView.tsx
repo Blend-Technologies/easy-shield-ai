@@ -341,7 +341,7 @@ const TeamDetailView = ({ team, onBack }: Props) => {
   );
 };
 
-const MemberRow = ({ member, onRemove }: { member: TeamMember; onRemove: () => void }) => {
+const MemberRow = ({ member, onRemove, onEdit }: { member: TeamMember; onRemove: () => void; onEdit: () => void }) => {
   const name = member.profile?.full_name || "Unknown User";
   const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -367,6 +367,14 @@ const MemberRow = ({ member, onRemove }: { member: TeamMember; onRemove: () => v
       <Badge variant="outline" className={`text-[10px] ${roleColor[member.role] || ""}`}>
         {member.role}
       </Badge>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+        onClick={onEdit}
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </Button>
       <Button
         variant="ghost"
         size="icon"

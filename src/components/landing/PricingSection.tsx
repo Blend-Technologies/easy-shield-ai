@@ -10,6 +10,7 @@ const plans = [
     period: "/month",
     description: "For individual consultants getting started",
     features: [
+      "Request for Proposal (RFP) Evaluator",
       "1 platform connection",
       "5 scans per month",
       "Basic best practices",
@@ -25,6 +26,7 @@ const plans = [
     period: "/month",
     description: "For teams delivering enterprise projects",
     features: [
+      "Request for Proposal (RFP) Evaluator",
       "5 platform connections",
       "Unlimited scans",
       "Advanced AI recommendations",
@@ -41,6 +43,7 @@ const plans = [
     period: "",
     description: "For large organizations with advanced needs",
     features: [
+      "Request for Proposal (RFP) Evaluator",
       "Unlimited connections",
       "Unlimited scans",
       "Custom AI training",

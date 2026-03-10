@@ -32,6 +32,7 @@ const plans = [
       "Request for Proposal (RFP) Evaluator",
       "Capability Statement match",
       "Architecture Diagram Generator",
+      "Cybersecurity Checklist",
       "5 platform connections",
       "Unlimited scans",
       "Advanced AI recommendations",

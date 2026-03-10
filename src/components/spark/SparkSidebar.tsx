@@ -180,7 +180,12 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack, on
                     {teams.map((team) => (
                       <div
                         key={team.id}
-                        className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors group/team"
+                        onClick={() => onSelectTeam?.(team)}
+                        className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors group/team cursor-pointer ${
+                          selectedTeamId === team.id
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-spark-sidebar-foreground hover:bg-black/5"
+                        }`}
                       >
                         <Avatar className="h-5 w-5 rounded">
                           <AvatarFallback
@@ -192,7 +197,7 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack, on
                         </Avatar>
                         <span className="truncate flex-1 text-left">{team.name}</span>
                         <button
-                          onClick={() => deleteTeam.mutate(team.id)}
+                          onClick={(e) => { e.stopPropagation(); deleteTeam.mutate(team.id); }}
                           className="opacity-0 group-hover/team:opacity-100 p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
                         >
                           <Trash2 className="w-3 h-3" />

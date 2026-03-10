@@ -73,7 +73,7 @@ const workspaceColors: Record<number, string> = {
   4: "bg-orange-500",
 };
 
-const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: Props) => {
+const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack, onSelectTeam, selectedTeamId }: Props) => {
   const [spacesExpanded, setSpacesExpanded] = useState(true);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const navigate = useNavigate();

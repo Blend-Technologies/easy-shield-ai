@@ -294,8 +294,13 @@ const WorkItems = () => {
                         {/* Assignee */}
                         <div className="flex items-center gap-1">
                           <User className={`w-3.5 h-3.5 ${textMuted}`} />
-                          <input value={newAssignee} onChange={(e) => setNewAssignee(e.target.value.toUpperCase().slice(0, 3))}
-                            placeholder="Initials" className={`w-14 h-7 px-2 text-xs rounded border ${inputBorder} ${inputBg} ${textDark} outline-none text-center`} />
+                          <select value={newAssignee} onChange={(e) => setNewAssignee(e.target.value)}
+                            className={`h-7 px-2 text-xs rounded border ${inputBorder} ${inputBg} ${textDark} outline-none`}>
+                            <option value="">Unassigned</option>
+                            {projectMembers.map((m) => (
+                              <option key={m.id} value={m.initials}>{m.full_name} ({m.initials})</option>
+                            ))}
+                          </select>
                         </div>
                         {/* Due Date */}
                         <div className="flex items-center gap-1">

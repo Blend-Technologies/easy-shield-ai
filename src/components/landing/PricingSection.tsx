@@ -11,6 +11,7 @@ const plans = [
     description: "For individual consultants getting started",
     features: [
       "Request for Proposal (RFP) Evaluator",
+      "Capability Statement match",
       "1 platform connection",
       "5 scans per month",
       "Basic best practices",
@@ -27,6 +28,7 @@ const plans = [
     description: "For teams delivering enterprise projects",
     features: [
       "Request for Proposal (RFP) Evaluator",
+      "Capability Statement match",
       "5 platform connections",
       "Unlimited scans",
       "Advanced AI recommendations",
@@ -44,6 +46,7 @@ const plans = [
     description: "For large organizations with advanced needs",
     features: [
       "Request for Proposal (RFP) Evaluator",
+      "Capability Statement match",
       "Unlimited connections",
       "Unlimited scans",
       "Custom AI training",

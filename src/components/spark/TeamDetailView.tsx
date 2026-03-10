@@ -37,7 +37,10 @@ const ROLES = ["Project Manager", "Cybersecurity Engineer", "AI Engineer", "Data
 const TeamDetailView = ({ team, onBack }: Props) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { members, isLoading: membersLoading, addMember, removeMember } = useTeamMembers(team.id);
+  const { members, isLoading: membersLoading, addMember, removeMember, updateMemberRole } = useTeamMembers(team.id);
+
+  const [editMember, setEditMember] = useState<TeamMember | null>(null);
+  const [editRole, setEditRole] = useState("");
 
   const [editingDesc, setEditingDesc] = useState(false);
   const [description, setDescription] = useState((team as any).description || "");

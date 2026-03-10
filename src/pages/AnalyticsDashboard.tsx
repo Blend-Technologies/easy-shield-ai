@@ -5,6 +5,7 @@ import SparkTopNav from "@/components/spark/SparkTopNav";
 import SparkSidebar from "@/components/spark/SparkSidebar";
 import DashboardContent from "@/components/analytics/DashboardContent";
 import { useSparkProjects, SparkProject } from "@/hooks/useSparkProjects";
+import { useProjectMembers } from "@/hooks/useProjectMembers";
 
 const AnalyticsDashboard = () => {
   const { projects, loading } = useSparkProjects();

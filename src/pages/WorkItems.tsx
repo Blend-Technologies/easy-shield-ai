@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { useWorkItems, WorkItem } from "@/hooks/useWorkItems";
 import { useSprints, Sprint } from "@/hooks/useSprints";
+import { useProjectIdFromName } from "@/hooks/useProjectIdFromName";
+import { useProjectMembers } from "@/hooks/useProjectMembers";
 import { format, isToday, isPast } from "date-fns";
 import TaskDetailDialog from "@/components/workitems/TaskDetailDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";

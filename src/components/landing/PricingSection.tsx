@@ -37,6 +37,7 @@ const plans = [
       "Project Management",
       "Cybersecurity Checklist",
       "Team Size of 10",
+      "Community Membership",
       "5 platform connections",
       "Unlimited scans",
       "Advanced AI recommendations",

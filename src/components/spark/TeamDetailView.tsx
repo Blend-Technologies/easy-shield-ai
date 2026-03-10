@@ -228,7 +228,7 @@ const TeamDetailView = ({ team, onBack }: Props) => {
         </TabsContent>
       </Tabs>
 
-      {/* Add Member Dialog */}
+      {/* Add Member Dialog - outside Tabs to avoid z-index issues */}
       <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>

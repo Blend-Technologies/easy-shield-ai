@@ -65,31 +65,39 @@ const TeamDetailView = ({ team, onBack }: Props) => {
     }
   };
 
-  const handleAddMember = async () => {
-    if (!newMemberEmail.trim()) return;
-
-    // Look up user by email via profiles — we need to find by auth email
-    // Since we can't query auth.users, we'll search profiles by full_name as fallback
-    // Best approach: use the email to find profile id
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .ilike("full_name", `%${newMemberEmail.trim()}%`)
-      .limit(5);
-
-    if (!profiles || profiles.length === 0) {
-      toast({ title: "User not found", description: "No user found with that name. They must have an account first.", variant: "destructive" });
+  // Search profiles as user types
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) {
+      setSearchResults([]);
       return;
     }
+    const timeout = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .ilike("full_name", `%${searchQuery.trim()}%`)
+        .limit(10);
+      // Filter out users already in the team
+      const memberIds = members.map((m) => m.user_id);
+      setSearchResults((data || []).filter((p) => !memberIds.includes(p.id)));
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchQuery, members]);
 
-    // Use first match
+  const handleAddMember = () => {
+    if (!selectedUserId) {
+      toast({ title: "Select a user", description: "Please select a user from the search results.", variant: "destructive" });
+      return;
+    }
     addMember.mutate(
-      { userId: profiles[0].id, role: newMemberRole },
+      { userId: selectedUserId, role: newMemberRole },
       {
         onSuccess: () => {
           setAddMemberOpen(false);
-          setNewMemberEmail("");
-          setNewMemberRole("member");
+          setSelectedUserId("");
+          setSearchQuery("");
+          setNewMemberRole("Project Manager");
+          setSearchResults([]);
         },
       }
     );

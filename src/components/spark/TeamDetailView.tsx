@@ -238,11 +238,30 @@ const TeamDetailView = ({ team, onBack }: Props) => {
             <div className="space-y-2">
               <Label>Search by name</Label>
               <Input
-                value={newMemberEmail}
-                onChange={(e) => setNewMemberEmail(e.target.value)}
-                placeholder="Enter member's name..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setSelectedUserId(""); }}
+                placeholder="Type a name to search..."
                 autoFocus
               />
+              {searchResults.length > 0 && (
+                <div className="border border-border rounded-md max-h-32 overflow-auto">
+                  {searchResults.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => { setSelectedUserId(user.id); setSearchQuery(user.full_name || ""); setSearchResults([]); }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                        selectedUserId === user.id ? "bg-accent font-medium" : ""
+                      }`}
+                    >
+                      {user.full_name || "Unnamed User"}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searchQuery.length >= 2 && searchResults.length === 0 && !selectedUserId && (
+                <p className="text-xs text-muted-foreground">No users found</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Role</Label>
@@ -252,9 +271,7 @@ const TeamDetailView = ({ team, onBack }: Props) => {
                 </SelectTrigger>
                 <SelectContent>
                   {ROLES.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {r.charAt(0).toUpperCase() + r.slice(1)}
-                    </SelectItem>
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -262,7 +279,7 @@ const TeamDetailView = ({ team, onBack }: Props) => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddMemberOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddMember} disabled={!newMemberEmail.trim() || addMember.isPending}>
+            <Button onClick={handleAddMember} disabled={!selectedUserId || addMember.isPending}>
               {addMember.isPending ? "Adding..." : "Add Member"}
             </Button>
           </DialogFooter>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { WorkItem } from "@/hooks/useWorkItems";
 import { Sprint } from "@/hooks/useSprints";
+import { ProjectMember } from "@/hooks/useProjectMembers";
 import {
   Dialog,
   DialogContent,

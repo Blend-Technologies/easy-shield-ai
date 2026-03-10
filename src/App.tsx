@@ -24,8 +24,14 @@ import CommunityHub from "./pages/CommunityHub";
 import CourseBuilder from "./pages/CourseBuilder";
 import CoursePlayer from "./pages/CoursePlayer";
 import AccountSettings from "./pages/AccountSettings";
+import { useOnlinePresence } from "./hooks/useOnlinePresence";
 
 const queryClient = new QueryClient();
+
+const OnlinePresenceTracker = () => {
+  useOnlinePresence();
+  return null;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

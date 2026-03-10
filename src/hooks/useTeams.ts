@@ -80,5 +80,19 @@ export const useTeams = (projectId?: string | null) => {
     },
   });
 
-  return { teams, isLoading, createTeam, deleteTeam };
+  const updateTeam = useMutation({
+    mutationFn: async ({ teamId, updates }: { teamId: string; updates: Partial<Pick<Team, "name" | "color" | "description">> }) => {
+      const { error } = await supabase.from("teams").update(updates as any).eq("id", teamId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      toast({ title: "Team updated" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error updating team", description: err.message, variant: "destructive" });
+    },
+  });
+
+  return { teams, isLoading, createTeam, deleteTeam, updateTeam };
 };

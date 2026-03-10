@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { useWorkItems, WorkItem } from "@/hooks/useWorkItems";
 import { useSprints, Sprint } from "@/hooks/useSprints";
+import { useProjectIdFromName } from "@/hooks/useProjectIdFromName";
+import { useProjectMembers } from "@/hooks/useProjectMembers";
 import { format, isToday, isPast } from "date-fns";
 import TaskDetailDialog from "@/components/workitems/TaskDetailDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -40,6 +42,8 @@ const statusGroups: { id: StatusStyle; label: string; color: string; iconColor: 
 const WorkItems = () => {
   const navigate = useNavigate();
   const { projectName } = useParams();
+  const projectId = useProjectIdFromName(projectName);
+  const { members: projectMembers } = useProjectMembers(projectId);
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
@@ -48,7 +52,7 @@ const WorkItems = () => {
   });
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
-  const [newAssignee, setNewAssignee] = useState("KN");
+  const [newAssignee, setNewAssignee] = useState("");
   const [newDueDate, setNewDueDate] = useState("");
   const [newPriority, setNewPriority] = useState("none");
   const [selectedTask, setSelectedTask] = useState<WorkItem | null>(null);
@@ -65,7 +69,7 @@ const WorkItems = () => {
 
   const resetNewTask = () => {
     setNewTitle("");
-    setNewAssignee("KN");
+    setNewAssignee("");
     setNewDueDate("");
     setNewPriority("none");
     setAddingTo(null);
@@ -76,7 +80,7 @@ const WorkItems = () => {
     await addItem({
       title: newTitle.trim(),
       status,
-      assignee_initials: newAssignee || "KN",
+      assignee_initials: newAssignee || undefined,
       due_date: newDueDate || undefined,
       priority: newPriority,
     });
@@ -225,7 +229,7 @@ const WorkItems = () => {
                 <StatusBadge style={group.id} label={group.label} />
                 <span className={`text-[13px] ${textMuted}`}>{tasks.length}</span>
                 <MoreHorizontal className={`w-4 h-4 ${textMuted}`} />
-                <button onClick={() => { setAddingTo(group.id); setNewTitle(""); setNewAssignee("KN"); setNewDueDate(""); setNewPriority("none"); }} className={`flex items-center gap-1 text-[13px] ${textMuted} ml-2`}>
+              <button onClick={() => { setAddingTo(group.id); setNewTitle(""); setNewAssignee(""); setNewDueDate(""); setNewPriority("none"); }} className={`flex items-center gap-1 text-[13px] ${textMuted} ml-2`}>
                   <Plus className="w-3.5 h-3.5" />Add Task
                 </button>
               </div>
@@ -247,9 +251,17 @@ const WorkItems = () => {
                             {task.description && <AlignJustify className={`w-3.5 h-3.5 flex-shrink-0 ${textMuted}`} />}
                           </div>
                           <div>
-                            <div className="w-[26px] h-[26px] rounded-full bg-[#8B5CF6] flex items-center justify-center">
-                              <span className="text-white text-[10px] font-bold">{task.assignee_initials || "?"}</span>
-                            </div>
+                            {(() => {
+                              const member = projectMembers.find((m) => m.initials === task.assignee_initials);
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-[26px] h-[26px] rounded-full flex items-center justify-center" style={{ backgroundColor: member?.team_color || "#8B5CF6" }}>
+                                    <span className="text-white text-[10px] font-bold">{task.assignee_initials || "?"}</span>
+                                  </div>
+                                  {member && <span className={`text-[11px] ${textMuted} truncate max-w-[90px]`}>{member.full_name}</span>}
+                                </div>
+                              );
+                            })()}
                           </div>
                           <span className={`text-[13px] ${dd.color}`}>{dd.text}</span>
                           <div>
@@ -282,8 +294,13 @@ const WorkItems = () => {
                         {/* Assignee */}
                         <div className="flex items-center gap-1">
                           <User className={`w-3.5 h-3.5 ${textMuted}`} />
-                          <input value={newAssignee} onChange={(e) => setNewAssignee(e.target.value.toUpperCase().slice(0, 3))}
-                            placeholder="Initials" className={`w-14 h-7 px-2 text-xs rounded border ${inputBorder} ${inputBg} ${textDark} outline-none text-center`} />
+                          <select value={newAssignee} onChange={(e) => setNewAssignee(e.target.value)}
+                            className={`h-7 px-2 text-xs rounded border ${inputBorder} ${inputBg} ${textDark} outline-none`}>
+                            <option value="">Unassigned</option>
+                            {projectMembers.map((m) => (
+                              <option key={m.id} value={m.initials}>{m.full_name} ({m.initials})</option>
+                            ))}
+                          </select>
                         </div>
                         {/* Due Date */}
                         <div className="flex items-center gap-1">
@@ -311,7 +328,7 @@ const WorkItems = () => {
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => { setAddingTo(group.id); setNewTitle(""); setNewAssignee("KN"); setNewDueDate(""); setNewPriority("none"); }}
+                    <button onClick={() => { setAddingTo(group.id); setNewTitle(""); setNewAssignee(""); setNewDueDate(""); setNewPriority("none"); }}
                       className={`flex items-center gap-2 h-9 pl-8 ${textMutedLight} text-[13px] cursor-pointer ${rowHover} w-full`}>
                       <Plus className="w-3.5 h-3.5" />Add Task
                     </button>
@@ -329,6 +346,7 @@ const WorkItems = () => {
         onUpdate={updateItem}
         sprints={sprints}
         onCreateSprint={addSprint}
+        projectMembers={projectMembers}
       />
 
       {/* Sprint Creation Dialog */}

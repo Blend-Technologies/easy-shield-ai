@@ -5,10 +5,12 @@ import SparkTopNav from "@/components/spark/SparkTopNav";
 import SparkSidebar from "@/components/spark/SparkSidebar";
 import DashboardContent from "@/components/analytics/DashboardContent";
 import { useSparkProjects, SparkProject } from "@/hooks/useSparkProjects";
+import { useProjectMembers } from "@/hooks/useProjectMembers";
 
 const AnalyticsDashboard = () => {
   const { projects, loading } = useSparkProjects();
   const [selectedProject, setSelectedProject] = useState<SparkProject | null>(null);
+  const { members: projectMembers } = useProjectMembers(selectedProject?.id);
   const [authChecked, setAuthChecked] = useState(false);
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
@@ -54,7 +56,7 @@ const AnalyticsDashboard = () => {
           onSelectProject={handleSelectProject}
           onBack={handleBack}
         />
-        <DashboardContent />
+        <DashboardContent projectMembers={projectMembers} />
       </div>
     </div>
   );

@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { useSprints } from "@/hooks/useSprints";
 import { useWorkItems, WorkItem } from "@/hooks/useWorkItems";
+import { useProjectIdFromName } from "@/hooks/useProjectIdFromName";
+import { useProjectMembers } from "@/hooks/useProjectMembers";
 
 const viewTabs = [
   { id: "list", label: "List", icon: List },
@@ -42,6 +44,8 @@ const columnDefs: ColumnDef[] = [
 const KanbanBoard = () => {
   const navigate = useNavigate();
   const { projectName } = useParams();
+  const projectId = useProjectIdFromName(projectName);
+  const { members: projectMembers } = useProjectMembers(projectId);
   const { sprints } = useSprints();
   const { items, addItem, updateItem } = useWorkItems();
 
@@ -290,7 +294,14 @@ const KanbanBoard = () => {
                               >
                                 <p className="text-[13px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mb-2">{task.title}</p>
                                 <div className="flex items-center gap-2">
-                                  <User className="w-[14px] h-[14px] text-[#AAAAAA]" />
+                                  {(() => {
+                                    const member = projectMembers.find((m) => m.initials === task.assignee_initials);
+                                    return member ? (
+                                      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: member.team_color }}>
+                                        <span className="text-white text-[8px] font-bold">{member.initials}</span>
+                                      </div>
+                                    ) : <User className="w-[14px] h-[14px] text-[#AAAAAA]" />;
+                                  })()}
                                   <Calendar className="w-[14px] h-[14px] text-[#AAAAAA]" />
                                   <Flag className="w-[14px] h-[14px] text-[#AAAAAA]" />
                                 </div>
@@ -315,7 +326,14 @@ const KanbanBoard = () => {
                     >
                       <p className="text-[14px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mb-3">{task.title}</p>
                       <div className="flex items-center gap-2">
-                        <User className="w-[15px] h-[15px] text-[#AAAAAA]" />
+                        {(() => {
+                          const member = projectMembers.find((m) => m.initials === task.assignee_initials);
+                          return member ? (
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: member.team_color }}>
+                              <span className="text-white text-[8px] font-bold">{member.initials}</span>
+                            </div>
+                          ) : <User className="w-[15px] h-[15px] text-[#AAAAAA]" />;
+                        })()}
                         <Calendar className="w-[15px] h-[15px] text-[#AAAAAA]" />
                         <Flag className="w-[15px] h-[15px] text-[#AAAAAA]" />
                         <Tag className="w-[15px] h-[15px] text-[#AAAAAA]" />

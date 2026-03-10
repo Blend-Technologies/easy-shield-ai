@@ -56,7 +56,7 @@ const AnalyticsDashboard = () => {
           onSelectProject={handleSelectProject}
           onBack={handleBack}
         />
-        <DashboardContent />
+        <DashboardContent projectMembers={projectMembers} />
       </div>
     </div>
   );

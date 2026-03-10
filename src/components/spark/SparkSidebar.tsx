@@ -38,6 +38,8 @@ type Props = {
   selectedProjectId: string | null;
   onSelectProject: (project: SparkProject) => void;
   onBack: () => void;
+  onSelectTeam?: (team: import("@/hooks/useTeams").Team | null) => void;
+  selectedTeamId?: string | null;
 };
 
 const navItems = [

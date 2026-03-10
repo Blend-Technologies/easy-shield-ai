@@ -37,7 +37,10 @@ const ROLES = ["Project Manager", "Cybersecurity Engineer", "AI Engineer", "Data
 const TeamDetailView = ({ team, onBack }: Props) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { members, isLoading: membersLoading, addMember, removeMember } = useTeamMembers(team.id);
+  const { members, isLoading: membersLoading, addMember, removeMember, updateMemberRole } = useTeamMembers(team.id);
+
+  const [editMember, setEditMember] = useState<TeamMember | null>(null);
+  const [editRole, setEditRole] = useState("");
 
   const [editingDesc, setEditingDesc] = useState(false);
   const [description, setDescription] = useState((team as any).description || "");
@@ -221,7 +224,12 @@ const TeamDetailView = ({ team, onBack }: Props) => {
           ) : (
             <div className="space-y-2 max-w-2xl">
               {members.map((member) => (
-                <MemberRow key={member.id} member={member} onRemove={() => removeMember.mutate(member.id)} />
+                <MemberRow
+                  key={member.id}
+                  member={member}
+                  onRemove={() => removeMember.mutate(member.id)}
+                  onEdit={() => { setEditMember(member); setEditRole(member.role); }}
+                />
               ))}
             </div>
           )}
@@ -285,11 +293,55 @@ const TeamDetailView = ({ team, onBack }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Member Role Dialog */}
+      <Dialog open={!!editMember} onOpenChange={(open) => { if (!open) setEditMember(null); }}>
+        <DialogContent className="sm:max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle>Edit Member Role</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-muted-foreground text-xs">Member</Label>
+              <p className="text-sm font-medium text-foreground">{editMember?.profile?.full_name || "Unknown User"}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={editRole} onValueChange={setEditRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditMember(null)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                if (editMember) {
+                  updateMemberRole.mutate(
+                    { memberId: editMember.id, role: editRole },
+                    { onSuccess: () => setEditMember(null) }
+                  );
+                }
+              }}
+              disabled={updateMemberRole.isPending || editRole === editMember?.role}
+            >
+              {updateMemberRole.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-const MemberRow = ({ member, onRemove }: { member: TeamMember; onRemove: () => void }) => {
+const MemberRow = ({ member, onRemove, onEdit }: { member: TeamMember; onRemove: () => void; onEdit: () => void }) => {
   const name = member.profile?.full_name || "Unknown User";
   const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -315,6 +367,14 @@ const MemberRow = ({ member, onRemove }: { member: TeamMember; onRemove: () => v
       <Badge variant="outline" className={`text-[10px] ${roleColor[member.role] || ""}`}>
         {member.role}
       </Badge>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+        onClick={onEdit}
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </Button>
       <Button
         variant="ghost"
         size="icon"

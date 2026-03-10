@@ -68,5 +68,19 @@ export const useTeamMembers = (teamId?: string) => {
     },
   });
 
-  return { members, isLoading, addMember, removeMember };
+  const updateMemberRole = useMutation({
+    mutationFn: async ({ memberId, role }: { memberId: string; role: string }) => {
+      const { error } = await supabase.from("team_members").update({ role }).eq("id", memberId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-members", teamId] });
+      toast({ title: "Role updated" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error updating role", description: err.message, variant: "destructive" });
+    },
+  });
+
+  return { members, isLoading, addMember, removeMember, updateMemberRole };
 };

@@ -38,6 +38,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <OnlinePresenceTracker />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />

@@ -32,7 +32,7 @@ type Props = {
   onBack: () => void;
 };
 
-const ROLES = ["admin", "member", "viewer"];
+const ROLES = ["Project Manager", "Cybersecurity Engineer", "AI Engineer", "Data Analyst"];
 
 const TeamDetailView = ({ team, onBack }: Props) => {
   const { toast } = useToast();

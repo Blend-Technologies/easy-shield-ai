@@ -38,7 +38,6 @@ type Props = {
 };
 
 const navItems = [
-  { icon: Users, label: "Teams" },
   { icon: LayoutDashboard, label: "Dashboards" },
   { icon: Pencil, label: "Whiteboards" },
   { icon: Target, label: "Goals" },
@@ -136,54 +135,70 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Tasks Management */}
+        {/* Teams with Tasks Management nested */}
         <Collapsible defaultOpen>
           <CollapsibleTrigger asChild>
             <button
               className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors text-spark-sidebar-foreground hover:bg-black/5 group"
             >
-              <Kanban className="w-4 h-4 flex-shrink-0 text-primary" />
-              <span className="flex-1 text-left font-medium">Tasks Management</span>
+              <Users className="w-4 h-4 flex-shrink-0 text-primary" />
+              <span className="flex-1 text-left font-medium">Teams</span>
               <ChevronDown className="w-3 h-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-0 group-data-[state=closed]:-rotate-90" />
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
-              {/* Dashboard section */}
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2.5 pt-2 pb-1">Dashboard</p>
-              {dashboardSubItems.map((sub) => (
-                <button
-                  key={sub.label}
-                  onClick={() => navigate(sub.href)}
-                  className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors"
-                >
-                  <sub.icon className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
-                  <span className="text-left">{sub.label}</span>
-                </button>
-              ))}
+              {/* Tasks Management sub-section */}
+              <Collapsible defaultOpen>
+                <CollapsibleTrigger asChild>
+                  <button
+                    className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors text-spark-sidebar-foreground hover:bg-black/5 group"
+                  >
+                    <Kanban className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+                    <span className="flex-1 text-left font-medium">Tasks Management</span>
+                    <ChevronDown className="w-3 h-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-0 group-data-[state=closed]:-rotate-90" />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
+                    {/* Dashboard section */}
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2.5 pt-2 pb-1">Dashboard</p>
+                    {dashboardSubItems.map((sub) => (
+                      <button
+                        key={sub.label}
+                        onClick={() => navigate(sub.href)}
+                        className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors"
+                      >
+                        <sub.icon className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+                        <span className="text-left">{sub.label}</span>
+                      </button>
+                    ))}
 
-              {/* Tasks section */}
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2.5 pt-2 pb-1">Tasks</p>
-              {tasksSubItems.map((sub) =>
-                sub.href ? (
-                  <button
-                    key={sub.label}
-                    onClick={() => navigate(sub.href)}
-                    className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors"
-                  >
-                    <sub.icon className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
-                    <span className="text-left">{sub.label}</span>
-                  </button>
-                ) : (
-                  <button
-                    key={sub.label}
-                    className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-black/5 transition-colors"
-                  >
-                    <sub.icon className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span className="text-left">{sub.label}</span>
-                  </button>
-                )
-              )}
+                    {/* Tasks section */}
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2.5 pt-2 pb-1">Tasks</p>
+                    {tasksSubItems.map((sub) =>
+                      sub.href ? (
+                        <button
+                          key={sub.label}
+                          onClick={() => navigate(sub.href)}
+                          className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors"
+                        >
+                          <sub.icon className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+                          <span className="text-left">{sub.label}</span>
+                        </button>
+                      ) : (
+                        <button
+                          key={sub.label}
+                          className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-black/5 transition-colors"
+                        >
+                          <sub.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="text-left">{sub.label}</span>
+                        </button>
+                      )
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </CollapsibleContent>
         </Collapsible>

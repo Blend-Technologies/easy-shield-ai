@@ -26,9 +26,12 @@ import {
   IterationCcw,
   Sparkles,
   Truck,
+  Trash2,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SparkProject } from "@/hooks/useSparkProjects";
+import { useTeams } from "@/hooks/useTeams";
+import CreateTeamDialog from "@/components/spark/CreateTeamDialog";
 
 type Props = {
   projects: SparkProject[];

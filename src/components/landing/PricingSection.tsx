@@ -15,6 +15,7 @@ const plans = [
       "Architecture Diagram Generator",
       "Project Management",
       "Cybersecurity Checklist",
+      "Team Size of 3",
       "1 platform connection",
       "5 scans per month",
       "Basic best practices",

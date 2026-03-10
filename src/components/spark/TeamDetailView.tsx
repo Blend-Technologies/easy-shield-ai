@@ -293,6 +293,50 @@ const TeamDetailView = ({ team, onBack }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Member Role Dialog */}
+      <Dialog open={!!editMember} onOpenChange={(open) => { if (!open) setEditMember(null); }}>
+        <DialogContent className="sm:max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle>Edit Member Role</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-muted-foreground text-xs">Member</Label>
+              <p className="text-sm font-medium text-foreground">{editMember?.profile?.full_name || "Unknown User"}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={editRole} onValueChange={setEditRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditMember(null)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                if (editMember) {
+                  updateMemberRole.mutate(
+                    { memberId: editMember.id, role: editRole },
+                    { onSuccess: () => setEditMember(null) }
+                  );
+                }
+              }}
+              disabled={updateMemberRole.isPending || editRole === editMember?.role}
+            >
+              {updateMemberRole.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -139,7 +139,7 @@ const AccountSettings = () => {
       <div className="flex-1 overflow-y-auto">
         {/* Close button */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/community/hub")}
           className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors z-10"
         >
           <X className="w-5 h-5" />

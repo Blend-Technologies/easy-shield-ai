@@ -69,7 +69,7 @@ const CommunityCreate = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="h-14 border-b border-border flex items-center px-6 gap-3">
         <button
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/")}
           className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           title="Back to Dashboard"
         >

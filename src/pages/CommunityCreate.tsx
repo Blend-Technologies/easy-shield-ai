@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Sparkles, Plus, Loader2 } from "lucide-react";
+import { Users, Sparkles, Plus, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,6 +68,13 @@ const CommunityCreate = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="h-14 border-b border-border flex items-center px-6 gap-3">
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          title="Back to Dashboard"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
           <Users className="w-4 h-4 text-primary-foreground" />
         </div>

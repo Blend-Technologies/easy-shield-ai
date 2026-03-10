@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { useSprints } from "@/hooks/useSprints";
 import { useWorkItems, WorkItem } from "@/hooks/useWorkItems";
+import { useProjectIdFromName } from "@/hooks/useProjectIdFromName";
+import { useProjectMembers } from "@/hooks/useProjectMembers";
 
 const viewTabs = [
   { id: "list", label: "List", icon: List },

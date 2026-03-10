@@ -43,6 +43,7 @@ const plans = [
     period: "",
     description: "For large organizations with advanced needs",
     features: [
+      "Request for Proposal (RFP) Evaluator",
       "Unlimited connections",
       "Unlimited scans",
       "Custom AI training",

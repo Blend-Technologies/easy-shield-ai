@@ -26,9 +26,12 @@ import {
   IterationCcw,
   Sparkles,
   Truck,
+  Trash2,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SparkProject } from "@/hooks/useSparkProjects";
+import { useTeams } from "@/hooks/useTeams";
+import CreateTeamDialog from "@/components/spark/CreateTeamDialog";
 
 type Props = {
   projects: SparkProject[];
@@ -70,8 +73,10 @@ const workspaceColors: Record<number, string> = {
 
 const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: Props) => {
   const [spacesExpanded, setSpacesExpanded] = useState(true);
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const navigate = useNavigate();
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
+  const { teams, isLoading: teamsLoading, createTeam, deleteTeam } = useTeams(selectedProjectId);
   const dashboardSubItems = getDashboardSubItems(selectedProject?.name || "");
   const tasksSubItems = getTasksSubItems(selectedProject?.name || "");
 
@@ -148,6 +153,54 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
+              {/* My Teams sub-section */}
+              <Collapsible defaultOpen>
+                <CollapsibleTrigger asChild>
+                  <button
+                    className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors text-spark-sidebar-foreground hover:bg-black/5 group"
+                  >
+                    <Users className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+                    <span className="flex-1 text-left font-medium">My Teams</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCreateTeamOpen(true); }}
+                      className="p-0.5 rounded hover:bg-black/10 text-muted-foreground"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                    <ChevronDown className="w-3 h-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-0 group-data-[state=closed]:-rotate-90" />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
+                    {teams.length === 0 && !teamsLoading && (
+                      <p className="text-xs text-muted-foreground px-2.5 py-1">No teams yet</p>
+                    )}
+                    {teams.map((team) => (
+                      <div
+                        key={team.id}
+                        className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors group/team"
+                      >
+                        <Avatar className="h-5 w-5 rounded">
+                          <AvatarFallback
+                            className="text-white text-[10px] font-bold rounded"
+                            style={{ backgroundColor: team.color }}
+                          >
+                            {team.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate flex-1 text-left">{team.name}</span>
+                        <button
+                          onClick={() => deleteTeam.mutate(team.id)}
+                          className="opacity-0 group-hover/team:opacity-100 p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
               {/* Tasks Management sub-section */}
               <Collapsible defaultOpen>
                 <CollapsibleTrigger asChild>
@@ -303,6 +356,19 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
           Help
         </button>
       </div>
+
+      <CreateTeamDialog
+        open={createTeamOpen}
+        onOpenChange={setCreateTeamOpen}
+        onCreateTeam={(name, color) => {
+          if (selectedProjectId) {
+            createTeam.mutate({ name, color, projectId: selectedProjectId }, {
+              onSuccess: () => setCreateTeamOpen(false),
+            });
+          }
+        }}
+        loading={createTeam.isPending}
+      />
     </aside>
   );
 };

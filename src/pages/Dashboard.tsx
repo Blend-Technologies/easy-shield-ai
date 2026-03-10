@@ -78,11 +78,11 @@ const Dashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid md:grid-cols-2 gap-4">
-          <Link to="/dashboard/connections" className="glass-card rounded-xl p-6 hover:shadow-lg transition-shadow group">
+          <div className="glass-card rounded-xl p-6 hover:shadow-lg transition-shadow group">
             <Plug className="w-8 h-8 text-primary mb-3" />
             <h3 className="font-heading font-semibold text-foreground mb-1">Connect a Platform</h3>
             <p className="text-sm text-muted-foreground">Add a new No-Code/Low-Code platform for analysis</p>
-          </Link>
+          </div>
           <Link to="/dashboard/scanner" className="glass-card rounded-xl p-6 hover:shadow-lg transition-shadow group">
             <Search className="w-8 h-8 text-accent mb-3" />
             <h3 className="font-heading font-semibold text-foreground mb-1">Run a Scan</h3>

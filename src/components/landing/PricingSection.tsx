@@ -52,6 +52,7 @@ const plans = [
       "Cybersecurity Checklist",
       "Team Size of 10 or more",
       "Community Membership",
+      "Priority support",
     ],
     cta: "Contact Sales",
     popular: false,

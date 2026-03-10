@@ -36,6 +36,7 @@ const plans = [
       "Architecture Diagram Generator",
       "Project Management",
       "Cybersecurity Checklist",
+      "Team Size of 10",
       "5 platform connections",
       "Unlimited scans",
       "Advanced AI recommendations",

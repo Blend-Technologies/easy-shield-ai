@@ -9,7 +9,7 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
-import Connections from "./pages/Connections";
+
 import DesignVisualizer from "./pages/DesignVisualizer";
 import ProposalWriter from "./pages/ProposalWriter";
 import ProposalEvaluator from "./pages/ProposalEvaluator";

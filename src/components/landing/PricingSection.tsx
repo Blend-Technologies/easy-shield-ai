@@ -11,6 +11,7 @@ const plans = [
     description: "For individual consultants getting started",
     features: [
       "Request for Proposal (RFP) Evaluator",
+      "Capability Statement match",
       "1 platform connection",
       "5 scans per month",
       "Basic best practices",

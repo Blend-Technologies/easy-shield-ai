@@ -49,6 +49,7 @@ const plans = [
     features: [
       "Request for Proposal (RFP) Evaluator",
       "Capability Statement match",
+      "Diagram Generator",
       "Unlimited connections",
       "Unlimited scans",
       "Custom AI training",

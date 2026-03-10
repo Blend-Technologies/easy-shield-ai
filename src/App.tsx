@@ -40,7 +40,7 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/connections" element={<Connections />} />
+          
           <Route path="/dashboard/visualizer" element={<DesignVisualizer />} />
           <Route path="/dashboard/proposal-writer" element={<ProposalWriter />} />
           <Route path="/dashboard/proposal-evaluator" element={<ProposalEvaluator />} />

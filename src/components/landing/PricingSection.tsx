@@ -10,6 +10,7 @@ const plans = [
     period: "/month",
     description: "For individual consultants getting started",
     features: [
+      "Request for Proposal (RFP) Evaluator",
       "1 platform connection",
       "5 scans per month",
       "Basic best practices",

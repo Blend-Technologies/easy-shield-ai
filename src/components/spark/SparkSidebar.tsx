@@ -156,8 +156,7 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
                 <Users className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
                 <span className="text-left">Manage Teams</span>
               </button>
-          <CollapsibleContent>
-            <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
+
               {/* Tasks Management sub-section */}
               <Collapsible defaultOpen>
                 <CollapsibleTrigger asChild>

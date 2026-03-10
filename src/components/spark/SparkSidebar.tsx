@@ -356,6 +356,19 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
           Help
         </button>
       </div>
+
+      <CreateTeamDialog
+        open={createTeamOpen}
+        onOpenChange={setCreateTeamOpen}
+        onCreateTeam={(name, color) => {
+          if (selectedProjectId) {
+            createTeam.mutate({ name, color, projectId: selectedProjectId }, {
+              onSuccess: () => setCreateTeamOpen(false),
+            });
+          }
+        }}
+        loading={createTeam.isPending}
+      />
     </aside>
   );
 };

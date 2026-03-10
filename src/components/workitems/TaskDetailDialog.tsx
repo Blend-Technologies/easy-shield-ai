@@ -173,13 +173,26 @@ export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate, s
                 <div className="w-[26px] h-[26px] rounded-full bg-[#8B5CF6] flex items-center justify-center">
                   <span className="text-white text-[10px] font-bold">{assignee || "?"}</span>
                 </div>
-                <input
-                  value={assignee}
-                  onChange={(e) => setAssignee(e.target.value.toUpperCase().slice(0, 3))}
-                  onBlur={() => { if (assignee !== task.assignee_initials) save({ assignee_initials: assignee }); }}
-                  placeholder="Initials"
-                  className="w-14 text-[13px] bg-transparent outline-none border-none text-[#1A1A1A]"
-                />
+                {projectMembers.length > 0 ? (
+                  <select
+                    value={assignee}
+                    onChange={(e) => { setAssignee(e.target.value); save({ assignee_initials: e.target.value }); }}
+                    className="text-[13px] bg-[#F5F5F5] px-2 py-1 rounded outline-none border-none cursor-pointer"
+                  >
+                    <option value="">Unassigned</option>
+                    {projectMembers.map((m) => (
+                      <option key={m.id} value={m.initials}>{m.full_name} ({m.initials})</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={assignee}
+                    onChange={(e) => setAssignee(e.target.value.toUpperCase().slice(0, 3))}
+                    onBlur={() => { if (assignee !== task.assignee_initials) save({ assignee_initials: assignee }); }}
+                    placeholder="Initials"
+                    className="w-14 text-[13px] bg-transparent outline-none border-none text-[#1A1A1A]"
+                  />
+                )}
               </div>
             </DetailRow>
 

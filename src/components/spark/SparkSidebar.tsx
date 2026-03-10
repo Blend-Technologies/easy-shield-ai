@@ -73,8 +73,10 @@ const workspaceColors: Record<number, string> = {
 
 const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: Props) => {
   const [spacesExpanded, setSpacesExpanded] = useState(true);
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const navigate = useNavigate();
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
+  const { teams, isLoading: teamsLoading, createTeam, deleteTeam } = useTeams(selectedProjectId);
   const dashboardSubItems = getDashboardSubItems(selectedProject?.name || "");
   const tasksSubItems = getTasksSubItems(selectedProject?.name || "");
 

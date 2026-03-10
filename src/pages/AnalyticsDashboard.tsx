@@ -10,6 +10,7 @@ import { useProjectMembers } from "@/hooks/useProjectMembers";
 const AnalyticsDashboard = () => {
   const { projects, loading } = useSparkProjects();
   const [selectedProject, setSelectedProject] = useState<SparkProject | null>(null);
+  const { members: projectMembers } = useProjectMembers(selectedProject?.id);
   const [authChecked, setAuthChecked] = useState(false);
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();

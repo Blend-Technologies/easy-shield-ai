@@ -80,7 +80,7 @@ const WorkItems = () => {
     await addItem({
       title: newTitle.trim(),
       status,
-      assignee_initials: newAssignee || "KN",
+      assignee_initials: newAssignee || undefined,
       due_date: newDueDate || undefined,
       priority: newPriority,
     });

@@ -44,8 +44,10 @@ const TeamDetailView = ({ team, onBack }: Props) => {
   const [savingDesc, setSavingDesc] = useState(false);
 
   const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [newMemberEmail, setNewMemberEmail] = useState("");
-  const [newMemberRole, setNewMemberRole] = useState("member");
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [newMemberRole, setNewMemberRole] = useState("Project Manager");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ id: string; full_name: string | null }[]>([]);
 
   const handleSaveDescription = async () => {
     setSavingDesc(true);

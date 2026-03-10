@@ -44,6 +44,8 @@ const columnDefs: ColumnDef[] = [
 const KanbanBoard = () => {
   const navigate = useNavigate();
   const { projectName } = useParams();
+  const projectId = useProjectIdFromName(projectName);
+  const { members: projectMembers } = useProjectMembers(projectId);
   const { sprints } = useSprints();
   const { items, addItem, updateItem } = useWorkItems();
 

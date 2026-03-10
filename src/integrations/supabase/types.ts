@@ -634,6 +634,7 @@ export type Database = {
           color: string
           created_at: string
           created_by: string
+          description: string | null
           id: string
           name: string
           project_id: string | null
@@ -644,6 +645,7 @@ export type Database = {
           color?: string
           created_at?: string
           created_by: string
+          description?: string | null
           id?: string
           name: string
           project_id?: string | null
@@ -654,6 +656,7 @@ export type Database = {
           color?: string
           created_at?: string
           created_by?: string
+          description?: string | null
           id?: string
           name?: string
           project_id?: string | null

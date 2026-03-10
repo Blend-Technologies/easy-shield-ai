@@ -38,6 +38,8 @@ type Props = {
   selectedProjectId: string | null;
   onSelectProject: (project: SparkProject) => void;
   onBack: () => void;
+  onSelectTeam?: (team: import("@/hooks/useTeams").Team | null) => void;
+  selectedTeamId?: string | null;
 };
 
 const navItems = [
@@ -71,7 +73,7 @@ const workspaceColors: Record<number, string> = {
   4: "bg-orange-500",
 };
 
-const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: Props) => {
+const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack, onSelectTeam, selectedTeamId }: Props) => {
   const [spacesExpanded, setSpacesExpanded] = useState(true);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const navigate = useNavigate();
@@ -178,7 +180,12 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
                     {teams.map((team) => (
                       <div
                         key={team.id}
-                        className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors group/team"
+                        onClick={() => onSelectTeam?.(team)}
+                        className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors group/team cursor-pointer ${
+                          selectedTeamId === team.id
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-spark-sidebar-foreground hover:bg-black/5"
+                        }`}
                       >
                         <Avatar className="h-5 w-5 rounded">
                           <AvatarFallback
@@ -190,7 +197,7 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
                         </Avatar>
                         <span className="truncate flex-1 text-left">{team.name}</span>
                         <button
-                          onClick={() => deleteTeam.mutate(team.id)}
+                          onClick={(e) => { e.stopPropagation(); deleteTeam.mutate(team.id); }}
                           className="opacity-0 group-hover/team:opacity-100 p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
                         >
                           <Trash2 className="w-3 h-3" />

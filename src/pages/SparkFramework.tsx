@@ -4,12 +4,15 @@ import ProjectSelector from "@/components/spark/ProjectSelector";
 import SparkTopNav from "@/components/spark/SparkTopNav";
 import SparkSidebar from "@/components/spark/SparkSidebar";
 import SparkDashboardContent from "@/components/spark/SparkDashboardContent";
+import TeamDetailView from "@/components/spark/TeamDetailView";
 import { useSparkProjects, SparkProject } from "@/hooks/useSparkProjects";
+import { Team } from "@/hooks/useTeams";
 import { supabase } from "@/integrations/supabase/client";
 
 const SparkFramework = () => {
   const { projects, loading, createProject, deleteProject } = useSparkProjects();
   const [selectedProject, setSelectedProject] = useState<SparkProject | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
@@ -29,7 +32,6 @@ const SparkFramework = () => {
     checkAuth();
   }, [navigate]);
 
-  // Sync URL param to selected project
   useEffect(() => {
     if (!projects.length || loading) return;
     if (projectName) {
@@ -44,17 +46,18 @@ const SparkFramework = () => {
 
   const handleSelectProject = (project: SparkProject) => {
     setSelectedProject(project);
+    setSelectedTeam(null);
     navigate(`/dashboard/spark/${encodeURIComponent(project.name)}`);
   };
 
   const handleBack = () => {
     setSelectedProject(null);
+    setSelectedTeam(null);
     navigate("/dashboard/spark");
   };
 
   if (!authChecked) return null;
 
-  // Project selector view (no project selected)
   if (!selectedProject) {
     return (
       <div className="min-h-screen bg-background">
@@ -69,21 +72,23 @@ const SparkFramework = () => {
     );
   }
 
-  // Full ClickUp-style dashboard
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* Top nav */}
       <SparkTopNav userName={userName} />
-
-      {/* Body: sidebar + content */}
       <div className="flex flex-1 overflow-hidden">
         <SparkSidebar
           projects={projects}
           selectedProjectId={selectedProject.id}
           onSelectProject={handleSelectProject}
           onBack={handleBack}
+          onSelectTeam={(team) => setSelectedTeam(team)}
+          selectedTeamId={selectedTeam?.id || null}
         />
-        <SparkDashboardContent project={selectedProject} />
+        {selectedTeam ? (
+          <TeamDetailView team={selectedTeam} onBack={() => setSelectedTeam(null)} />
+        ) : (
+          <SparkDashboardContent project={selectedProject} />
+        )}
       </div>
     </div>
   );

@@ -69,7 +69,7 @@ const WorkItems = () => {
 
   const resetNewTask = () => {
     setNewTitle("");
-    setNewAssignee("KN");
+    setNewAssignee("");
     setNewDueDate("");
     setNewPriority("none");
     setAddingTo(null);

@@ -328,7 +328,7 @@ const WorkItems = () => {
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => { setAddingTo(group.id); setNewTitle(""); setNewAssignee("KN"); setNewDueDate(""); setNewPriority("none"); }}
+                    <button onClick={() => { setAddingTo(group.id); setNewTitle(""); setNewAssignee(""); setNewDueDate(""); setNewPriority("none"); }}
                       className={`flex items-center gap-2 h-9 pl-8 ${textMutedLight} text-[13px] cursor-pointer ${rowHover} w-full`}>
                       <Plus className="w-3.5 h-3.5" />Add Task
                     </button>

@@ -35,9 +35,10 @@ interface TaskDetailDialogProps {
   onUpdate: (id: string, updates: Partial<Pick<WorkItem, "title" | "status" | "description" | "assignee_initials" | "due_date" | "priority" | "sprint_id">>) => Promise<void>;
   sprints?: Sprint[];
   onCreateSprint?: (sprint: { name: string; start_date: string; end_date: string }) => Promise<Sprint | null>;
+  projectMembers?: ProjectMember[];
 }
 
-export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate, sprints = [], onCreateSprint }: TaskDetailDialogProps) {
+export default function TaskDetailDialog({ task, open, onOpenChange, onUpdate, sprints = [], onCreateSprint, projectMembers = [] }: TaskDetailDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<string>("backlog");

@@ -251,9 +251,17 @@ const WorkItems = () => {
                             {task.description && <AlignJustify className={`w-3.5 h-3.5 flex-shrink-0 ${textMuted}`} />}
                           </div>
                           <div>
-                            <div className="w-[26px] h-[26px] rounded-full bg-[#8B5CF6] flex items-center justify-center">
-                              <span className="text-white text-[10px] font-bold">{task.assignee_initials || "?"}</span>
-                            </div>
+                            {(() => {
+                              const member = projectMembers.find((m) => m.initials === task.assignee_initials);
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-[26px] h-[26px] rounded-full flex items-center justify-center" style={{ backgroundColor: member?.team_color || "#8B5CF6" }}>
+                                    <span className="text-white text-[10px] font-bold">{task.assignee_initials || "?"}</span>
+                                  </div>
+                                  {member && <span className={`text-[11px] ${textMuted} truncate max-w-[90px]`}>{member.full_name}</span>}
+                                </div>
+                              );
+                            })()}
                           </div>
                           <span className={`text-[13px] ${dd.color}`}>{dd.text}</span>
                           <div>

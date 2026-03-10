@@ -7,8 +7,13 @@ import OpenTasksChart from "./OpenTasksChart";
 import CompletedThisWeek from "./CompletedThisWeek";
 import TasksDuePanel from "./TasksDuePanel";
 import LatestActivityPanel from "./LatestActivityPanel";
+import { ProjectMember } from "@/hooks/useProjectMembers";
 
-const DashboardContent = () => {
+type Props = {
+  projectMembers?: ProjectMember[];
+};
+
+const DashboardContent = ({ projectMembers = [] }: Props) => {
   return (
     <div className="flex-1 overflow-y-auto bg-white">
       <DashboardTopBar />
@@ -23,7 +28,7 @@ const DashboardContent = () => {
 
         {/* Middle row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <TasksByAssigneeChart />
+          <TasksByAssigneeChart members={projectMembers} />
           <OpenTasksChart />
           <CompletedThisWeek />
         </div>

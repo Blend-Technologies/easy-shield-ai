@@ -38,11 +38,11 @@ export const useTeamMembers = (teamId?: string) => {
 
   const addMember = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
-      const { error } = await supabase.from("team_members").insert({
+      const { error } = await supabase.from("team_members").upsert({
         team_id: teamId!,
         user_id: userId,
         role,
-      });
+      }, { onConflict: "team_id,user_id" });
       if (error) throw error;
     },
     onSuccess: () => {

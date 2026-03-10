@@ -51,6 +51,7 @@ const App = () => (
           <Route path="/dashboard/:projectName/work-items" element={<WorkItems />} />
           <Route path="/dashboard/:projectName/analytics" element={<AnalyticsDashboard />} />
           <Route path="/dashboard/:projectName/boards" element={<KanbanBoard />} />
+          <Route path="/dashboard/:projectName/teams" element={<TeamsPage />} />
           <Route path="/dashboard/diagram/:diagramId" element={<DiagramEditor />} />
           <Route path="/community/create" element={<CommunityCreate />} />
           <Route path="/community/hub" element={<CommunityHub />} />

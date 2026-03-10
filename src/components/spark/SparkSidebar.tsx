@@ -148,6 +148,16 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack }: 
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
+              {/* Teams Page link */}
+              <button
+                onClick={() => navigate(`/dashboard/${encodeURIComponent(selectedProject?.name || "")}/teams`)}
+                className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors"
+              >
+                <Users className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+                <span className="text-left">Manage Teams</span>
+              </button>
+          <CollapsibleContent>
+            <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
               {/* Tasks Management sub-section */}
               <Collapsible defaultOpen>
                 <CollapsibleTrigger asChild>

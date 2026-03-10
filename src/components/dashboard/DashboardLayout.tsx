@@ -21,7 +21,7 @@ import logo from "@/assets/logo.jpeg";
 const sidebarLinks = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { label: "SPARK Framework", icon: Sparkles, href: "/dashboard/spark" },
-  { label: "Platform Connections", icon: Plug, href: "/dashboard/connections" },
+  
   { label: "Best Practices", icon: Search, href: "/dashboard/best-practices" },
   { label: "Scanner", icon: Shield, href: "/dashboard/scanner" },
   { label: "Knowledge Base", icon: BookOpen, href: "/dashboard/knowledge" },

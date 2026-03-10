@@ -9,7 +9,7 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
-import Connections from "./pages/Connections";
+
 import DesignVisualizer from "./pages/DesignVisualizer";
 import ProposalWriter from "./pages/ProposalWriter";
 import ProposalEvaluator from "./pages/ProposalEvaluator";
@@ -40,7 +40,7 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/connections" element={<Connections />} />
+          
           <Route path="/dashboard/visualizer" element={<DesignVisualizer />} />
           <Route path="/dashboard/proposal-writer" element={<ProposalWriter />} />
           <Route path="/dashboard/proposal-evaluator" element={<ProposalEvaluator />} />

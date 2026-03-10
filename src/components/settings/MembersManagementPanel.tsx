@@ -122,7 +122,20 @@ const MembersManagementPanel = () => {
                     {member.title && <p className="text-xs text-gray-400">{member.title}</p>}
                   </div>
                 </div>
-                <span className="text-xs text-gray-500">Member</span>
+                <span className="flex items-center gap-1.5">
+                  {member.roles.map((role) => (
+                    <span
+                      key={role}
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        role === "admin"
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </span>
+                  ))}
+                </span>
                 <span className="flex items-center gap-1.5 text-xs">
                   <Circle
                     className={`w-2.5 h-2.5 fill-current ${member.online ? "text-green-500" : "text-gray-300"}`}

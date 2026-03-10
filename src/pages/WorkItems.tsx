@@ -229,7 +229,7 @@ const WorkItems = () => {
                 <StatusBadge style={group.id} label={group.label} />
                 <span className={`text-[13px] ${textMuted}`}>{tasks.length}</span>
                 <MoreHorizontal className={`w-4 h-4 ${textMuted}`} />
-                <button onClick={() => { setAddingTo(group.id); setNewTitle(""); setNewAssignee("KN"); setNewDueDate(""); setNewPriority("none"); }} className={`flex items-center gap-1 text-[13px] ${textMuted} ml-2`}>
+              <button onClick={() => { setAddingTo(group.id); setNewTitle(""); setNewAssignee(""); setNewDueDate(""); setNewPriority("none"); }} className={`flex items-center gap-1 text-[13px] ${textMuted} ml-2`}>
                   <Plus className="w-3.5 h-3.5" />Add Task
                 </button>
               </div>

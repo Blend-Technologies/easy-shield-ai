@@ -46,6 +46,7 @@ const plans = [
     description: "For large organizations with advanced needs",
     features: [
       "Request for Proposal (RFP) Evaluator",
+      "Capability Statement match",
       "Unlimited connections",
       "Unlimited scans",
       "Custom AI training",

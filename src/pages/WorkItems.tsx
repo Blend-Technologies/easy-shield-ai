@@ -42,6 +42,8 @@ const statusGroups: { id: StatusStyle; label: string; color: string; iconColor: 
 const WorkItems = () => {
   const navigate = useNavigate();
   const { projectName } = useParams();
+  const projectId = useProjectIdFromName(projectName);
+  const { members: projectMembers } = useProjectMembers(projectId);
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
@@ -50,7 +52,7 @@ const WorkItems = () => {
   });
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
-  const [newAssignee, setNewAssignee] = useState("KN");
+  const [newAssignee, setNewAssignee] = useState("");
   const [newDueDate, setNewDueDate] = useState("");
   const [newPriority, setNewPriority] = useState("none");
   const [selectedTask, setSelectedTask] = useState<WorkItem | null>(null);

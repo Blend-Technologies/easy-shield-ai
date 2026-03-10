@@ -26,6 +26,7 @@ const plans = [
     period: "/month",
     description: "For teams delivering enterprise projects",
     features: [
+      "Request for Proposal (RFP) Evaluator",
       "5 platform connections",
       "Unlimited scans",
       "Advanced AI recommendations",

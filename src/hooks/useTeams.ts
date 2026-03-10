@@ -7,6 +7,7 @@ export type Team = {
   name: string;
   slug: string;
   color: string;
+  description: string;
   created_by: string;
   project_id: string | null;
   created_at: string;

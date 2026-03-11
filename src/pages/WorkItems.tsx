@@ -356,6 +356,7 @@ const WorkItems = () => {
                                 <option key={s.id} value={s.id}>{s.name}</option>
                               ))}
                             </select>
+                          </div>
                           <Flag className="w-3.5 h-3.5 text-[#CCC]" />
                           <button onClick={() => deleteItem(task.id)} className={`${textMuted} opacity-0 group-hover/row:opacity-100 transition-opacity`}>
                             <Trash2 className="w-4 h-4" />

@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ChevronDown, Plus, Search, Eye, Settings, LayoutGrid, List,
   Columns3, BarChart3, Table, Activity, Layers, GitBranch,
   CheckCircle2, Circle, Clock, MoreHorizontal, Flag, PlusCircle,
   AlignJustify, User, Filter, Sun, Moon, Trash2, ArrowLeft,
-  RefreshCw, AlertTriangle, Pause,
+  RefreshCw, AlertTriangle, Pause, Upload, FileText, Loader2,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { useWorkItems, WorkItem } from "@/hooks/useWorkItems";
 import { useSprints, Sprint } from "@/hooks/useSprints";
 import { useProjectIdFromName } from "@/hooks/useProjectIdFromName";
@@ -17,7 +19,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Zap } from "lucide-react";
 
 const tabs = [
-  { id: "overview", label: "Compliance Matrix", icon: LayoutGrid },
   { id: "list", label: "List", icon: List },
   { id: "board", label: "Board", icon: Columns3 },
   { id: "timeline", label: "Timeline", icon: BarChart3 },
@@ -61,6 +62,50 @@ const WorkItems = () => {
   const [creatingSprint, setCreatingSprint] = useState(false);
   const { grouped, loading, addItem, updateItem, deleteItem } = useWorkItems();
   const { sprints, addSprint } = useSprints();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [rfpUploading, setRfpUploading] = useState(false);
+
+  const handleRfpUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setRfpUploading(true);
+
+    try {
+      const text = await file.text();
+      const { data, error } = await supabase.functions.invoke("extract-requirements", {
+        body: { rfpDocuments: [{ name: file.name, content: text }] },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const requirements = data?.requirements || [];
+      if (requirements.length === 0) {
+        toast({ title: "No requirements found", description: "The document did not contain identifiable shall/must requirements.", variant: "destructive" });
+        return;
+      }
+
+      let added = 0;
+      for (const req of requirements) {
+        const result = await addItem({
+          title: `[${req.id}] ${req.text.substring(0, 200)}`,
+          status: "backlog",
+          description: `**Requirement ${req.id}** (${req.type.toUpperCase()})\n\nSection: ${req.section || "N/A"}\n\n${req.text}`,
+          priority: req.type === "must" ? "high" : "normal",
+        });
+        if (result) added++;
+      }
+
+      toast({ title: "RFP Imported", description: `${added} requirements added to backlog.` });
+    } catch (err: any) {
+      console.error("RFP upload error:", err);
+      toast({ variant: "destructive", title: "Import Failed", description: err.message || "Failed to process RFP document." });
+    } finally {
+      setRfpUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const toggleGroup = (id: string) =>
     setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -210,6 +255,30 @@ const WorkItems = () => {
           <ChevronDown className={`w-3 h-3 ${darkMode ? "text-gray-400" : "text-gray-600"}`} />
           <span className={`text-lg font-bold ${textDark}`}>List</span>
           <MoreHorizontal className={`w-4 h-4 ${textMuted}`} />
+        </div>
+      </div>
+
+      {/* RFP UPLOAD SECTION */}
+      <div className={`${barBg} px-4 pt-4`}>
+        <div className={`flex items-center gap-3 p-3 rounded-lg border border-dashed ${darkMode ? "border-white/20 bg-white/5" : "border-[#D0D0D0] bg-[#FAFAFA]"}`}>
+          <FileText className={`w-5 h-5 flex-shrink-0 ${darkMode ? "text-purple-400" : "text-[#7C3AED]"}`} />
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-medium ${textDark}`}>Import RFP Document</p>
+            <p className={`text-xs ${textMuted}`}>Upload a .txt or .md file to auto-extract shall/must requirements into backlog</p>
+          </div>
+          <input ref={fileInputRef} type="file" accept=".txt,.md,.text" onChange={handleRfpUpload} className="hidden" />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={rfpUploading}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
+              rfpUploading
+                ? "bg-[#7C3AED]/50 text-white cursor-not-allowed"
+                : "bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
+            }`}
+          >
+            {rfpUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            {rfpUploading ? "Processing..." : "Upload RFP"}
+          </button>
         </div>
       </div>
 

@@ -60,8 +60,8 @@ const WorkItems = () => {
   const [sprintStart, setSprintStart] = useState("");
   const [sprintEnd, setSprintEnd] = useState("");
   const [creatingSprint, setCreatingSprint] = useState(false);
-  const { grouped, loading, addItem, updateItem, deleteItem } = useWorkItems();
-  const { sprints, addSprint } = useSprints();
+  const { grouped, loading, addItem, updateItem, deleteItem } = useWorkItems(projectId);
+  const { sprints, addSprint } = useSprints(projectId);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rfpUploading, setRfpUploading] = useState(false);

@@ -5,23 +5,30 @@ import { useToast } from "@/hooks/use-toast";
 export type Sprint = {
   id: string;
   user_id: string;
+  project_id: string | null;
   name: string;
   start_date: string;
   end_date: string;
   created_at: string;
 };
 
-export function useSprints() {
+export function useSprints(projectId?: string | null) {
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchSprints = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("sprints")
       .select("*")
       .order("start_date", { ascending: false });
+
+    if (projectId) {
+      query = query.eq("project_id", projectId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       toast({ variant: "destructive", title: "Error", description: error.message });
@@ -40,7 +47,7 @@ export function useSprints() {
 
     const { data, error } = await supabase
       .from("sprints")
-      .insert({ user_id: user.id, ...sprint })
+      .insert({ user_id: user.id, project_id: projectId || null, ...sprint })
       .select()
       .single();
 
@@ -65,7 +72,7 @@ export function useSprints() {
 
   useEffect(() => {
     fetchSprints();
-  }, []);
+  }, [projectId]);
 
   return { sprints, loading, addSprint, deleteSprint, refetch: fetchSprints };
 }

@@ -489,6 +489,32 @@ const ProposalEvaluator = () => {
                             </div>
                           ))}
                         </div>
+                        {/* Follow-up question input */}
+                        <div className="mt-3 pt-3 border-t border-border">
+                          <div className="flex gap-2">
+                            <Textarea
+                              placeholder="Ask a follow-up question about the requirements (e.g., 'Focus only on security requirements' or 'Which requirements relate to data privacy?')"
+                              value={followUpQuestion}
+                              onChange={(e) => setFollowUpQuestion(e.target.value)}
+                              className="min-h-[60px] text-sm resize-none"
+                              disabled={isAskingFollowUp}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey && followUpQuestion.trim()) {
+                                  e.preventDefault();
+                                  extractRequirements(followUpQuestion.trim());
+                                }
+                              }}
+                            />
+                            <Button
+                              size="icon"
+                              className="shrink-0 self-end"
+                              onClick={() => extractRequirements(followUpQuestion.trim())}
+                              disabled={isAskingFollowUp || !followUpQuestion.trim()}
+                            >
+                              {isAskingFollowUp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        </div>
                       </CardContent>
                     )}
                   </Card>

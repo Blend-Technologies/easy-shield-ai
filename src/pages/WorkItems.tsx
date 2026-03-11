@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Zap } from "lucide-react";
 
 const tabs = [
-  { id: "overview", label: "Overview", icon: LayoutGrid },
+  { id: "overview", label: "Compliance Matrix", icon: LayoutGrid },
   { id: "list", label: "List", icon: List },
   { id: "board", label: "Board", icon: Columns3 },
   { id: "timeline", label: "Timeline", icon: BarChart3 },

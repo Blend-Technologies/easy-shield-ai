@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 export type WorkItem = {
   id: string;
   user_id: string;
+  project_id: string | null;
   title: string;
   description: string | null;
   status: string;
@@ -16,17 +17,23 @@ export type WorkItem = {
   updated_at: string;
 };
 
-export function useWorkItems() {
+export function useWorkItems(projectId?: string | null) {
   const [items, setItems] = useState<WorkItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchItems = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("work_items")
       .select("*")
       .order("created_at", { ascending: false });
+
+    if (projectId) {
+      query = query.eq("project_id", projectId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       toast({ variant: "destructive", title: "Error", description: error.message });
@@ -55,6 +62,7 @@ export function useWorkItems() {
       .from("work_items")
       .insert({
         user_id: user.id,
+        project_id: projectId || null,
         title: item.title,
         status: item.status || "backlog",
         description: item.description || null,
@@ -100,7 +108,7 @@ export function useWorkItems() {
 
   useEffect(() => {
     fetchItems();
-  }, []);
+  }, [projectId]);
 
   const grouped: Record<string, WorkItem[]> = {
     backlog: items.filter((i) => i.status === "backlog"),
@@ -112,7 +120,6 @@ export function useWorkItems() {
     "on-hold": items.filter((i) => i.status === "on-hold"),
     complete: items.filter((i) => i.status === "complete"),
     closed: items.filter((i) => i.status === "closed"),
-    // Legacy mappings
     shipped: items.filter((i) => i.status === "shipped"),
   };
 

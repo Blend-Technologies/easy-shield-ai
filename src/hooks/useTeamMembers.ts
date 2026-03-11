@@ -12,6 +12,7 @@ export type TeamMember = {
     full_name: string | null;
     avatar_url: string | null;
     title: string | null;
+    online: boolean | null;
   };
 };
 

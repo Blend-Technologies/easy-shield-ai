@@ -425,8 +425,8 @@ const ProposalEvaluator = () => {
                       className="w-full"
                       size="lg"
                       variant={requirementsResult ? "outline" : "default"}
-                      onClick={extractRequirements}
-                      disabled={isExtracting || files.length === 0}
+                      onClick={() => extractRequirements()}
+                      disabled={isExtracting || isAskingFollowUp || files.length === 0}
                     >
                       {isExtracting ? (
                         <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating Checklist Requirements...</>

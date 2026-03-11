@@ -258,6 +258,30 @@ const WorkItems = () => {
         </div>
       </div>
 
+      {/* RFP UPLOAD SECTION */}
+      <div className={`${barBg} px-4 pt-4`}>
+        <div className={`flex items-center gap-3 p-3 rounded-lg border border-dashed ${darkMode ? "border-white/20 bg-white/5" : "border-[#D0D0D0] bg-[#FAFAFA]"}`}>
+          <FileText className={`w-5 h-5 flex-shrink-0 ${darkMode ? "text-purple-400" : "text-[#7C3AED]"}`} />
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-medium ${textDark}`}>Import RFP Document</p>
+            <p className={`text-xs ${textMuted}`}>Upload a .txt or .md file to auto-extract shall/must requirements into backlog</p>
+          </div>
+          <input ref={fileInputRef} type="file" accept=".txt,.md,.text" onChange={handleRfpUpload} className="hidden" />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={rfpUploading}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
+              rfpUploading
+                ? "bg-[#7C3AED]/50 text-white cursor-not-allowed"
+                : "bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
+            }`}
+          >
+            {rfpUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            {rfpUploading ? "Processing..." : "Upload RFP"}
+          </button>
+        </div>
+      </div>
+
       {/* STATUS GROUPS */}
       <div className={`${barBg} px-4 pb-8`}>
         {loading && <p className={`text-sm ${textMuted} py-4`}>Loading...</p>}

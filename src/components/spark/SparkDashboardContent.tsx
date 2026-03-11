@@ -295,13 +295,19 @@ const SparkDashboardContent = ({ project }: Props) => {
                   </div>
                 </div>
                 <div>
-                  {mockAgenda.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/30 transition-colors">
-                      <CheckCircle2 className="w-4 h-4 text-spark-card-border flex-shrink-0" />
-                      <span className="text-sm text-foreground truncate flex-1">{item.title}</span>
-                      <span className="text-xs text-muted-foreground">{item.time}</span>
+                  {todayTasks.length === 0 ? (
+                    <div className="px-5 py-6 text-center text-sm text-muted-foreground">
+                      No tasks due today
                     </div>
-                  ))}
+                  ) : (
+                    todayTasks.map((task) => (
+                      <div key={task.id} className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/30 transition-colors">
+                        <CheckCircle2 className="w-4 h-4 text-spark-card-border flex-shrink-0" />
+                        <span className="text-sm text-foreground truncate flex-1">{task.title}</span>
+                        <span className="text-xs text-muted-foreground">All day</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 

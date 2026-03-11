@@ -157,7 +157,7 @@ export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResul
                 variant="outline"
                 size="sm"
                 className="gap-1.5 text-xs"
-                onClick={() => navigate(`/dashboard/diagram/${diagramId}`)}
+                onClick={() => window.open(`/dashboard/diagram/${diagramId}`, '_blank')}
               >
                 <Maximize2 className="w-3.5 h-3.5" />
                 Expand &amp; Edit

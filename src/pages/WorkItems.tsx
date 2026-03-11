@@ -322,10 +322,19 @@ const WorkItems = () => {
                               const member = projectMembers.find((m) => m.initials === task.assignee_initials);
                               return (
                                 <div className="flex items-center gap-1.5">
-                                  <div className="w-[26px] h-[26px] rounded-full flex items-center justify-center" style={{ backgroundColor: member?.team_color || "#8B5CF6" }}>
+                                  <div className="w-[26px] h-[26px] rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: member?.team_color || "#8B5CF6" }}>
                                     <span className="text-white text-[10px] font-bold">{task.assignee_initials || "?"}</span>
                                   </div>
-                                  {member && <span className={`text-[11px] ${textMuted} truncate max-w-[90px]`}>{member.full_name}</span>}
+                                  <select
+                                    value={task.assignee_initials || ""}
+                                    onChange={(e) => updateItem(task.id, { assignee_initials: e.target.value || null })}
+                                    className={`text-[12px] bg-transparent border-none outline-none cursor-pointer truncate max-w-[90px] ${textMuted} hover:${textDark}`}
+                                  >
+                                    <option value="">Unassigned</option>
+                                    {projectMembers.map((m) => (
+                                      <option key={m.id} value={m.initials}>{m.full_name}</option>
+                                    ))}
+                                  </select>
                                 </div>
                               );
                             })()}

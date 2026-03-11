@@ -351,13 +351,22 @@ const MemberRow = ({ member, onRemove, onEdit }: { member: TeamMember; onRemove:
     viewer: "bg-muted text-muted-foreground",
   };
 
+  const isOnline = member.profile?.online;
+
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors group">
-      <Avatar className="h-8 w-8">
-        <AvatarFallback className="bg-muted text-foreground text-xs font-medium">
-          {initials}
-        </AvatarFallback>
-      </Avatar>
+      <div className="relative">
+        <Avatar className="h-8 w-8">
+          <AvatarFallback className="bg-muted text-foreground text-xs font-medium">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <span
+          className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-background ${
+            isOnline ? "bg-green-500" : "bg-muted-foreground/40"
+          }`}
+        />
+      </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{name}</p>
         {member.profile?.title && (

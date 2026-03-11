@@ -49,7 +49,7 @@ const SparkFramework = () => {
   const handleSelectProject = (project: SparkProject) => {
     setSelectedProject(project);
     setSelectedTeam(null);
-    navigate(`/dashboard/spark/${encodeURIComponent(project.name)}`);
+    navigate(`/dashboard/${encodeURIComponent(project.name)}`);
   };
 
   const handleBack = () => {

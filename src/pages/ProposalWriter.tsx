@@ -327,6 +327,7 @@ const ProposalWriter = () => {
           <p className="text-muted-foreground mt-1">
             Evaluate RFP fit, then generate professional proposals powered by AI.
           </p>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-5 gap-6">

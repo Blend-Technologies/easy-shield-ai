@@ -318,7 +318,11 @@ const ProposalWriter = () => {
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6">
-        <div>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/spark/Testing")} className="shrink-0">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
           <h1 className="font-heading text-2xl font-bold text-foreground">Proposal Writer</h1>
           <p className="text-muted-foreground mt-1">
             Evaluate RFP fit, then generate professional proposals powered by AI.

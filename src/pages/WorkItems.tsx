@@ -339,16 +339,23 @@ const WorkItems = () => {
                               );
                             })()}
                           </div>
-                          <span className={`text-[13px] ${dd.color}`}>{dd.text}</span>
+                          <input
+                            type="date"
+                            value={task.due_date || ""}
+                            onChange={(e) => updateItem(task.id, { due_date: e.target.value || null })}
+                            className={`text-[13px] bg-transparent border-none outline-none cursor-pointer ${dd.color} w-[110px]`}
+                          />
                           <div>
-                            {(() => {
-                              const sprint = sprints.find((s) => s.id === task.sprint_id);
-                              return sprint ? (
-                                <span className="text-[12px] px-2 py-0.5 rounded-full bg-[#EDE9FF] text-[#7C3AED] font-medium truncate max-w-[140px] inline-block">{sprint.name}</span>
-                              ) : (
-                                <span className={`text-[13px] ${textMuted}`}>—</span>
-                              );
-                            })()}
+                            <select
+                              value={task.sprint_id || ""}
+                              onChange={(e) => updateItem(task.id, { sprint_id: e.target.value || null })}
+                              className={`text-[12px] bg-transparent border-none outline-none cursor-pointer truncate max-w-[140px] ${task.sprint_id ? "text-[#7C3AED]" : textMuted}`}
+                            >
+                              <option value="">No sprint</option>
+                              {sprints.map((s) => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                              ))}
+                            </select>
                           </div>
                           <Flag className="w-3.5 h-3.5 text-[#CCC]" />
                           <button onClick={() => deleteItem(task.id)} className={`${textMuted} opacity-0 group-hover/row:opacity-100 transition-opacity`}>

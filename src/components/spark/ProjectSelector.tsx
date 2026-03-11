@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, FolderOpen, Trash2, Sparkles } from "lucide-react";
+import { Plus, FolderOpen, Trash2, Sparkles, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +23,7 @@ type Props = {
 };
 
 const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Props) => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -47,6 +49,14 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Pr
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-2xl"
       >
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 self-start"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Home
+        </button>
+
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
             <Sparkles className="w-8 h-8 text-primary" />

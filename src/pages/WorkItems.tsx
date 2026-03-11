@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ChevronDown, Plus, Search, Eye, Settings, LayoutGrid, List,
   Columns3, BarChart3, Table, Activity, Layers, GitBranch,
   CheckCircle2, Circle, Clock, MoreHorizontal, Flag, PlusCircle,
   AlignJustify, User, Filter, Sun, Moon, Trash2, ArrowLeft,
-  RefreshCw, AlertTriangle, Pause,
+  RefreshCw, AlertTriangle, Pause, Upload, FileText, Loader2,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { useWorkItems, WorkItem } from "@/hooks/useWorkItems";
 import { useSprints, Sprint } from "@/hooks/useSprints";
 import { useProjectIdFromName } from "@/hooks/useProjectIdFromName";

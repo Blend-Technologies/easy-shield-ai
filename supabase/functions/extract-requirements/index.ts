@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { rfpDocuments } = await req.json();
+    const { rfpDocuments, followUpQuestion, previousRequirements } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -48,7 +48,15 @@ Respond with this exact JSON structure:
 
 Be thorough. Extract every instance where the document uses "shall" or "must" to define a mandatory requirement. Include the full sentence or clause containing the requirement.`;
 
-    const userPrompt = `Write out a list of shall and Must from this document:\n\n${rfpContext}`;
+    let userPrompt: string;
+
+    if (followUpQuestion && previousRequirements) {
+      // Follow-up mode: refine based on previous results and user question
+      const prevReqsJson = JSON.stringify(previousRequirements, null, 2);
+      userPrompt = `Here are the previously extracted requirements from the RFP documents:\n\n${prevReqsJson}\n\nOriginal RFP Documents:\n${rfpContext}\n\nThe user has a follow-up question/instruction: "${followUpQuestion}"\n\nPlease update the requirements list based on the user's question. You may add, remove, refine, filter, or re-categorize requirements as needed. Return the full updated requirements list in the same JSON format.`;
+    } else {
+      userPrompt = `Write out a list of shall and Must from this document:\n\n${rfpContext}`;
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

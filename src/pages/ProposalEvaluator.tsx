@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileUp, Loader2, X, FileText, BarChart3, ArrowLeft, ListChecks, ChevronDown, ChevronUp, Badge, Lightbulb, Cloud } from "lucide-react";
+import { FileUp, Loader2, X, FileText, BarChart3, ArrowLeft, ListChecks, ChevronDown, ChevronUp, Badge, Lightbulb, Cloud, MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 import { EvaluatorDashboard, type EvaluationResult } from "@/components/proposal/EvaluatorDashboard";
 import { SolutionDashboard, type SolutionResult } from "@/components/proposal/SolutionDashboard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -49,6 +50,8 @@ const ProposalEvaluator = () => {
   const [diagramId, setDiagramId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supplementaryFileRef = useRef<HTMLInputElement>(null);
+  const [followUpQuestion, setFollowUpQuestion] = useState("");
+  const [isAskingFollowUp, setIsAskingFollowUp] = useState(false);
 
   const readFileContent = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -86,19 +89,26 @@ const ProposalEvaluator = () => {
     setEvaluationResult(null);
   };
 
-  const extractRequirements = useCallback(async () => {
+  const extractRequirements = useCallback(async (followUp?: string) => {
     if (files.length === 0) {
       toast({ title: "Missing documents", description: "Upload at least one RFP document first.", variant: "destructive" });
       return;
     }
 
-    setIsExtracting(true);
-    setRequirementsResult(null);
-    setEvaluationResult(null);
+    const isFollowUp = !!followUp;
+    if (isFollowUp) {
+      setIsAskingFollowUp(true);
+    } else {
+      setIsExtracting(true);
+      setRequirementsResult(null);
+      setEvaluationResult(null);
+    }
 
     const rfpDocuments = files
       .filter((f) => f.status === "done")
       .map((f) => ({ name: f.file.name, content: f.content.slice(0, 15000) }));
+
+    const previousRequirements = isFollowUp && requirementsResult ? requirementsResult : undefined;
 
     try {
       const resp = await fetch(
@@ -109,7 +119,7 @@ const ProposalEvaluator = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ rfpDocuments }),
+          body: JSON.stringify({ rfpDocuments, followUpQuestion: followUp, previousRequirements }),
         }
       );
 
@@ -120,13 +130,19 @@ const ProposalEvaluator = () => {
 
       const result = await resp.json();
       setRequirementsResult(result);
-      toast({ title: "Requirements extracted!", description: `Found ${result.totalShall} shall + ${result.totalMust} must requirements.` });
+      if (isFollowUp) {
+        setFollowUpQuestion("");
+        toast({ title: "Requirements updated!", description: `Now showing ${result.requirements?.length || 0} requirements.` });
+      } else {
+        toast({ title: "Requirements extracted!", description: `Found ${result.totalShall} shall + ${result.totalMust} must requirements.` });
+      }
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
       setIsExtracting(false);
+      setIsAskingFollowUp(false);
     }
-  }, [files, toast]);
+  }, [files, requirementsResult, toast]);
 
   const evaluateRFP = useCallback(async () => {
     if (files.length === 0 && !supplementaryFile) {
@@ -409,8 +425,8 @@ const ProposalEvaluator = () => {
                       className="w-full"
                       size="lg"
                       variant={requirementsResult ? "outline" : "default"}
-                      onClick={extractRequirements}
-                      disabled={isExtracting || files.length === 0}
+                      onClick={() => extractRequirements()}
+                      disabled={isExtracting || isAskingFollowUp || files.length === 0}
                     >
                       {isExtracting ? (
                         <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating Checklist Requirements...</>
@@ -472,6 +488,32 @@ const ProposalEvaluator = () => {
                               </div>
                             </div>
                           ))}
+                        </div>
+                        {/* Follow-up question input */}
+                        <div className="mt-3 pt-3 border-t border-border">
+                          <div className="flex gap-2">
+                            <Textarea
+                              placeholder="Ask a follow-up question about the requirements (e.g., 'Focus only on security requirements' or 'Which requirements relate to data privacy?')"
+                              value={followUpQuestion}
+                              onChange={(e) => setFollowUpQuestion(e.target.value)}
+                              className="min-h-[60px] text-sm resize-none"
+                              disabled={isAskingFollowUp}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey && followUpQuestion.trim()) {
+                                  e.preventDefault();
+                                  extractRequirements(followUpQuestion.trim());
+                                }
+                              }}
+                            />
+                            <Button
+                              size="icon"
+                              className="shrink-0 self-end"
+                              onClick={() => extractRequirements(followUpQuestion.trim())}
+                              disabled={isAskingFollowUp || !followUpQuestion.trim()}
+                            >
+                              {isAskingFollowUp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     )}

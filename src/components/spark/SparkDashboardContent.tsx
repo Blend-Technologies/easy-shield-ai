@@ -76,6 +76,10 @@ const SparkDashboardContent = ({ project }: Props) => {
   const todoTasks = tasks.filter((t) => t.status === "todo");
   const inProgressTasks = tasks.filter((t) => t.status === "in_progress");
   const doneTasks = tasks.filter((t) => t.status === "done");
+  const todayTasks = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    return tasks.filter((t) => t.due_date === today && t.status !== "done");
+  }, [tasks]);
 
   const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return;

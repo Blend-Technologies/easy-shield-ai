@@ -145,17 +145,11 @@ const SparkDashboardContent = ({ project }: Props) => {
                       </span>
                     </div>
                   ))}
-                  {activity.length === 0 &&
-                    mockRecents.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/30 transition-colors"
-                      >
-                        <Circle className="w-4 h-4 text-spark-card-border flex-shrink-0" />
-                        <span className="text-sm text-foreground truncate flex-1">{item.title}</span>
-                        <span className="text-xs text-muted-foreground flex-shrink-0">• {item.location}</span>
-                      </div>
-                    ))}
+                  {activity.length === 0 && (
+                    <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+                      No recent activity yet. Start by adding tasks!
+                    </div>
+                  )}
                 </div>
               </div>
 

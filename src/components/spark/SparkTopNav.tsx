@@ -1,4 +1,4 @@
-import { Search, Sparkles, Bell, CalendarDays, Grid3X3, Plus, ChevronDown, Home } from "lucide-react";
+import { Search, Sparkles, Bell, CalendarDays, Grid3X3, Plus, ChevronDown, Home, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";

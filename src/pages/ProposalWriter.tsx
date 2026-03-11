@@ -31,6 +31,7 @@ const models = [
 ];
 
 const ProposalWriter = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [model, setModel] = useState("gemini-flash");
   const [proposalType, setProposalType] = useState("enterprise");

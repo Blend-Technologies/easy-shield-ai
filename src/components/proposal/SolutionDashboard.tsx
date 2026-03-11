@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,7 +58,6 @@ const providerLabel = (provider: string) => {
 const nodeTypes = { custom: CustomNode };
 
 export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResult; diagramId?: string }) => {
-  const navigate = useNavigate();
   const flowNodes: Node[] = useMemo(
     () =>
       result.nodes.map((n) => ({
@@ -158,7 +156,7 @@ export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResul
                 variant="outline"
                 size="sm"
                 className="gap-1.5 text-xs"
-                onClick={() => navigate(`/dashboard/diagram/${diagramId}`)}
+                onClick={() => window.open(`/dashboard/diagram/${diagramId}`, '_blank')}
               >
                 <Maximize2 className="w-3.5 h-3.5" />
                 Expand &amp; Edit

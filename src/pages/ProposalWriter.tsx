@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-import { FileUp, Sparkles, Download, Loader2, X, FileText, Trash2 } from "lucide-react";
+import { FileUp, Sparkles, Download, Loader2, X, FileText, Trash2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
 import { saveAs } from "file-saver";
@@ -30,6 +31,7 @@ const models = [
 ];
 
 const ProposalWriter = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [model, setModel] = useState("gemini-flash");
   const [proposalType, setProposalType] = useState("enterprise");
@@ -317,11 +319,16 @@ const ProposalWriter = () => {
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6">
-        <div>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/spark/Testing")} className="shrink-0">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
           <h1 className="font-heading text-2xl font-bold text-foreground">Proposal Writer</h1>
           <p className="text-muted-foreground mt-1">
             Evaluate RFP fit, then generate professional proposals powered by AI.
           </p>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-5 gap-6">

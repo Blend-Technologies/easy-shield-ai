@@ -35,11 +35,13 @@ const SparkFramework = () => {
   useEffect(() => {
     if (!projects.length || loading) return;
     if (projectName) {
-      const match = projects.find((p) => p.name === decodeURIComponent(projectName));
+      const decoded = decodeURIComponent(projectName);
+      const match = projects.find((p) => p.name === decoded);
       if (match && match.id !== selectedProject?.id) {
         setSelectedProject(match);
       }
-    } else {
+    } else if (!selectedProject) {
+      // Only reset if no project is already selected (avoids clearing after create)
       setSelectedProject(null);
     }
   }, [projectName, projects, loading]);

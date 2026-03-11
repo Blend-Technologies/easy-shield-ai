@@ -38,7 +38,7 @@ Respond with this exact JSON structure:
       "id": "<sequential number like R-001>",
       "type": "shall" | "must",
       "text": "<the full requirement text>",
-      "section": "<section or heading where it was found, if identifiable>"
+      "section": "<ONLY use a heading or section title that appears VERBATIM in the document. If no clear heading is identifiable, use 'General'. Do NOT invent section numbers, page numbers, or headings that are not explicitly present in the text.>"
     }
   ],
   "totalShall": <count of shall requirements>,

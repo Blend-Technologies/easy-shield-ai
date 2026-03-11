@@ -296,7 +296,7 @@ const DiagramEditorInner = () => {
         setIsGenerating(false);
       }
     },
-    [setNodes, setEdges, fitView]
+    [nodes, edges, setNodes, setEdges, fitView]
   );
 
   return (

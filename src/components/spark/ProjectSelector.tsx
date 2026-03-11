@@ -49,6 +49,14 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Pr
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-2xl"
       >
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 self-start"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Home
+        </button>
+
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
             <Sparkles className="w-8 h-8 text-primary" />

@@ -92,11 +92,11 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack, on
         >
           <Avatar className="h-7 w-7 rounded-md">
             <AvatarFallback className="bg-teal-500 text-white text-xs font-bold rounded-md">
-              B
+              {selectedProject?.name?.charAt(0)?.toUpperCase() || "P"}
             </AvatarFallback>
           </Avatar>
           <span className="text-sm font-semibold text-spark-sidebar-foreground truncate flex-1 text-left">
-            Testing
+            {selectedProject?.name || "Select Project"}
           </span>
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
         </button>

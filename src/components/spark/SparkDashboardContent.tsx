@@ -34,26 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Mock data for recents
-const mockRecents = [
-  { id: 1, title: 'Create "The Temptation and Fall of Man" story in the page "/bible-expl...', location: "in ..." },
-  { id: 2, title: 'Create a personalized story about "The Temptation and Fall of Man" in ...', location: "in ..." },
-  { id: 3, title: 'Create a life story for a child about temptation in the page "/family-ti...', location: "in ..." },
-  { id: 4, title: "on the creation swipe game, make sure the exit arrow is activated: /ga...", location: "in ..." },
-  { id: 5, title: "Use this link to create more bible games: https://poki.com/en/g/fruit-ni...", location: "i..." },
-  { id: 6, title: 'Remove the game "The garden of Eden"', location: "in List" },
-  { id: 7, title: "Add an arrow that will allow the user to go back to the games list on thi...", location: "in..." },
-  { id: 8, title: 'Create a game on "The temptation"', location: "in List" },
-];
-
-// Mock agenda
-const mockAgenda = [
-  { id: 1, title: "Create AI Agent with FastAPI and Semantic Kernel", time: "All day" },
-  { id: 2, title: "Launch your federal-ready website", time: "All day" },
-  { id: 3, title: "3 Days Challenge", time: "All day" },
-  { id: 4, title: "Create a WhatsApp Group", time: "All day" },
-];
-
 const phases = [
   { key: "S", label: "Scope" },
   { key: "P", label: "Protect" },
@@ -96,6 +76,10 @@ const SparkDashboardContent = ({ project }: Props) => {
   const todoTasks = tasks.filter((t) => t.status === "todo");
   const inProgressTasks = tasks.filter((t) => t.status === "in_progress");
   const doneTasks = tasks.filter((t) => t.status === "done");
+  const todayTasks = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    return tasks.filter((t) => t.due_date === today && t.status !== "done");
+  }, [tasks]);
 
   const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return;
@@ -165,17 +149,11 @@ const SparkDashboardContent = ({ project }: Props) => {
                       </span>
                     </div>
                   ))}
-                  {activity.length === 0 &&
-                    mockRecents.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/30 transition-colors"
-                      >
-                        <Circle className="w-4 h-4 text-spark-card-border flex-shrink-0" />
-                        <span className="text-sm text-foreground truncate flex-1">{item.title}</span>
-                        <span className="text-xs text-muted-foreground flex-shrink-0">• {item.location}</span>
-                      </div>
-                    ))}
+                  {activity.length === 0 && (
+                    <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+                      No recent activity yet. Start by adding tasks!
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -321,13 +299,19 @@ const SparkDashboardContent = ({ project }: Props) => {
                   </div>
                 </div>
                 <div>
-                  {mockAgenda.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/30 transition-colors">
-                      <CheckCircle2 className="w-4 h-4 text-spark-card-border flex-shrink-0" />
-                      <span className="text-sm text-foreground truncate flex-1">{item.title}</span>
-                      <span className="text-xs text-muted-foreground">{item.time}</span>
+                  {todayTasks.length === 0 ? (
+                    <div className="px-5 py-6 text-center text-sm text-muted-foreground">
+                      No tasks due today
                     </div>
-                  ))}
+                  ) : (
+                    todayTasks.map((task) => (
+                      <div key={task.id} className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/30 transition-colors">
+                        <CheckCircle2 className="w-4 h-4 text-spark-card-border flex-shrink-0" />
+                        <span className="text-sm text-foreground truncate flex-1">{task.title}</span>
+                        <span className="text-xs text-muted-foreground">All day</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 

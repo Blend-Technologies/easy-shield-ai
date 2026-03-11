@@ -576,6 +576,7 @@ export type Database = {
           end_date: string
           id: string
           name: string
+          project_id: string | null
           start_date: string
           user_id: string
         }
@@ -584,6 +585,7 @@ export type Database = {
           end_date: string
           id?: string
           name: string
+          project_id?: string | null
           start_date: string
           user_id: string
         }
@@ -592,10 +594,19 @@ export type Database = {
           end_date?: string
           id?: string
           name?: string
+          project_id?: string | null
           start_date?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sprints_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "spark_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_members: {
         Row: {
@@ -709,6 +720,7 @@ export type Database = {
           due_date: string | null
           id: string
           priority: string
+          project_id: string | null
           sprint_id: string | null
           status: string
           title: string
@@ -722,6 +734,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string
+          project_id?: string | null
           sprint_id?: string | null
           status?: string
           title: string
@@ -735,6 +748,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string
+          project_id?: string | null
           sprint_id?: string | null
           status?: string
           title?: string
@@ -742,6 +756,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "work_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "spark_projects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "work_items_sprint_id_fkey"
             columns: ["sprint_id"]

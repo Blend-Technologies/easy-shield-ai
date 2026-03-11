@@ -23,6 +23,7 @@ type Props = {
 };
 
 const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Props) => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");

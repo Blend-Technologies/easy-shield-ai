@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, FolderOpen, Trash2, Sparkles, ArrowLeft } from "lucide-react";
+import { Plus, FolderOpen, Trash2, Sparkles, ArrowLeft, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { SparkProject } from "@/hooks/useSparkProjects";
 
@@ -28,6 +30,9 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Pr
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [creating, setCreating] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<SparkProject | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const handleCreate = async () => {
     if (!name.trim()) return;
@@ -40,6 +45,15 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Pr
       onSelect(project);
     }
     setCreating(false);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget || deleteConfirmName !== deleteTarget.name) return;
+    setDeleting(true);
+    await onDelete(deleteTarget.id);
+    setDeleting(false);
+    setDeleteTarget(null);
+    setDeleteConfirmName("");
   };
 
   return (
@@ -144,7 +158,7 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Pr
                     className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-destructive"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDelete(project.id);
+                      setDeleteTarget(project);
                     }}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -155,6 +169,45 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Pr
           </div>
         )}
       </motion.div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeleteConfirmName(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Delete Project
+            </DialogTitle>
+            <DialogDescription>
+              This action is permanent and cannot be undone. All tasks, activity, and data associated with this project will be deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <p className="text-sm text-foreground">
+              To confirm, type <strong className="font-semibold">{deleteTarget?.name}</strong> below:
+            </p>
+            <Input
+              placeholder="Type the project name..."
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && deleteConfirmName === deleteTarget?.name && handleDelete()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => { setDeleteTarget(null); setDeleteConfirmName(""); }}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteConfirmName !== deleteTarget?.name || deleting}
+              onClick={handleDelete}
+            >
+              {deleting ? "Deleting..." : "Delete Project"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

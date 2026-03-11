@@ -89,19 +89,26 @@ const ProposalEvaluator = () => {
     setEvaluationResult(null);
   };
 
-  const extractRequirements = useCallback(async () => {
+  const extractRequirements = useCallback(async (followUp?: string) => {
     if (files.length === 0) {
       toast({ title: "Missing documents", description: "Upload at least one RFP document first.", variant: "destructive" });
       return;
     }
 
-    setIsExtracting(true);
-    setRequirementsResult(null);
-    setEvaluationResult(null);
+    const isFollowUp = !!followUp;
+    if (isFollowUp) {
+      setIsAskingFollowUp(true);
+    } else {
+      setIsExtracting(true);
+      setRequirementsResult(null);
+      setEvaluationResult(null);
+    }
 
     const rfpDocuments = files
       .filter((f) => f.status === "done")
       .map((f) => ({ name: f.file.name, content: f.content.slice(0, 15000) }));
+
+    const previousRequirements = isFollowUp && requirementsResult ? requirementsResult : undefined;
 
     try {
       const resp = await fetch(
@@ -112,7 +119,7 @@ const ProposalEvaluator = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ rfpDocuments }),
+          body: JSON.stringify({ rfpDocuments, followUpQuestion: followUp, previousRequirements }),
         }
       );
 
@@ -123,13 +130,19 @@ const ProposalEvaluator = () => {
 
       const result = await resp.json();
       setRequirementsResult(result);
-      toast({ title: "Requirements extracted!", description: `Found ${result.totalShall} shall + ${result.totalMust} must requirements.` });
+      if (isFollowUp) {
+        setFollowUpQuestion("");
+        toast({ title: "Requirements updated!", description: `Now showing ${result.requirements?.length || 0} requirements.` });
+      } else {
+        toast({ title: "Requirements extracted!", description: `Found ${result.totalShall} shall + ${result.totalMust} must requirements.` });
+      }
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
       setIsExtracting(false);
+      setIsAskingFollowUp(false);
     }
-  }, [files, toast]);
+  }, [files, requirementsResult, toast]);
 
   const evaluateRFP = useCallback(async () => {
     if (files.length === 0 && !supplementaryFile) {

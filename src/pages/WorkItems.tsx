@@ -62,6 +62,50 @@ const WorkItems = () => {
   const [creatingSprint, setCreatingSprint] = useState(false);
   const { grouped, loading, addItem, updateItem, deleteItem } = useWorkItems();
   const { sprints, addSprint } = useSprints();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [rfpUploading, setRfpUploading] = useState(false);
+
+  const handleRfpUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setRfpUploading(true);
+
+    try {
+      const text = await file.text();
+      const { data, error } = await supabase.functions.invoke("extract-requirements", {
+        body: { rfpDocuments: [{ name: file.name, content: text }] },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const requirements = data?.requirements || [];
+      if (requirements.length === 0) {
+        toast({ title: "No requirements found", description: "The document did not contain identifiable shall/must requirements.", variant: "destructive" });
+        return;
+      }
+
+      let added = 0;
+      for (const req of requirements) {
+        const result = await addItem({
+          title: `[${req.id}] ${req.text.substring(0, 200)}`,
+          status: "backlog",
+          description: `**Requirement ${req.id}** (${req.type.toUpperCase()})\n\nSection: ${req.section || "N/A"}\n\n${req.text}`,
+          priority: req.type === "must" ? "high" : "normal",
+        });
+        if (result) added++;
+      }
+
+      toast({ title: "RFP Imported", description: `${added} requirements added to backlog.` });
+    } catch (err: any) {
+      console.error("RFP upload error:", err);
+      toast({ variant: "destructive", title: "Import Failed", description: err.message || "Failed to process RFP document." });
+    } finally {
+      setRfpUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const toggleGroup = (id: string) =>
     setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));

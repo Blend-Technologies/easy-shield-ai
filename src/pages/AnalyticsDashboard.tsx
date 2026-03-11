@@ -36,7 +36,7 @@ const AnalyticsDashboard = () => {
 
   const handleSelectProject = (project: SparkProject) => {
     setSelectedProject(project);
-    navigate(`/dashboard/spark/${encodeURIComponent(project.name)}`);
+    navigate(`/dashboard/${encodeURIComponent(project.name)}`);
   };
 
   const handleBack = () => {

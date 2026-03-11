@@ -19,9 +19,18 @@ const SparkTopNav = ({ userName }: Props) => {
 
   return (
     <header className="h-12 bg-spark-nav flex items-center px-4 gap-3 flex-shrink-0">
-      {/* Logo */}
-      <div className="flex items-center gap-2 mr-4 cursor-pointer" onClick={() => navigate("/dashboard")}>
-        <img src={logo} alt="EZShield+AI" className="h-7 w-7 rounded-md" />
+      {/* Back arrow + Logo */}
+      <div className="flex items-center gap-2 mr-4">
+        <button
+          onClick={() => navigate("/")}
+          className="p-1.5 rounded-md hover:bg-white/10 text-spark-nav-foreground/70 transition-colors"
+          title="Back to Home"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div className="cursor-pointer" onClick={() => navigate("/dashboard")}>
+          <img src={logo} alt="EZShield+AI" className="h-7 w-7 rounded-md" />
+        </div>
       </div>
 
       {/* Search */}

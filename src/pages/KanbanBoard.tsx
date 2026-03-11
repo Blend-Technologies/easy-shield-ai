@@ -46,8 +46,8 @@ const KanbanBoard = () => {
   const { projectName } = useParams();
   const projectId = useProjectIdFromName(projectName);
   const { members: projectMembers } = useProjectMembers(projectId);
-  const { sprints } = useSprints();
-  const { items, addItem, updateItem } = useWorkItems();
+  const { sprints } = useSprints(projectId);
+  const { items, addItem, updateItem } = useWorkItems(projectId);
 
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");

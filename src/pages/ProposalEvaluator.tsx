@@ -50,6 +50,8 @@ const ProposalEvaluator = () => {
   const [diagramId, setDiagramId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supplementaryFileRef = useRef<HTMLInputElement>(null);
+  const [followUpQuestion, setFollowUpQuestion] = useState("");
+  const [isAskingFollowUp, setIsAskingFollowUp] = useState(false);
 
   const readFileContent = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {

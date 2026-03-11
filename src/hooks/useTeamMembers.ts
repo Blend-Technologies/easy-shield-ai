@@ -25,7 +25,7 @@ export const useTeamMembers = (teamId?: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("team_members")
-        .select("*, profiles:user_id(full_name, avatar_url, title)")
+        .select("*, profiles:user_id(full_name, avatar_url, title, online)")
         .eq("team_id", teamId!)
         .order("created_at", { ascending: true });
       if (error) throw error;

@@ -21,8 +21,6 @@ const tabs = [
   { id: "list", label: "List", icon: List },
   { id: "board", label: "Board", icon: Columns3 },
   { id: "timeline", label: "Timeline", icon: BarChart3 },
-  { id: "table", label: "Table", icon: Table },
-  { id: "workload", label: "Workload", icon: Activity },
 ];
 
 type StatusStyle = "backlog" | "in-progress" | "testing" | "at-risk" | "blocked" | "update-required" | "on-hold" | "complete" | "closed";

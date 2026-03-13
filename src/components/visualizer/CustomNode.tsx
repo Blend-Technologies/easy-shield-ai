@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { getServiceIcon } from "@/lib/cloudServiceIcons";
 
 type CustomNodeData = {
   label: string;
@@ -12,6 +13,7 @@ type CustomNodeData = {
 const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData }) => {
   const badgeColor = data.color || "bg-electric-sapphire-400";
   const badgeText = data.textColor || "text-white";
+  const serviceIcon = getServiceIcon(data.label);
 
   return (
     <div
@@ -36,7 +38,11 @@ const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData 
         <div
           className={`w-9 h-9 rounded-lg ${badgeColor} ${badgeText} flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm`}
         >
-          {data.icon}
+          {serviceIcon ? (
+            <img src={serviceIcon} alt={data.label} className="w-5 h-5" />
+          ) : (
+            data.icon
+          )}
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground leading-tight">

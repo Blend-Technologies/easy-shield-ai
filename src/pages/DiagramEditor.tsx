@@ -46,6 +46,14 @@ const DiagramEditorInner = () => {
   useEffect(() => {
     if (!diagramId) return;
     const load = async () => {
+      // Wait for auth session to be ready
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error("Please log in to view this diagram");
+        navigate("/login");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("diagrams")
         .select("*")
@@ -53,6 +61,7 @@ const DiagramEditorInner = () => {
         .single();
 
       if (error || !data) {
+        console.error("Failed to load diagram:", error);
         toast.error("Failed to load diagram");
         navigate("/dashboard/proposal-evaluator");
         return;

@@ -83,7 +83,7 @@ const ProposalEvaluator = () => {
     setIndexedChunks(null);
     try {
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/index-documents`,
+        `${import.meta.env.VITE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL}/functions/v1/index-documents`,
         {
           method: "POST",
           headers: {
@@ -166,7 +166,7 @@ const ProposalEvaluator = () => {
 
     try {
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/document-chat`,
+        `${import.meta.env.VITE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL}/functions/v1/document-chat`,
         {
           method: "POST",
           headers: {
@@ -263,7 +263,7 @@ const ProposalEvaluator = () => {
 
     try {
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proposal-agent`,
+        `${import.meta.env.VITE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL}/functions/v1/proposal-agent`,
         {
           method: "POST",
           headers: {

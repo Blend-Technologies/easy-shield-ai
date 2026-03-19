@@ -3,84 +3,16 @@ import { Bell, Bookmark, MoreHorizontal, Heart, MessageCircle, Check, Plus, Load
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useAnnouncements } from "@/hooks/useAnnouncements";
 import CreateAnnouncementModal from "./CreateAnnouncementModal";
-
-interface Announcement {
-  id: string;
-  title: string;
-  author: {
-    name: string;
-    avatar: string;
-    bio: string;
-  };
-  date: string;
-  hook: string;
-  taggedUser?: string;
-  body: string;
-  likes: number;
-  comments: number;
-  likers: string[];
-}
-
-const MOCK_ANNOUNCEMENTS: Announcement[] = [
-  {
-    id: "1",
-    title: "Meet Cinthia - Our New Customer Success Manager",
-    author: {
-      name: "Dave Ebbelaar",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-      bio: "Founder of Datalumina® | Teaching Developers How to Build AI Systems | Mentor for..."
-    },
-    date: "Feb 17",
-    taggedUser: "@Cinthia",
-    hook: "has joined Datalumina as our new Customer Success Manager!",
-    body: "We're thrilled to welcome Cinthia to our growing team. She brings over 8 years of experience in customer success and community management from leading tech companies. Cinthia will be your go-to person for any questions about your membership, learning path recommendations, and ensuring you get the most out of your Datalumina experience. Feel free to reach out to her anytime - she's here to help you succeed on your data journey!",
-    likes: 47,
-    comments: 12,
-    likers: ["JD", "MK", "AS"]
-  },
-  {
-    id: "2",
-    title: "New Course Launch: Advanced RAG Systems with LangChain",
-    author: {
-      name: "Dave Ebbelaar",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-      bio: "Founder of Datalumina® | Teaching Developers How to Build AI Systems | Mentor for..."
-    },
-    date: "Feb 10",
-    hook: "🚀 Big announcement!",
-    body: "After months of development, we're excited to release our most comprehensive course yet on Retrieval Augmented Generation. This 12-module course covers everything from basic vector databases to production-grade RAG pipelines. You'll learn how to build systems that can query millions of documents in milliseconds while maintaining context accuracy. Early access is now available for Pro members!",
-    likes: 156,
-    comments: 34,
-    likers: ["TW", "RB", "KL"]
-  },
-  {
-    id: "3",
-    title: "Platform Maintenance Scheduled - Feb 25th",
-    author: {
-      name: "Tech Team",
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
-      bio: "Datalumina Engineering & Infrastructure Team | Keeping things running smoothly..."
-    },
-    date: "Feb 5",
-    hook: "⚠️ Scheduled maintenance notice:",
-    body: "We'll be performing infrastructure upgrades on February 25th from 2:00 AM to 6:00 AM UTC. During this time, the platform may experience brief interruptions. This upgrade will improve video streaming performance and reduce loading times across all courses. We appreciate your patience!",
-    likes: 23,
-    comments: 5,
-    likers: ["NP", "SD", "VK"]
-  }
-];
 
 const UpdatesFeed = () => {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const { announcements, loading: announcementsLoading, createAnnouncement } = useAnnouncements();
   const [joined, setJoined] = useState(false);
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(new Set());
-  const [likeCounts, setLikeCounts] = useState<Record<string, number>>(
-    Object.fromEntries(MOCK_ANNOUNCEMENTS.map(a => [a.id, a.likes]))
-  );
-  const [announcements, setAnnouncements] = useState<Announcement[]>(MOCK_ANNOUNCEMENTS);
   const [modalOpen, setModalOpen] = useState(false);
 
   const toggleExpand = (id: string) => {
@@ -94,13 +26,7 @@ const UpdatesFeed = () => {
   const toggleLike = (id: string) => {
     setLikedPosts(prev => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        setLikeCounts(counts => ({ ...counts, [id]: counts[id] - 1 }));
-      } else {
-        next.add(id);
-        setLikeCounts(counts => ({ ...counts, [id]: counts[id] + 1 }));
-      }
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   };
@@ -113,25 +39,13 @@ const UpdatesFeed = () => {
     });
   };
 
-  const handlePublishAnnouncement = (title: string, hook: string, body: string) => {
-    const newPost: Announcement = {
-      id: Date.now().toString(),
-      title,
-      author: {
-        name: "Admin",
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-        bio: "Community Administrator",
-      },
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      hook,
-      body,
-      likes: 0,
-      comments: 0,
-      likers: [],
-    };
-    setAnnouncements(prev => [newPost, ...prev]);
-    setLikeCounts(prev => ({ ...prev, [newPost.id]: 0 }));
+  const handlePublishAnnouncement = async (title: string, hook: string, body: string) => {
+    await createAnnouncement(title, hook, body);
     setModalOpen(false);
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   return (
@@ -139,14 +53,14 @@ const UpdatesFeed = () => {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Bell className="w-6 h-6 text-gray-900" />
-          <h1 className="text-2xl font-bold text-gray-900">Updates</h1>
+          <Bell className="w-6 h-6 text-foreground" />
+          <h1 className="text-2xl font-bold text-foreground">Updates</h1>
         </div>
         <div className="flex items-center gap-2">
           {isAdmin && !adminLoading && (
             <Button
               onClick={() => setModalOpen(true)}
-              className="rounded-full px-5 bg-[#1a2b5e] hover:bg-[#16275a] text-white flex items-center gap-1.5"
+              className="rounded-full px-5 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               New Announcement
@@ -215,29 +129,45 @@ const UpdatesFeed = () => {
         </div>
       )}
 
+      {/* Loading state */}
+      {announcementsLoading && (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!announcementsLoading && announcements.length === 0 && (
+        <div className="text-center py-16 text-muted-foreground">
+          <Bell className="w-10 h-10 mx-auto mb-3 opacity-40" />
+          <p className="text-lg font-medium">No announcements yet</p>
+          {isAdmin && <p className="text-sm mt-1">Create your first announcement above.</p>}
+        </div>
+      )}
+
       {/* Announcement Cards */}
       <div className="space-y-4">
         {announcements.map((post) => (
           <div
             key={post.id}
-            className="bg-white rounded-xl border border-gray-200 shadow-sm p-6"
+            className="bg-card rounded-xl border border-border shadow-sm p-6"
           >
             {/* Card Header */}
             <div className="flex items-start justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900 flex-1 pr-4">{post.title}</h3>
+              <h3 className="text-lg font-bold text-foreground flex-1 pr-4">{post.title}</h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => toggleBookmark(post.id)}
-                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-muted rounded-lg transition-colors"
                 >
                   <Bookmark
                     className={`w-5 h-5 ${
-                      bookmarkedPosts.has(post.id) ? "fill-gray-700 text-gray-700" : "text-gray-400"
+                      bookmarkedPosts.has(post.id) ? "fill-foreground text-foreground" : "text-muted-foreground"
                     }`}
                   />
                 </button>
-                <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-                  <MoreHorizontal className="w-5 h-5 text-gray-400" />
+                <button className="p-1.5 hover:bg-muted rounded-lg transition-colors">
+                  <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
                 </button>
               </div>
             </div>
@@ -245,36 +175,35 @@ const UpdatesFeed = () => {
             {/* Author Row */}
             <div className="flex items-start gap-3 mb-4">
               <Avatar className="w-11 h-11">
-                <AvatarImage src={post.author.avatar} alt={post.author.name} />
-                <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+                <AvatarImage src={post.author_avatar || undefined} alt={post.author_name || "Admin"} />
+                <AvatarFallback>{(post.author_name || "A").charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-gray-900">{post.author.name}</span>
+                  <span className="font-semibold text-foreground">{post.author_name || "Admin"}</span>
                   <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                     Admin
                   </span>
-                  <span className="text-gray-500 text-sm">{post.date}</span>
+                  <span className="text-muted-foreground text-sm">{formatDate(post.created_at)}</span>
                 </div>
-                <p className="text-sm text-gray-500 truncate mt-0.5">{post.author.bio}</p>
+                {post.author_bio && (
+                  <p className="text-sm text-muted-foreground truncate mt-0.5">{post.author_bio}</p>
+                )}
               </div>
             </div>
 
             {/* Post Body */}
             <div className="mb-4">
-              <p className="text-gray-700">
-                {post.taggedUser && (
-                  <span className="text-blue-600 font-bold">{post.taggedUser} </span>
-                )}
-                <span className="text-blue-600 font-bold">{post.hook}</span>
-              </p>
-              <p className={`text-gray-600 mt-2 ${expandedPosts.has(post.id) ? "" : "line-clamp-3"}`}>
+              {post.hook && (
+                <p className="text-blue-600 font-bold">{post.hook}</p>
+              )}
+              <p className={`text-muted-foreground mt-2 ${expandedPosts.has(post.id) ? "" : "line-clamp-3"}`}>
                 {post.body}
               </p>
               {post.body.length > 150 && (
                 <button
                   onClick={() => toggleExpand(post.id)}
-                  className="text-gray-500 text-sm mt-1 hover:text-gray-700"
+                  className="text-muted-foreground text-sm mt-1 hover:text-foreground"
                 >
                   {expandedPosts.has(post.id) ? "See less" : "See more"}
                 </button>
@@ -282,34 +211,19 @@ const UpdatesFeed = () => {
             </div>
 
             {/* Card Footer */}
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+            <div className="flex items-center justify-between pt-3 border-t border-border">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => toggleLike(post.id)}
-                  className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
+                  className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors"
                 >
                   <Heart
                     className={`w-5 h-5 ${likedPosts.has(post.id) ? "fill-red-500 text-red-500" : ""}`}
                   />
                 </button>
-                <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
                   <MessageCircle className="w-5 h-5" />
                 </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  {post.likers.map((initials, idx) => (
-                    <div
-                      key={idx}
-                      className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border-2 border-white"
-                    >
-                      {initials}
-                    </div>
-                  ))}
-                </div>
-                <span className="text-sm text-gray-500">
-                  {likeCounts[post.id]} likes · {post.comments} comments
-                </span>
               </div>
             </div>
           </div>

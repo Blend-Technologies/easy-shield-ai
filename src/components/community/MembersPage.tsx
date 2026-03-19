@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Search, MessageCircle, Pencil, Trash2, CalendarDays } from "lucide-react";
+import { Search, MessageCircle, Pencil, Trash2, CalendarDays, Globe, MapPin } from "lucide-react";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

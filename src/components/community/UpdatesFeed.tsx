@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Bookmark, MoreHorizontal, Heart, MessageCircle, Check, Plus, Loader2 } from "lucide-react";
+import { Bell, Bookmark, MoreHorizontal, Heart, MessageCircle, Check, Plus, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useIsAdmin } from "@/hooks/useIsAdmin";

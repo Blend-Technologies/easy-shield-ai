@@ -60,7 +60,7 @@ const UpdatesFeed = () => {
           {isAdmin && !adminLoading && (
             <Button
               onClick={() => setModalOpen(true)}
-              className="rounded-full px-5 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-1.5"
+              className="rounded-full px-5 bg-[#6B4EFF] hover:bg-[#5A3EE6] text-white flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               New Announcement
@@ -71,7 +71,7 @@ const UpdatesFeed = () => {
             className={`rounded-full px-5 ${
               joined
                 ? "bg-green-600 hover:bg-green-700"
-                : "bg-blue-600 hover:bg-blue-700"
+                : "bg-[#6B4EFF] hover:bg-[#5A3EE6]"
             } text-white`}
           >
             {joined ? (
@@ -123,9 +123,9 @@ const UpdatesFeed = () => {
 
       {/* Admin badge */}
       {isAdmin && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+        <div className="flex items-center gap-2 px-3 py-2 bg-[#6B4EFF]/10 border border-[#6B4EFF]/20 rounded-lg text-sm text-[#6B4EFF]">
           <span className="font-semibold">Admin view</span>
-          <span className="text-blue-500">— You can create announcements in this space.</span>
+          <span className="text-[#6B4EFF]/70">— You can create announcements in this space.</span>
         </div>
       )}
 
@@ -181,7 +181,7 @@ const UpdatesFeed = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-foreground">{post.author_name || "Admin"}</span>
-                  <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  <span className="bg-[#6B4EFF] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                     Admin
                   </span>
                   <span className="text-muted-foreground text-sm">{formatDate(post.created_at)}</span>
@@ -195,7 +195,7 @@ const UpdatesFeed = () => {
             {/* Post Body */}
             <div className="mb-4">
               {post.hook && (
-                <p className="text-blue-600 font-bold">{post.hook}</p>
+                <p className="text-[#6B4EFF] font-bold">{post.hook}</p>
               )}
               <p className={`text-muted-foreground mt-2 ${expandedPosts.has(post.id) ? "" : "line-clamp-3"}`}>
                 {post.body}

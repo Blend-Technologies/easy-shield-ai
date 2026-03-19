@@ -85,7 +85,7 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
               </span>
             )}
           </div>
-          <span className="font-semibold text-gray-900 text-sm truncate max-w-[160px]">
+          <span className="font-semibold text-gray-900 text-sm truncate max-w-[160px]" title={communityName}>
             {communityName}
           </span>
         </div>

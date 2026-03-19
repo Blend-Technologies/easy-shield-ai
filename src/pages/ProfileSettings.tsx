@@ -137,7 +137,12 @@ const ProfileSettings = () => {
         communityName={communityName}
         logo={communityLogo}
         activeTab=""
-        onTabChange={() => {}}
+        onTabChange={(tab) => {
+          const communityId = localStorage.getItem("lastCommunityId");
+          if (communityId) {
+            navigate(`/community/hub/${communityId}`, { state: { tab } });
+          }
+        }}
       />
 
       <div className="pt-24 pb-12 max-w-2xl mx-auto px-4 sm:px-6">

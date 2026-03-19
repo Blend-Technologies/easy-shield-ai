@@ -26,11 +26,53 @@ import CoursePlayer from "./pages/CoursePlayer";
 import AccountSettings from "./pages/AccountSettings";
 import ProfileSettings from "./pages/ProfileSettings";
 import { useOnlinePresence } from "./hooks/useOnlinePresence";
+import { useEffect } from "react";
+import { supabase } from "./integrations/supabase/client";
 
 const queryClient = new QueryClient();
 
 const OnlinePresenceTracker = () => {
   useOnlinePresence();
+  return null;
+};
+
+// Auto-enroll user in a community after signup via invite link
+const PendingCommunityJoin = () => {
+  useEffect(() => {
+    const handleJoin = async () => {
+      const communityId = localStorage.getItem("pendingCommunityJoin");
+      if (!communityId) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if already enrolled
+      const { data: existing } = await supabase
+        .from("course_enrollments")
+        .select("id")
+        .eq("course_id", communityId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!existing) {
+        await supabase.from("course_enrollments").insert({
+          course_id: communityId,
+          user_id: user.id,
+        });
+      }
+      localStorage.removeItem("pendingCommunityJoin");
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") {
+        handleJoin();
+      }
+    });
+    // Also check on mount (e.g. returning from email confirmation)
+    handleJoin();
+
+    return () => subscription.unsubscribe();
+  }, []);
   return null;
 };
 

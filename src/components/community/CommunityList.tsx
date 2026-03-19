@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Pencil, Trash2 } from "lucide-react";
+import { Sparkles, Pencil, Trash2, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -90,6 +90,19 @@ const CommunityList = ({ communities, onRefresh, showActions = false }: Props) =
           >
             {showActions && (
               <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span
+                  role="button"
+                  title="Copy invite link"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const link = `${window.location.origin}/signup?community=${c.id}`;
+                    navigator.clipboard.writeText(link);
+                    toast({ title: "Invite link copied!", description: "Share this link with anyone you'd like to invite." });
+                  }}
+                  className="p-1.5 rounded-md bg-muted hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                </span>
                 <span
                   role="button"
                   onClick={(e) => openEdit(c, e)}

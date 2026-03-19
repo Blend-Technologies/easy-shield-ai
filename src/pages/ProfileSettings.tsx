@@ -54,6 +54,26 @@ const ProfileSettings = () => {
     load();
   }, [navigate]);
 
+  // Fetch community name from the last visited community
+  useEffect(() => {
+    const path = document.referrer || window.location.href;
+    const match = path.match(/\/community\/hub\/([a-f0-9-]+)/);
+    const storedId = localStorage.getItem("lastCommunityId");
+    const communityId = match?.[1] || storedId;
+    if (!communityId) return;
+    supabase
+      .from("courses")
+      .select("title, logo_url")
+      .eq("id", communityId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setCommunityName(data.title);
+          setCommunityLogo(data.logo_url);
+        }
+      });
+  }, []);
+
   const handleSave = async () => {
     if (!userId) return;
     setSaving(true);

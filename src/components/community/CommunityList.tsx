@@ -89,7 +89,7 @@ const CommunityList = ({ communities, onRefresh, showActions = false }: Props) =
             className="text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 hover:shadow-md transition-all group relative"
           >
             {showActions && (
-              <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-3 right-3 flex gap-1">
                 <span
                   role="button"
                   title="Copy invite link"

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageSquare, Bell, LayoutGrid, X, ArrowLeft, Settings, LogOut } from "lucide-react";
+import { MessageSquare, Bell, LayoutGrid, X, ArrowLeft, User, RefreshCw, Settings, Mail, LogOut } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CommunityTopNavProps {
   communityName: string;
@@ -120,22 +121,49 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
               onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
             />
             {avatarMenuOpen && (
-              <div className="absolute right-0 top-10 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+              <div className="absolute right-0 top-10 w-52 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50">
+                <p className="px-4 py-1.5 text-xs font-bold text-gray-900 uppercase tracking-wider">My Account</p>
+                <button
+                  onClick={() => { setAvatarMenuOpen(false); navigate("/community/profile"); }}
+                  className="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                  Profile
+                </button>
+                <button
+                  onClick={() => setAvatarMenuOpen(false)}
+                  className="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Progress
+                </button>
                 {isAdmin && (
                   <button
                     onClick={() => { setAvatarMenuOpen(false); navigate("/community/settings"); }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     <Settings className="w-4 h-4" />
-                    Account Settings
+                    Settings
                   </button>
                 )}
                 <button
                   onClick={() => setAvatarMenuOpen(false)}
-                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  Support
+                </button>
+                <div className="border-t border-gray-100 my-1.5 mx-3" />
+                <button
+                  onClick={async () => {
+                    setAvatarMenuOpen(false);
+                    await supabase.auth.signOut();
+                    navigate("/login");
+                  }}
+                  className="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
-                  Sign Out
+                  Logout
                 </button>
               </div>
             )}

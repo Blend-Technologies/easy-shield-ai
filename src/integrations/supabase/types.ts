@@ -394,6 +394,7 @@ export type Database = {
           location: string | null
           online: boolean | null
           title: string | null
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -405,6 +406,7 @@ export type Database = {
           location?: string | null
           online?: boolean | null
           title?: string | null
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -416,6 +418,7 @@ export type Database = {
           location?: string | null
           online?: boolean | null
           title?: string | null
+          website?: string | null
         }
         Relationships: []
       }

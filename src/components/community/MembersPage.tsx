@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Search, MessageCircle, Pencil, Trash2, CalendarDays } from "lucide-react";
+import { Search, MessageCircle, Pencil, Trash2, CalendarDays, Globe, MapPin } from "lucide-react";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -145,21 +146,47 @@ const MembersPage = () => {
               return (
                 <div key={member.id} className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex items-center gap-4 hover:border-gray-200 transition-colors">
                   {/* Avatar with level badge */}
-                  <div className="relative flex-shrink-0">
-                    {member.avatar_url ? (
-                      <img src={member.avatar_url} alt={member.full_name ?? ""} className="w-11 h-11 rounded-full object-cover" />
-                    ) : (
-                      <div
-                        className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                        style={{ backgroundColor: colorForId(member.id) }}
-                      >
-                        {getInitials(member.full_name)}
+                  <HoverCard openDelay={200} closeDelay={100}>
+                    <HoverCardTrigger asChild>
+                      <div className="relative flex-shrink-0 cursor-pointer">
+                        {member.avatar_url ? (
+                          <img src={member.avatar_url} alt={member.full_name ?? ""} className="w-11 h-11 rounded-full object-cover" />
+                        ) : (
+                          <div
+                            className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                            style={{ backgroundColor: colorForId(member.id) }}
+                          >
+                            {getInitials(member.full_name)}
+                          </div>
+                        )}
+                        <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#6B4EFF] text-white text-[9px] font-bold flex items-center justify-center border-2 border-white">
+                          {level}
+                        </span>
                       </div>
-                    )}
-                    <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#6B4EFF] text-white text-[9px] font-bold flex items-center justify-center border-2 border-white">
-                      {level}
-                    </span>
-                  </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent className="w-72 p-4" side="right" align="start">
+                      <div className="flex items-center gap-3 mb-2">
+                        {member.avatar_url ? (
+                          <img src={member.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-xs" style={{ backgroundColor: colorForId(member.id) }}>
+                            {getInitials(member.full_name)}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{member.full_name ?? "Unnamed"}</p>
+                          <p className="text-xs text-gray-400">{handle}</p>
+                        </div>
+                      </div>
+                      {member.bio && <p className="text-xs text-gray-600 mb-2">{member.bio}</p>}
+                      <div className="flex flex-col gap-1 text-[11px] text-gray-500">
+                        {member.location && (
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{member.location}</span>
+                        )}
+                        <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />Joined {formatJoinDate(member.created_at)}</span>
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">

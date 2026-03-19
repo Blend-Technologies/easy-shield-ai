@@ -24,6 +24,7 @@ import CommunityHub from "./pages/CommunityHub";
 import CourseBuilder from "./pages/CourseBuilder";
 import CoursePlayer from "./pages/CoursePlayer";
 import AccountSettings from "./pages/AccountSettings";
+import ProfileSettings from "./pages/ProfileSettings";
 import { useOnlinePresence } from "./hooks/useOnlinePresence";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,7 @@ const App = () => (
           <Route path="/community/course-builder/:courseId" element={<CourseBuilder />} />
           <Route path="/community/course/:courseId" element={<CoursePlayer />} />
           <Route path="/community/settings" element={<AccountSettings />} />
+          <Route path="/community/profile" element={<ProfileSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

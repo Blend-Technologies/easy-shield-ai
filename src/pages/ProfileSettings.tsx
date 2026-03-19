@@ -134,8 +134,8 @@ const ProfileSettings = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <CommunityTopNav
-        communityName="Blueprint Builder"
-        logo={null}
+        communityName={communityName}
+        logo={communityLogo}
         activeTab=""
         onTabChange={() => {}}
       />

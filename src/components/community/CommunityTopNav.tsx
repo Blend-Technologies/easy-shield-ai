@@ -17,8 +17,20 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
   const navigate = useNavigate();
   const [showBanner, setShowBanner] = useState(true);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [userName, setUserName] = useState("Me");
   const avatarMenuRef = useRef<HTMLDivElement>(null);
   const { isAdmin } = useIsAdmin();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("profiles").select("avatar_url, full_name").eq("id", user.id).maybeSingle().then(({ data }) => {
+        if (data?.avatar_url) setUserAvatar(data.avatar_url);
+        if (data?.full_name) setUserName(data.full_name);
+      });
+    });
+  }, []);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -115,9 +127,9 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
           {/* Avatar with dropdown */}
           <div className="relative" ref={avatarMenuRef}>
             <img
-              src="https://ui-avatars.com/api/?name=Me&background=6B4EFF&color=fff&size=32"
+              src={userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6B4EFF&color=fff&size=32`}
               alt="avatar"
-              className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-[#6B4EFF]/40 transition-all"
+              className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-[#6B4EFF]/40 transition-all object-cover"
               onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
             />
             {avatarMenuOpen && (

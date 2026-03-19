@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CommunityTopNav from "@/components/community/CommunityTopNav";
@@ -23,9 +23,10 @@ interface CommunityData {
 const CommunityHub = () => {
   const { communityId } = useParams<{ communityId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [community, setCommunity] = useState<CommunityData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("Community");
+  const [activeTab, setActiveTab] = useState((location.state as any)?.tab || "Community");
   const [activeSidebarItem, setActiveSidebarItem] = useState("Introductions");
   const [showBanner, setShowBanner] = useState(true);
 

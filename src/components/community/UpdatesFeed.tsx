@@ -123,9 +123,9 @@ const UpdatesFeed = () => {
 
       {/* Admin badge */}
       {isAdmin && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+        <div className="flex items-center gap-2 px-3 py-2 bg-[#6B4EFF]/10 border border-[#6B4EFF]/20 rounded-lg text-sm text-[#6B4EFF]">
           <span className="font-semibold">Admin view</span>
-          <span className="text-blue-500">— You can create announcements in this space.</span>
+          <span className="text-[#6B4EFF]/70">— You can create announcements in this space.</span>
         </div>
       )}
 

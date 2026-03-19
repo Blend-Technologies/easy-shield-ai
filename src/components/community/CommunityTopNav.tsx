@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageSquare, Bell, LayoutGrid, X, ArrowLeft, Settings, LogOut } from "lucide-react";
+import { MessageSquare, Bell, LayoutGrid, X, ArrowLeft, User, RefreshCw, Settings, Mail, LogOut } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CommunityTopNavProps {
   communityName: string;

@@ -17,8 +17,20 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
   const navigate = useNavigate();
   const [showBanner, setShowBanner] = useState(true);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [userName, setUserName] = useState("Me");
   const avatarMenuRef = useRef<HTMLDivElement>(null);
   const { isAdmin } = useIsAdmin();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("profiles").select("avatar_url, full_name").eq("id", user.id).maybeSingle().then(({ data }) => {
+        if (data?.avatar_url) setUserAvatar(data.avatar_url);
+        if (data?.full_name) setUserName(data.full_name);
+      });
+    });
+  }, []);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {

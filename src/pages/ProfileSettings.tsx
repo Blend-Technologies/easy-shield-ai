@@ -16,6 +16,7 @@ const ProfileSettings = () => {
   const [uploading, setUploading] = useState(false);
   const [communityName, setCommunityName] = useState("Community");
   const [communityLogo, setCommunityLogo] = useState<string | null>(null);
+  const [activeCommunityId, setActiveCommunityId] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     full_name: "",
     bio: "",
@@ -61,6 +62,9 @@ const ProfileSettings = () => {
     const storedId = localStorage.getItem("lastCommunityId");
     const communityId = match?.[1] || storedId;
     if (!communityId) return;
+
+    setActiveCommunityId(communityId);
+
     supabase
       .from("courses")
       .select("title, logo_url")
@@ -138,10 +142,9 @@ const ProfileSettings = () => {
         logo={communityLogo}
         activeTab=""
         onTabChange={(tab) => {
-          const communityId = localStorage.getItem("lastCommunityId");
-          if (communityId) {
-            navigate(`/community/hub/${communityId}`, { state: { tab } });
-          }
+          const communityId = activeCommunityId || localStorage.getItem("lastCommunityId");
+          if (!communityId) return;
+          navigate(`/community/hub/${communityId}?tab=${encodeURIComponent(tab)}`);
         }}
       />
 

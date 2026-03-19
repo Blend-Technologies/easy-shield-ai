@@ -26,9 +26,15 @@ const CommunityHub = () => {
   const location = useLocation();
   const [community, setCommunity] = useState<CommunityData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState((location.state as any)?.tab || "Community");
+  const [activeTab, setActiveTab] = useState("Community");
   const [activeSidebarItem, setActiveSidebarItem] = useState("Introductions");
   const [showBanner, setShowBanner] = useState(true);
+
+  useEffect(() => {
+    const tabFromQuery = new URLSearchParams(location.search).get("tab");
+    const tabFromState = (location.state as { tab?: string } | null)?.tab;
+    setActiveTab(tabFromQuery || tabFromState || "Community");
+  }, [location.search, location.state]);
 
   useEffect(() => {
     if (!communityId) {

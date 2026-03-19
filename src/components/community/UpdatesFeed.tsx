@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Bookmark, MoreHorizontal, Heart, MessageCircle, Check, Plus, Loader2 } from "lucide-react";
+import { Bell, Bookmark, MoreHorizontal, Heart, MessageCircle, Check, Plus, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -8,7 +8,7 @@ import CreateAnnouncementModal from "./CreateAnnouncementModal";
 
 const UpdatesFeed = () => {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
-  const { announcements, loading: announcementsLoading, createAnnouncement } = useAnnouncements();
+  const { announcements, loading: announcementsLoading, createAnnouncement, deleteAnnouncement } = useAnnouncements();
   const [joined, setJoined] = useState(false);
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
@@ -166,6 +166,15 @@ const UpdatesFeed = () => {
                     }`}
                   />
                 </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => deleteAnnouncement(post.id)}
+                    className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors"
+                    title="Delete announcement"
+                  >
+                    <Trash2 className="w-5 h-5 text-destructive" />
+                  </button>
+                )}
                 <button className="p-1.5 hover:bg-muted rounded-lg transition-colors">
                   <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
                 </button>

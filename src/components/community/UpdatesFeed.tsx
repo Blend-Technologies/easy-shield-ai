@@ -166,6 +166,15 @@ const UpdatesFeed = () => {
                     }`}
                   />
                 </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => deleteAnnouncement(post.id)}
+                    className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors"
+                    title="Delete announcement"
+                  >
+                    <Trash2 className="w-5 h-5 text-destructive" />
+                  </button>
+                )}
                 <button className="p-1.5 hover:bg-muted rounded-lg transition-colors">
                   <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
                 </button>

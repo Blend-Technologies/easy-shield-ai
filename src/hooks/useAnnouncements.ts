@@ -76,9 +76,18 @@ export const useAnnouncements = () => {
     return false;
   };
 
+  const deleteAnnouncement = async (id: string) => {
+    const { error } = await supabase.from("announcements").delete().eq("id", id);
+    if (!error) {
+      await fetchAnnouncements();
+      return true;
+    }
+    return false;
+  };
+
   useEffect(() => {
     fetchAnnouncements();
   }, []);
 
-  return { announcements, loading, createAnnouncement, refetch: fetchAnnouncements };
+  return { announcements, loading, createAnnouncement, deleteAnnouncement, refetch: fetchAnnouncements };
 };

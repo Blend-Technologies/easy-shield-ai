@@ -181,7 +181,7 @@ const UpdatesFeed = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-foreground">{post.author_name || "Admin"}</span>
-                  <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  <span className="bg-[#6B4EFF] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                     Admin
                   </span>
                   <span className="text-muted-foreground text-sm">{formatDate(post.created_at)}</span>

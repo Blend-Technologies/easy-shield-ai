@@ -195,7 +195,7 @@ const UpdatesFeed = () => {
             {/* Post Body */}
             <div className="mb-4">
               {post.hook && (
-                <p className="text-blue-600 font-bold">{post.hook}</p>
+                <p className="text-[#6B4EFF] font-bold">{post.hook}</p>
               )}
               <p className={`text-muted-foreground mt-2 ${expandedPosts.has(post.id) ? "" : "line-clamp-3"}`}>
                 {post.body}

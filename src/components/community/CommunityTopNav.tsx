@@ -127,9 +127,9 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
           {/* Avatar with dropdown */}
           <div className="relative" ref={avatarMenuRef}>
             <img
-              src="https://ui-avatars.com/api/?name=Me&background=6B4EFF&color=fff&size=32"
+              src={userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6B4EFF&color=fff&size=32`}
               alt="avatar"
-              className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-[#6B4EFF]/40 transition-all"
+              className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-[#6B4EFF]/40 transition-all object-cover"
               onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
             />
             {avatarMenuOpen && (

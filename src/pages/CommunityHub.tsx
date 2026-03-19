@@ -48,6 +48,7 @@ const CommunityHub = () => {
         return;
       }
       setCommunity(data);
+      localStorage.setItem("lastCommunityId", data.id);
       setLoading(false);
     };
 

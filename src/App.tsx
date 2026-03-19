@@ -27,6 +27,7 @@ import AccountSettings from "./pages/AccountSettings";
 import ProfileSettings from "./pages/ProfileSettings";
 import { useOnlinePresence } from "./hooks/useOnlinePresence";
 import { useEffect } from "react";
+import { supabase } from "./integrations/supabase/client";
 
 const queryClient = new QueryClient();
 

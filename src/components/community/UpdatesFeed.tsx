@@ -8,7 +8,7 @@ import CreateAnnouncementModal from "./CreateAnnouncementModal";
 
 const UpdatesFeed = () => {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
-  const { announcements, loading: announcementsLoading, createAnnouncement } = useAnnouncements();
+  const { announcements, loading: announcementsLoading, createAnnouncement, deleteAnnouncement } = useAnnouncements();
   const [joined, setJoined] = useState(false);
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());

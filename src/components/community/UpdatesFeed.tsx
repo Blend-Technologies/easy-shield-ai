@@ -60,7 +60,7 @@ const UpdatesFeed = () => {
           {isAdmin && !adminLoading && (
             <Button
               onClick={() => setModalOpen(true)}
-              className="rounded-full px-5 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-1.5"
+              className="rounded-full px-5 bg-[#6B4EFF] hover:bg-[#5A3EE6] text-white flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               New Announcement

@@ -112,11 +112,37 @@ const MembersPage = () => {
 
   const canEdit = (memberId: string) => isAdmin || memberId === currentUserId;
 
+  const totalMembers = members.length;
+  const onlineCount = members.filter((m) => m.online).length;
+  const adminCount = members.filter((m) => m.roles.includes("admin")).length;
+
+  const stats = [
+    { label: "Members", value: totalMembers, active: true },
+    { label: "Admins", value: adminCount, active: false },
+    { label: "Online", value: onlineCount, active: false },
+  ];
+
   return (
     <div className="min-h-[calc(100vh-56px)] bg-background">
       {/* Page header */}
       <div className="flex items-center justify-between px-8 pt-6 pb-4">
-        <h1 className="text-2xl font-bold text-foreground">Members</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold text-foreground">Members</h1>
+          <div className="flex items-center gap-2">
+            {stats.map((s) => (
+              <span
+                key={s.label}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  s.active
+                    ? "bg-[#1a1a2e] text-white"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {s.label} {s.value}
+              </span>
+            ))}
+          </div>
+        </div>
         <Button
           variant="ghost"
           size="sm"

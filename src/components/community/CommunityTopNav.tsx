@@ -78,12 +78,12 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
         </div>
 
         {/* Center nav tabs */}
-        <nav className="flex-1 flex items-center justify-center gap-1">
+        <nav className="flex-1 flex items-center justify-center gap-0.5 overflow-x-auto">
           {NAV_TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => onTabChange(tab)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab
                   ? "bg-[#6B4EFF] text-white"
                   : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"

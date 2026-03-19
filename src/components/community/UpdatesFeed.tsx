@@ -71,7 +71,7 @@ const UpdatesFeed = () => {
             className={`rounded-full px-5 ${
               joined
                 ? "bg-green-600 hover:bg-green-700"
-                : "bg-blue-600 hover:bg-blue-700"
+                : "bg-[#6B4EFF] hover:bg-[#5A3EE6]"
             } text-white`}
           >
             {joined ? (

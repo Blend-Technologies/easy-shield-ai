@@ -14,6 +14,8 @@ const ProfileSettings = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [communityName, setCommunityName] = useState("Community");
+  const [communityLogo, setCommunityLogo] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     full_name: "",
     bio: "",
@@ -51,6 +53,26 @@ const ProfileSettings = () => {
     };
     load();
   }, [navigate]);
+
+  // Fetch community name from the last visited community
+  useEffect(() => {
+    const path = document.referrer || window.location.href;
+    const match = path.match(/\/community\/hub\/([a-f0-9-]+)/);
+    const storedId = localStorage.getItem("lastCommunityId");
+    const communityId = match?.[1] || storedId;
+    if (!communityId) return;
+    supabase
+      .from("courses")
+      .select("title, logo_url")
+      .eq("id", communityId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setCommunityName(data.title);
+          setCommunityLogo(data.logo_url);
+        }
+      });
+  }, []);
 
   const handleSave = async () => {
     if (!userId) return;
@@ -112,8 +134,8 @@ const ProfileSettings = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <CommunityTopNav
-        communityName="Blueprint Builder"
-        logo={null}
+        communityName={communityName}
+        logo={communityLogo}
         activeTab=""
         onTabChange={() => {}}
       />

@@ -85,7 +85,7 @@ const CommunityList = ({ communities, onRefresh, showActions = false }: Props) =
         {communities.map((c) => (
           <button
             key={c.id}
-            onClick={() => navigate(`/community/hub`)}
+            onClick={() => navigate(`/community/hub/${c.id}`)}
             className="text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 hover:shadow-md transition-all group relative"
           >
             {showActions && (

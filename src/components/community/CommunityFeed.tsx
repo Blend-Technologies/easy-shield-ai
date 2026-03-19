@@ -1,17 +1,16 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Bookmark, MoreHorizontal, Plus, ChevronDown, Check, ThumbsUp, Trash2, Loader2 } from "lucide-react";
+import { Bookmark, MoreHorizontal, Plus, Search, MessageCircle, Trash2, Loader2, Calendar, Clock } from "lucide-react";
 import CreatePostModal from "./CreatePostModal";
 import { useCommunityPosts, CommunityPost } from "@/hooks/useCommunityPosts";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 
-const SORT_OPTIONS = [
-  "For you",
-  "Alphabetical",
-  "Latest",
-  "Likes",
-  "New activity",
-  "Oldest",
-  "Popular",
+const FILTER_TABS = ["Recent", "Trending", "Most Discussed"] as const;
+
+const REACTIONS = [
+  { emoji: "😮", count: 4 },
+  { emoji: "❤️", count: 2 },
+  { emoji: "👊", count: 1 },
+  { emoji: "🚀", count: 1 },
 ];
 
 interface PostCardProps {
@@ -35,144 +34,167 @@ const PostCard = ({ post, onToggleLike, onToggleBookmark, onDelete }: PostCardPr
   }, [menuOpen]);
 
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
-  const preview = post.body.length > 160 ? post.body.slice(0, 160) + "…" : post.body;
+  const dateStr = format(new Date(post.created_at), "MMM dd");
+  const preview = post.body.length > 200 ? post.body.slice(0, 200) + "…" : post.body;
+
+  // Generate initials
+  const initials = post.author_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const level = Math.floor(Math.random() * 5) + 1; // Mock level
+  const dotColor = Math.random() > 0.5 ? "bg-blue-500" : "bg-orange-400";
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-5">
+        {/* Author row */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <img src={post.author_avatar} alt={post.author_name} className="w-10 h-10 rounded-full" />
+            <div className="relative">
+              <img src={post.author_avatar} alt={post.author_name} className="w-11 h-11 rounded-full" />
+              <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#6B4EFF] text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                {level}
+              </span>
+            </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-gray-900 text-sm">{post.author_name}</span>
-                <span className="text-gray-400 text-xs">{timeAgo}</span>
+                <span className="text-gray-400 text-xs">{dateStr}</span>
               </div>
-              <span className="text-gray-500 text-xs">Posted in {post.channel}</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                  🔥 <span className="text-gray-600 font-medium">{post.channel}</span>
+                </span>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="relative" ref={menuRef}>
             <button
-              onClick={() => onToggleBookmark(post.id)}
-              className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
-                post.isBookmarked ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
-              }`}
-              title={post.isBookmarked ? "Remove bookmark" : "Bookmark"}
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
             >
-              <Bookmark className="w-4 h-4" fill={post.isBookmarked ? "currentColor" : "none"} />
+              <MoreHorizontal className="w-4 h-4" />
             </button>
-            <div className="relative" ref={menuRef}>
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[140px]">
-                  {post.isOwner && (
-                    <button
-                      onClick={() => { onDelete(post.id); setMenuOpen(false); }}
-                      className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Delete post
-                    </button>
-                  )}
-                  {!post.isOwner && (
-                    <button
-                      onClick={() => setMenuOpen(false)}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      Report post
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[140px]">
+                {post.isOwner && (
+                  <button
+                    onClick={() => { onDelete(post.id); setMenuOpen(false); }}
+                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete post
+                  </button>
+                )}
+                {!post.isOwner && (
+                  <button onClick={() => setMenuOpen(false)} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    Report post
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Title with dot */}
         {post.title && (
-          <h3 className="font-bold text-gray-900 text-base mb-2">{post.title}</h3>
+          <div className="flex items-start gap-2 mb-2">
+            <span className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${dotColor}`} />
+            <h3 className="font-bold text-gray-900 text-[15px] leading-snug">{post.title}</h3>
+          </div>
         )}
-        <p className="text-gray-600 text-sm leading-relaxed">
+
+        {/* Body */}
+        <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
           {expanded ? post.body : preview}
-          {!expanded && post.body.length > 160 && (
-            <button
-              onClick={() => setExpanded(true)}
-              className="ml-1 text-blue-600 font-medium hover:underline"
-            >
+          {!expanded && post.body.length > 200 && (
+            <button onClick={() => setExpanded(true)} className="ml-1 text-[#6B4EFF] font-medium hover:underline">
               See more
             </button>
           )}
         </p>
 
-        {/* Like button */}
-        <div className="mt-3 flex items-center gap-1">
-          <button
-            onClick={() => onToggleLike(post.id)}
-            className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors ${
-              post.isLiked
-                ? "text-blue-600 bg-blue-50 hover:bg-blue-100"
-                : "text-gray-500 hover:bg-gray-100"
-            }`}
-          >
-            <ThumbsUp className="w-3.5 h-3.5" fill={post.isLiked ? "currentColor" : "none"} />
-            {post.likes > 0 && <span>{post.likes}</span>}
-            <span>{post.isLiked ? "Liked" : "Like"}</span>
-          </button>
+        {/* Reaction row */}
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Emoji reactions */}
+            <div className="flex items-center gap-1.5">
+              {REACTIONS.map((r, i) => (
+                <button
+                  key={i}
+                  onClick={() => onToggleLike(post.id)}
+                  className="flex items-center gap-0.5 text-xs text-gray-600 hover:bg-gray-100 px-1.5 py-1 rounded-md transition-colors"
+                >
+                  <span>{r.emoji}</span>
+                  <span className="text-gray-500">{post.likes > 0 && i === 0 ? post.likes : r.count}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Comment count */}
+            <button className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700">
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>3</span>
+            </button>
+
+            {/* Bookmark */}
+            <button
+              onClick={() => onToggleBookmark(post.id)}
+              className={`${post.isBookmarked ? "text-[#6B4EFF]" : "text-gray-400 hover:text-gray-600"}`}
+            >
+              <Bookmark className="w-3.5 h-3.5" fill={post.isBookmarked ? "currentColor" : "none"} />
+            </button>
+          </div>
+
+          {/* Right side: avatars + time */}
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-1.5">
+              {[0, 1, 2].map(i => (
+                <img
+                  key={i}
+                  src={`https://ui-avatars.com/api/?name=U${i}&background=${["6B4EFF", "10b981", "f59e0b"][i]}&color=fff&size=20`}
+                  className="w-5 h-5 rounded-full border border-white"
+                  alt=""
+                />
+              ))}
+            </div>
+            <span className="text-xs text-[#6B4EFF]">{timeAgo}</span>
+          </div>
         </div>
       </div>
-
-      {post.image_url && (
-        <div className="border-t border-gray-100">
-          <img
-            src={post.image_url}
-            alt="Post attachment"
-            className="w-full h-52 object-cover"
-          />
-        </div>
-      )}
     </div>
   );
 };
 
 const CommunityFeed = () => {
-  const [sortOpen, setSortOpen] = useState(false);
-  const [sort, setSort] = useState("Latest");
+  const [filter, setFilter] = useState<typeof FILTER_TABS[number]>("Recent");
+  const [searchQuery, setSearchQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { posts, loading, createPost, deletePost, toggleLike, toggleBookmark } = useCommunityPosts();
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setSortOpen(false);
-      }
-    };
-    if (sortOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [sortOpen]);
-
   const sortedPosts = useMemo(() => {
-    const arr = [...posts];
-    switch (sort) {
-      case "Alphabetical":
-        return arr.sort((a, b) => (a.title ?? a.body).localeCompare(b.title ?? b.body));
-      case "Oldest":
-        return arr.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      case "Likes":
-      case "Popular":
-        return arr.sort((a, b) => b.likes - a.likes);
-      case "Latest":
-      case "New activity":
-        return arr.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      default:
-        return arr;
+    let arr = [...posts];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      arr = arr.filter(p =>
+        (p.title?.toLowerCase().includes(q)) ||
+        p.body.toLowerCase().includes(q) ||
+        p.author_name.toLowerCase().includes(q)
+      );
     }
-  }, [posts, sort]);
+
+    // Sort
+    switch (filter) {
+      case "Trending":
+        return arr.sort((a, b) => b.likes - a.likes);
+      case "Most Discussed":
+        return arr.sort((a, b) => b.likes - a.likes); // Placeholder
+      case "Recent":
+      default:
+        return arr.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+  }, [posts, filter, searchQuery]);
 
   const handlePublish = async (title: string, body: string, channel: string) => {
     const ok = await createPost(title, body, channel);
@@ -183,50 +205,36 @@ const CommunityFeed = () => {
     <div className="space-y-4">
       <CreatePostModal open={modalOpen} onClose={() => setModalOpen(false)} onPublish={handlePublish} />
 
-      {/* Feed header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Feed</h2>
-        <div className="flex items-center gap-2">
-          {/* Sort dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setSortOpen((o) => !o)}
-              className="flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 bg-white border border-gray-200 rounded-lg px-3 py-1.5 transition-colors select-none"
-            >
-              {sort}
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${sortOpen ? "rotate-180" : ""}`} />
-            </button>
-            <div
-              className={`absolute right-0 top-full mt-2 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-150 origin-top-right ${
-                sortOpen ? "opacity-100 scale-100 translate-y-0 pointer-events-auto" : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
-              }`}
-              style={{ width: "340px" }}
-            >
-              <div className="py-2">
-                {SORT_OPTIONS.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => { setSort(option); setSortOpen(false); }}
-                    className={`w-full flex items-center justify-between text-left transition-colors hover:bg-gray-50 ${
-                      sort === option ? "font-semibold text-gray-900" : "font-normal text-gray-800"
-                    }`}
-                    style={{ fontSize: "18px", paddingLeft: "24px", paddingRight: "20px", paddingTop: "14px", paddingBottom: "14px" }}
-                  >
-                    {option}
-                    {sort === option && <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+      {/* Search bar */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex items-center px-4 py-3 gap-3">
+        <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        <input
+          type="text"
+          placeholder="Search posts by title, content, or author..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="flex-1 text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent"
+        />
+      </div>
 
+      {/* Filter tabs */}
+      <div className="flex items-center gap-2">
+        {FILTER_TABS.map(tab => (
           <button
-            onClick={() => setModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-1.5 rounded-full transition-colors"
+            key={tab}
+            onClick={() => setFilter(tab)}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              filter === tab
+                ? "bg-[#6B4EFF] text-white"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
           >
-            New post
+            {tab === "Recent" && <Clock className="w-3.5 h-3.5" />}
+            {tab === "Trending" && <span>🔥</span>}
+            {tab === "Most Discussed" && <MessageCircle className="w-3.5 h-3.5" />}
+            {tab}
           </button>
-        </div>
+        ))}
       </div>
 
       {/* Post composer */}
@@ -235,35 +243,43 @@ const CommunityFeed = () => {
         onClick={() => setModalOpen(true)}
       >
         <img
-          src="https://ui-avatars.com/api/?name=Me&background=2563EB&color=fff&size=40"
+          src="https://ui-avatars.com/api/?name=Me&background=6B4EFF&color=fff&size=40"
           alt="me"
           className="w-10 h-10 rounded-full flex-shrink-0"
         />
-        <span className="flex-1 text-sm text-gray-400 select-none">Start a post…</span>
-        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
+        <span className="flex-1 text-sm text-gray-400 select-none">Share something with the community...</span>
+        <button
+          onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
+          className="bg-[#6B4EFF] hover:bg-[#5a3ee6] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5"
+        >
+          <Plus className="w-4 h-4" />
+          New Post
+        </button>
       </div>
 
-      {/* Loading state */}
+      {/* Event reminder banner */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3 flex items-center gap-3">
+        <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+        <p className="text-sm text-gray-700">
+          <span className="font-bold text-gray-900">Asset Protection, Trademark And Trust Fund Masterclass With Chanise Anderson</span>
+          {" "}is happening in about 9 hours
+        </p>
+      </div>
+
+      {/* Loading */}
       {loading && (
         <div className="flex justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty */}
       {!loading && sortedPosts.length === 0 && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
           <p className="text-gray-500 text-sm">No posts yet. Be the first to share something!</p>
           <button
             onClick={() => setModalOpen(true)}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
+            className="mt-4 bg-[#6B4EFF] hover:bg-[#5a3ee6] text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
           >
             Create a post
           </button>
@@ -271,7 +287,7 @@ const CommunityFeed = () => {
       )}
 
       {/* Post cards */}
-      {!loading && sortedPosts.map((post) => (
+      {!loading && sortedPosts.map(post => (
         <PostCard
           key={post.id}
           post={post}

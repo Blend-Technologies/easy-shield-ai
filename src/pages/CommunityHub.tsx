@@ -4,7 +4,6 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CommunityTopNav from "@/components/community/CommunityTopNav";
 import CommunityLeftSidebar from "@/components/community/CommunityLeftSidebar";
-import CommunityRightSidebar from "@/components/community/CommunityRightSidebar";
 import CommunityFeed from "@/components/community/CommunityFeed";
 import UpdatesFeed from "@/components/community/UpdatesFeed";
 import CoursesPage from "@/components/community/CoursesPage";
@@ -26,8 +25,9 @@ const CommunityHub = () => {
   const navigate = useNavigate();
   const [community, setCommunity] = useState<CommunityData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("Home");
-  const [activeSidebarItem, setActiveSidebarItem] = useState("Community");
+  const [activeTab, setActiveTab] = useState("Community");
+  const [activeSidebarItem, setActiveSidebarItem] = useState("Introductions");
+  const [showBanner, setShowBanner] = useState(true);
 
   useEffect(() => {
     if (!communityId) {
@@ -56,8 +56,29 @@ const CommunityHub = () => {
 
   if (loading || !community) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  const topOffset = showBanner ? "pt-[96px]" : "pt-14";
+
+  // Full-width tabs
+  if (activeTab === "Programs" || activeTab === "Calendar" || activeTab === "Members") {
+    return (
+      <div className="min-h-screen bg-white">
+        <CommunityTopNav
+          communityName={community.title}
+          logo={community.logo_url}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        <div className={topOffset}>
+          {activeTab === "Programs" && <CoursesPage />}
+          {activeTab === "Calendar" && <CalendarPage />}
+          {activeTab === "Members" && <MembersPage />}
+        </div>
       </div>
     );
   }
@@ -65,6 +86,7 @@ const CommunityHub = () => {
   const renderContent = () => {
     switch (activeSidebarItem) {
       case "Updates":
+      case "Announcements":
         return <UpdatesFeed />;
       case "Events":
         return <EventsPage />;
@@ -73,27 +95,8 @@ const CommunityHub = () => {
     }
   };
 
-  // Full-width tabs without sidebars
-  if (activeTab === "Courses" || activeTab === "Calendar" || activeTab === "Members") {
-    return (
-      <div className="min-h-screen bg-background">
-        <CommunityTopNav
-          communityName={community.title}
-          logo={community.logo_url}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
-        <div className="pt-14">
-          {activeTab === "Courses" && <CoursesPage />}
-          {activeTab === "Calendar" && <CalendarPage />}
-          {activeTab === "Members" && <MembersPage />}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-gray-50">
       <CommunityTopNav
         communityName={community.title}
         logo={community.logo_url}
@@ -101,17 +104,16 @@ const CommunityHub = () => {
         onTabChange={setActiveTab}
       />
 
-      <div className="flex pt-14">
+      <div className={`flex ${topOffset}`}>
         <CommunityLeftSidebar
           activeItem={activeSidebarItem}
           onItemClick={setActiveSidebarItem}
+          showBanner={showBanner}
         />
 
-        <main className={`ml-[260px] ${activeSidebarItem === "Community" ? "mr-[260px]" : ""} flex-1 min-w-0 py-8 px-6`}>
+        <main className="ml-[260px] flex-1 min-w-0 py-6 px-6 max-w-4xl">
           {renderContent()}
         </main>
-
-        {activeSidebarItem === "Community" && <CommunityRightSidebar />}
       </div>
     </div>
   );

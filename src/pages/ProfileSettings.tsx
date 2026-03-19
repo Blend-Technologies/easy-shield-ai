@@ -14,6 +14,8 @@ const ProfileSettings = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [communityName, setCommunityName] = useState("Community");
+  const [communityLogo, setCommunityLogo] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     full_name: "",
     bio: "",

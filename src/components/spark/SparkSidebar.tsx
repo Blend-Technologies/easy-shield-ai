@@ -79,6 +79,7 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack, on
   const navigate = useNavigate();
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
   const { teams, isLoading: teamsLoading, createTeam, deleteTeam } = useTeams(selectedProjectId);
+  const scopeSubItems = getScopeSubItems(selectedProject?.name || "");
   const dashboardSubItems = getDashboardSubItems(selectedProject?.name || "");
   const tasksSubItems = getTasksSubItems(selectedProject?.name || "");
 

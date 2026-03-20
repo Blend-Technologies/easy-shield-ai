@@ -50,9 +50,9 @@ const navItems = [
   { icon: MoreHorizontal, label: "More" },
 ];
 
-const scopeSubItems = [
-  { icon: ClipboardCheck, label: "Proposal Evaluator", href: "/dashboard/proposal-evaluator" },
-  { icon: FileEdit, label: "Proposal Writer", href: "/dashboard/proposal-writer" },
+const getScopeSubItems = (projectName: string) => [
+  { icon: ClipboardCheck, label: "Proposal Evaluator", href: `/dashboard/proposal-evaluator?project=${encodeURIComponent(projectName)}` },
+  { icon: FileEdit, label: "Proposal Writer", href: `/dashboard/proposal-writer?project=${encodeURIComponent(projectName)}` },
 ];
 
 const getDashboardSubItems = (projectName: string) => [

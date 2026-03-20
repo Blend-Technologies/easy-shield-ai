@@ -32,6 +32,8 @@ const models = [
 
 const ProposalWriter = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const projectName = searchParams.get("project") || "spark";
   const { toast } = useToast();
   const [model, setModel] = useState("gemini-flash");
   const [proposalType, setProposalType] = useState("enterprise");

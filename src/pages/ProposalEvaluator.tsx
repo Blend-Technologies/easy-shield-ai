@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -42,6 +42,8 @@ type RequirementsResult = {
 
 const ProposalEvaluator = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const projectName = searchParams.get("project") || "spark";
   const { toast } = useToast();
   const [proposalType, setProposalType] = useState("enterprise");
   const [files, setFiles] = useState<UploadedFile[]>([]);
@@ -366,7 +368,7 @@ const ProposalEvaluator = () => {
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/spark/Testing")} className="shrink-0">
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/dashboard/${encodeURIComponent(projectName)}`)} className="shrink-0">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>

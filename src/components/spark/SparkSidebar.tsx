@@ -50,9 +50,9 @@ const navItems = [
   { icon: MoreHorizontal, label: "More" },
 ];
 
-const scopeSubItems = [
-  { icon: ClipboardCheck, label: "Proposal Evaluator", href: "/dashboard/proposal-evaluator" },
-  { icon: FileEdit, label: "Proposal Writer", href: "/dashboard/proposal-writer" },
+const getScopeSubItems = (projectName: string) => [
+  { icon: ClipboardCheck, label: "Proposal Evaluator", href: `/dashboard/proposal-evaluator?project=${encodeURIComponent(projectName)}` },
+  { icon: FileEdit, label: "Proposal Writer", href: `/dashboard/proposal-writer?project=${encodeURIComponent(projectName)}` },
 ];
 
 const getDashboardSubItems = (projectName: string) => [
@@ -79,6 +79,7 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack, on
   const navigate = useNavigate();
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
   const { teams, isLoading: teamsLoading, createTeam, deleteTeam } = useTeams(selectedProjectId);
+  const scopeSubItems = getScopeSubItems(selectedProject?.name || "");
   const dashboardSubItems = getDashboardSubItems(selectedProject?.name || "");
   const tasksSubItems = getTasksSubItems(selectedProject?.name || "");
 

@@ -42,6 +42,8 @@ type RequirementsResult = {
 
 const ProposalEvaluator = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const projectName = searchParams.get("project") || "spark";
   const { toast } = useToast();
   const [proposalType, setProposalType] = useState("enterprise");
   const [files, setFiles] = useState<UploadedFile[]>([]);

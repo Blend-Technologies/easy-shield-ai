@@ -661,10 +661,11 @@ const ProposalEvaluator = () => {
                       const completedTools = new Set(
                         agentLog.filter(e => e.type === "tool_result").map(e => e.tool)
                       );
+                      const agentDone = agentLog.some(e => e.type === "agent_done");
                       return agentLog.map((entry, i) => (
                         <div key={i} className="flex items-start gap-2 text-xs">
                           {entry.type === "tool_start" && (() => {
-                            const done = completedTools.has(entry.tool);
+                            const done = completedTools.has(entry.tool) || agentDone;
                             if (done)
                               return <><CheckCircle2 className="w-3 h-3 text-green-500 mt-0.5 shrink-0" /><span className="text-muted-foreground">{entry.message}</span></>;
                             if (!isAgentRunning && !done)

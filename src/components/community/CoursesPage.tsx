@@ -263,14 +263,8 @@ const CoursesPage = () => {
               Dismiss
             </button>
           </div>
-          {!adminLoading && isAdmin && (
-            <Button onClick={handleAddCourse} className="bg-[#6B4EFF] hover:bg-[#5a3ee6] text-white gap-2">
-              <Plus className="h-4 w-4" />
-              Add Program
-            </Button>
-          )}
         </div>
-        <p className="text-gray-500 text-sm mb-6">Learn at your own pace with our structured programs</p>
+      )}
 
         {/* Notification Prompt */}
         {showNotifPrompt && (

@@ -287,7 +287,6 @@ const CoursesPage = () => {
             />
           ))}
         </div>
-      )}
 
       {/* Loading */}
       {(isLoading || adminLoading) && (

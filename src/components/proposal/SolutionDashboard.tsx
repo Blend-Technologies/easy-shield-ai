@@ -171,7 +171,7 @@ export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResul
               edges={flowEdges}
               nodeTypes={nodeTypes}
               fitView
-              fitViewOptions={{ padding: 0.3 }}
+              fitViewOptions={{ padding: 0.4, maxZoom: 0.8 }}
               proOptions={{ hideAttribution: true }}
               nodesDraggable={false}
               nodesConnectable={false}

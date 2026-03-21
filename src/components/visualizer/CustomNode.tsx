@@ -18,10 +18,11 @@ const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData 
   return (
     <div
       className={`
-        bg-background border-2 rounded-lg px-2.5 py-1.5 min-w-[120px] max-w-[180px] shadow-md
+        bg-background border-2 rounded-lg px-2 py-1 min-w-[90px] max-w-[140px] shadow-md
         transition-all duration-200 cursor-grab active:cursor-grabbing
         ${selected ? "border-electric-sapphire-400 shadow-electric-sapphire-400/20 shadow-lg" : "border-border hover:border-electric-sapphire-300/50"}
       `}
+      title={data.description}
     >
       <Handle
         type="target"
@@ -45,11 +46,8 @@ const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData 
           )}
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold text-foreground leading-tight truncate">
+          <p className="text-[10px] font-semibold text-foreground leading-tight truncate">
             {data.label}
-          </p>
-          <p className="text-[9px] text-muted-foreground mt-0.5 line-clamp-2 leading-tight">
-            {data.description}
           </p>
         </div>
       </div>

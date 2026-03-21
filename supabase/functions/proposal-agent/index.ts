@@ -550,7 +550,7 @@ Solution guidelines:
 Architecture diagram guidelines:
 - Generate 5-10 nodes representing the key components of the solution using ${providerName} services
 - Use realistic ${providerName} service names (e.g. ${cloudProvider === "aws" ? "EC2, S3, Lambda, RDS, CloudFront, SQS, SNS, DynamoDB" : cloudProvider === "azure" ? "App Service, Blob Storage, Functions, SQL Database, Front Door, Service Bus, Cosmos DB" : "Compute Engine, Cloud Storage, Cloud Functions, Cloud SQL, Cloud CDN, Pub/Sub, Firestore"})
-- Space nodes with ~300px horizontal gaps and ~180px vertical gaps
+- Space nodes with ~220px horizontal gaps and ~130px vertical gaps to keep the diagram compact
 - Connect nodes logically to show data/request flow
 - Use animated: true for primary data flows
 

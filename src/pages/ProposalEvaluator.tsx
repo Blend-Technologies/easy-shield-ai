@@ -78,6 +78,7 @@ const ProposalEvaluator = () => {
   );
   const agentLogRef = useRef<HTMLDivElement>(null);
   const agentAbortRef = useRef<AbortController | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const [isIndexing, setIsIndexing] = useState(false);
   const [indexedChunks, setIndexedChunks] = useState<number | null>(null);
 
@@ -98,6 +99,14 @@ const ProposalEvaluator = () => {
   useEffect(() => { lsSet("solutionResult", solutionResult); }, [solutionResult]);
   useEffect(() => { lsSet("diagramId", diagramId); }, [diagramId]);
   useEffect(() => { lsSet("agentLog", agentLog); }, [agentLog]);
+
+  // Auto-scroll to results on initial load if a previous session exists
+  useEffect(() => {
+    if ((requirementsResult || evaluationResult || solutionResult) && resultsRef.current) {
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only on mount
 
   // Document chat
   type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -767,6 +776,9 @@ const ProposalEvaluator = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Results anchor — used for auto-scroll on session restore */}
+          <div ref={resultsRef} />
 
           {/* Step 1: Requirements Result */}
           {requirementsResult && (

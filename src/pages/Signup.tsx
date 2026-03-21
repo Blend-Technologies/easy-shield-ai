@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,15 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+
+  // Persist community invite ID so we can auto-enroll after email confirmation
+  useEffect(() => {
+    const communityId = searchParams.get("community");
+    if (communityId) {
+      localStorage.setItem("pendingCommunityJoin", communityId);
+    }
+  }, [searchParams]);
 
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));

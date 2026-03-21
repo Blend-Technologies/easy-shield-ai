@@ -7,13 +7,13 @@ import CalendarPage from "@/components/community/CalendarPage";
 import MembersPage from "@/components/community/MembersPage";
 import CoursesPage from "@/components/community/CoursesPage";
 
-interface CommunityState {
-  name: string;
-  tagline: string;
-  description: string;
-  category: string;
-  website: string;
-  logo: string | null;
+interface CommunityData {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string | null;
+  category: string | null;
+  logo_url: string | null;
 }
 
 const CommunityHub = () => {
@@ -98,14 +98,13 @@ const CommunityHub = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <CommunityTopNav
-        communityName={community.name}
-        logo={community.logo}
+        communityName={community.title}
+        logo={community.logo_url}
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
 
-      <div className="flex pt-14">
-        {/* Left sidebar */}
+      <div className={`flex ${topOffset}`}>
         <CommunityLeftSidebar
           activeChannel={activeChannel}
           onChannelClick={setActiveChannel}

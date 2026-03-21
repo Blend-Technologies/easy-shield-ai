@@ -45,7 +45,7 @@ const PostCard = ({ post, onToggleLike, onToggleBookmark, onDelete, onEdit, onTo
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-5">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
@@ -77,7 +77,7 @@ const PostCard = ({ post, onToggleLike, onToggleBookmark, onDelete, onEdit, onTo
                 post.isBookmarked ? "text-violet-600" : "text-gray-400 hover:text-gray-600"
               }`}
             >
-              <Bookmark className="w-4 h-4" fill={post.isBookmarked ? "currentColor" : "none"} />
+              <MoreHorizontal className="w-4 h-4" />
             </button>
             <div className="relative" ref={menuRef}>
               <button

@@ -17,6 +17,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import startHereImg from "@/assets/programs/start-here.jpg";
+import mod1Img from "@/assets/programs/module-1-foundations.jpg";
+import mod2Img from "@/assets/programs/module-2-strategy.jpg";
+import mod3Img from "@/assets/programs/module-3-build.jpg";
+import mod4Img from "@/assets/programs/module-4-tech.jpg";
+import mod5Img from "@/assets/programs/module-5-distribution.jpg";
+
 type Course = Database["public"]["Tables"]["courses"]["Row"];
 
 const GRADIENTS = [
@@ -182,12 +189,12 @@ const CoursesPage = () => {
     setCreating(true);
     const { data, error } = await supabase
       .from("courses")
-      .insert({ title: "Untitled Course", created_by: user.id })
+      .insert({ title: "Untitled Program", created_by: user.id })
       .select()
       .single();
     setCreating(false);
     if (error) {
-      toast({ title: "Error creating course", description: error.message, variant: "destructive" });
+      toast({ title: "Error creating program", description: error.message, variant: "destructive" });
       return;
     }
     toast({ title: "Course created — set up the details now!" });
@@ -200,10 +207,10 @@ const CoursesPage = () => {
     const { error } = await supabase.from("courses").delete().eq("id", deleteTarget.id);
     setDeleting(false);
     if (error) {
-      toast({ title: "Error deleting course", description: error.message, variant: "destructive" });
+      toast({ title: "Error deleting program", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Course deleted" });
+    toast({ title: "Program deleted" });
     setDeleteTarget(null);
     await queryClient.invalidateQueries({ queryKey: ["courses"] });
   };
@@ -256,6 +263,35 @@ const CoursesPage = () => {
               Dismiss
             </button>
           </div>
+          {!adminLoading && isAdmin && (
+            <Button onClick={handleAddCourse} className="bg-[#6B4EFF] hover:bg-[#5a3ee6] text-white gap-2">
+              <Plus className="h-4 w-4" />
+              Add Program
+            </Button>
+          )}
+        </div>
+        <p className="text-gray-500 text-sm mb-6">Learn at your own pace with our structured programs</p>
+
+        {/* Notification Prompt */}
+        {showNotifPrompt && (
+          <div className="mb-8">
+            <NotificationPrompt onDismiss={() => setShowNotifPrompt(false)} />
+          </div>
+        )}
+
+        {/* Programs Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courses.map((course, i) => (
+            <ProgramCard
+              key={course.id}
+              course={course}
+              index={i}
+              isAdmin={!adminLoading && isAdmin}
+              onEdit={() => navigate(`/community/course-builder/${course.id}`)}
+              onDelete={() => setDeleteTarget(course)}
+              onClick={() => navigate(`/community/course-player/${course.id}`)}
+            />
+          ))}
         </div>
       )}
 

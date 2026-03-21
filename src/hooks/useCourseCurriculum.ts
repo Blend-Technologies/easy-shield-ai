@@ -282,6 +282,21 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
     toast({ title: "Video uploaded successfully" });
   };
 
+  const uploadAttachment = async (itemId: string, file: File) => {
+    const ext = file.name.split('.').pop();
+    const filePath = `attachments/${itemId}/${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('course-videos')
+      .upload(filePath, file, { upsert: false });
+    if (uploadError) {
+      toast({ title: "Error uploading attachment", description: uploadError.message, variant: "destructive" });
+      return null;
+    }
+    const { data: { publicUrl } } = supabase.storage.from('course-videos').getPublicUrl(filePath);
+    toast({ title: "Attachment uploaded" });
+    return publicUrl;
+  };
+
   const uploadArticle = async (itemId: string, file: File) => {
     const fileExt = file.name.split('.').pop();
     const filePath = `articles/${itemId}.${fileExt}`;
@@ -334,6 +349,7 @@ export const useCourseCurriculum = (courseId: string | undefined) => {
     reorderItems,
     uploadVideo,
     uploadArticle,
+    uploadAttachment,
     refetch: fetchCurriculum,
   };
 };

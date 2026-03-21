@@ -1,3 +1,4 @@
+// @ts-nocheck — Deno edge function: VS Code TS checker doesn't understand Deno globals.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
 
@@ -76,10 +77,10 @@ serve(async (req) => {
       });
     }
 
-    const AZURE_OPENAI_ENDPOINT = Deno.env.get("AZURE_OPENAI_ENDPOINT") ?? "";
+    const AZURE_OPENAI_ENDPOINT = (Deno.env.get("AZURE_OPENAI_ENDPOINT") ?? "").replace(/\/+$/, "");
     const AZURE_OPENAI_API_KEY = Deno.env.get("AZURE_OPENAI_API_KEY") ?? "";
     const AZURE_OPENAI_CHAT_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_CHAT_DEPLOYMENT") ?? "gpt-4o";
-    const AZURE_OPENAI_EMBEDDING_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT") ?? "text-embedding-3-small";
+    const AZURE_OPENAI_EMBEDDING_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT") ?? "text-embedding-ada-002";
     const AZURE_OPENAI_API_VERSION = Deno.env.get("AZURE_OPENAI_API_VERSION") ?? "2024-08-01-preview";
     const AZURE_POSTGRES_URL = Deno.env.get("AZURE_POSTGRES_URL") ?? "";
 

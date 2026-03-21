@@ -1,8 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, AlertTriangle, Lightbulb, Target } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Text } from "recharts";
+import { CheckCircle, AlertTriangle, Lightbulb, Target, Code2, Wrench } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+
+export type TechnicalSkill = {
+  skill: string;
+  level: "required" | "preferred";
+  reason: string;
+};
+
+export type TechStackItem = {
+  name: string;
+  category: string;
+  required: boolean;
+  context?: string;
+};
 
 export type EvaluationResult = {
   overallScore: number;
@@ -11,6 +24,8 @@ export type EvaluationResult = {
   weaknesses: string[];
   recommendations: string[];
   summary: string;
+  technicalSkills?: TechnicalSkill[];
+  techStack?: TechStackItem[];
 };
 
 const getScoreColor = (score: number) => {
@@ -170,6 +185,75 @@ export const EvaluatorDashboard = ({ result }: { result: EvaluationResult }) => 
           </ol>
         </CardContent>
       </Card>
+
+      {/* Technical Skills & Tech Stack */}
+      {((result.technicalSkills?.length ?? 0) > 0 || (result.techStack?.length ?? 0) > 0) && (
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Technical Skills */}
+          {(result.technicalSkills?.length ?? 0) > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2 text-violet-600 dark:text-violet-400">
+                  <Code2 className="w-4 h-4" /> Technical Skills Required
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2.5">
+                  {result.technicalSkills!.map((s, i) => (
+                    <div key={i} className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-sm font-medium text-foreground">{s.skill}</span>
+                        <Badge
+                          variant="outline"
+                          className={s.level === "required"
+                            ? "text-destructive border-destructive/40 text-xs shrink-0"
+                            : "text-amber-600 border-amber-400/40 text-xs shrink-0"}
+                        >
+                          {s.level}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{s.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Tech Stack */}
+          {(result.techStack?.length ?? 0) > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2 text-sky-600 dark:text-sky-400">
+                  <Wrench className="w-4 h-4" /> Tech Stack Required
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* Group by category */}
+                {Array.from(new Set(result.techStack!.map((t) => t.category))).map((cat) => (
+                  <div key={cat} className="mb-3 last:mb-0">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">{cat}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.techStack!.filter((t) => t.category === cat).map((t, i) => (
+                        <Badge
+                          key={i}
+                          variant="secondary"
+                          className={`text-xs cursor-default ${t.required ? "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300" : "opacity-70"}`}
+                          title={t.context}
+                        >
+                          {t.name}
+                          {t.required && <span className="ml-1 text-[9px] font-bold">★</span>}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <p className="text-[10px] text-muted-foreground mt-2">★ = mandatory per RFP · hover badge for context</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 };

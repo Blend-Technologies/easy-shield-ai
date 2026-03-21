@@ -12,6 +12,17 @@ dist
 dist-ssr
 *.local
 
+# Environment variables — never commit secrets
+.env
+.env.*
+!.env.example
+
+# Supabase temp files
+supabase/.temp/
+
+# Notebooks with credentials
+*.ipynb
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

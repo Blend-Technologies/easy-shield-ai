@@ -10,6 +10,7 @@ export interface CommunityPost {
   channel: string;
   image_url: string | null;
   likes: number;
+  pinned: boolean;
   created_at: string;
   author_name: string;
   author_avatar: string;
@@ -21,19 +22,11 @@ export interface CommunityPost {
 export function useCommunityPosts() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setCurrentUserId(data.user?.id ?? null);
-    });
-  }, []);
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     const uid = user?.id ?? null;
-    setCurrentUserId(uid);
 
     const { data: postsData, error } = await supabase
       .from("community_posts")
@@ -48,7 +41,6 @@ export function useCommunityPosts() {
 
     if (!postsData) { setLoading(false); return; }
 
-    // Fetch profiles, likes, bookmarks in parallel
     const userIds = [...new Set(postsData.map((p) => p.user_id))];
     const [profilesRes, likesRes, bookmarksRes] = await Promise.all([
       supabase.from("profiles").select("id, full_name").in("id", userIds),
@@ -66,7 +58,6 @@ export function useCommunityPosts() {
 
     const enriched: CommunityPost[] = postsData.map((post) => {
       const name = profileMap[post.user_id] ?? "Anonymous";
-      const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
       const colors = ["6366f1", "f59e0b", "10b981", "ef4444", "3b82f6", "8b5cf6"];
       const color = colors[name.charCodeAt(0) % colors.length];
       return {
@@ -77,6 +68,7 @@ export function useCommunityPosts() {
         channel: post.channel,
         image_url: post.image_url,
         likes: post.likes,
+        pinned: (post as { pinned?: boolean }).pinned ?? false,
         created_at: post.created_at,
         author_name: name,
         author_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff&size=40`,
@@ -93,7 +85,6 @@ export function useCommunityPosts() {
   useEffect(() => {
     fetchPosts();
 
-    // Realtime subscription
     const channel = supabase
       .channel("community_posts_changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "community_posts" }, () => {
@@ -104,7 +95,7 @@ export function useCommunityPosts() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchPosts]);
 
-  const createPost = useCallback(async (title: string, body: string, channel: string) => {
+  const createPost = useCallback(async (title: string, body: string, channel: string, imageUrl?: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast({ title: "Not logged in", variant: "destructive" }); return false; }
 
@@ -112,7 +103,8 @@ export function useCommunityPosts() {
       user_id: user.id,
       title: title || null,
       body,
-      channel: channel || "Community",
+      channel: channel || "General Discussion",
+      image_url: imageUrl ?? null,
     });
 
     if (error) {
@@ -133,6 +125,36 @@ export function useCommunityPosts() {
     toast({ title: "Post deleted" });
   }, []);
 
+  const updatePost = useCallback(async (postId: string, title: string, body: string) => {
+    const { error } = await supabase
+      .from("community_posts")
+      .update({ title: title || null, body })
+      .eq("id", postId);
+    if (error) {
+      toast({ title: "Failed to update", description: error.message, variant: "destructive" });
+      return;
+    }
+    setPosts((prev) =>
+      prev.map((p) => p.id === postId ? { ...p, title: title || null, body } : p)
+    );
+    toast({ title: "Post updated" });
+  }, []);
+
+  const togglePin = useCallback(async (postId: string, pinned: boolean) => {
+    const { error } = await supabase
+      .from("community_posts")
+      .update({ pinned } as never)
+      .eq("id", postId);
+    if (error) {
+      toast({ title: "Failed to pin/unpin", description: error.message, variant: "destructive" });
+      return;
+    }
+    setPosts((prev) =>
+      prev.map((p) => p.id === postId ? { ...p, pinned } : p)
+    );
+    toast({ title: pinned ? "Post pinned" : "Post unpinned" });
+  }, []);
+
   const toggleLike = useCallback(async (postId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast({ title: "Please log in to like posts", variant: "destructive" }); return; }
@@ -140,7 +162,6 @@ export function useCommunityPosts() {
     const post = posts.find((p) => p.id === postId);
     if (!post) return;
 
-    // Optimistic update
     setPosts((prev) =>
       prev.map((p) =>
         p.id === postId
@@ -165,7 +186,6 @@ export function useCommunityPosts() {
     const post = posts.find((p) => p.id === postId);
     if (!post) return;
 
-    // Optimistic update
     setPosts((prev) =>
       prev.map((p) => p.id === postId ? { ...p, isBookmarked: !p.isBookmarked } : p)
     );
@@ -177,5 +197,5 @@ export function useCommunityPosts() {
     }
   }, [posts]);
 
-  return { posts, loading, createPost, deletePost, toggleLike, toggleBookmark, refetch: fetchPosts };
+  return { posts, loading, createPost, deletePost, updatePost, togglePin, toggleLike, toggleBookmark, refetch: fetchPosts };
 }

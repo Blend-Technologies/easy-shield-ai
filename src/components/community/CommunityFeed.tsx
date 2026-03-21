@@ -1,29 +1,31 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Bookmark, MoreHorizontal, Plus, ChevronDown, Check, ThumbsUp, Trash2, Loader2 } from "lucide-react";
+import {
+  Search, Plus, Bookmark, MoreHorizontal, ThumbsUp, Trash2,
+  Loader2, CalendarDays, Pin, Megaphone, Pencil, Check, X,
+} from "lucide-react";
 import CreatePostModal from "./CreatePostModal";
 import { useCommunityPosts, CommunityPost } from "@/hooks/useCommunityPosts";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
-const SORT_OPTIONS = [
-  "For you",
-  "Alphabetical",
-  "Latest",
-  "Likes",
-  "New activity",
-  "Oldest",
-  "Popular",
-];
+type FeedTab = "Recent" | "Trending" | "Most Discussed";
 
 interface PostCardProps {
   post: CommunityPost;
   onToggleLike: (id: string) => void;
   onToggleBookmark: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (id: string, title: string, body: string) => void;
+  onTogglePin: (id: string, pinned: boolean) => void;
+  isAdmin: boolean;
 }
 
-const PostCard = ({ post, onToggleLike, onToggleBookmark, onDelete }: PostCardProps) => {
+const PostCard = ({ post, onToggleLike, onToggleBookmark, onDelete, onEdit, onTogglePin, isAdmin }: PostCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(post.title ?? "");
+  const [editBody, setEditBody] = useState(post.body);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,30 +36,46 @@ const PostCard = ({ post, onToggleLike, onToggleBookmark, onDelete }: PostCardPr
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen]);
 
-  const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
-  const preview = post.body.length > 160 ? post.body.slice(0, 160) + "…" : post.body;
+  const dateLabel = format(new Date(post.created_at), "MMM d");
+  const preview = post.body.length > 200 ? post.body.slice(0, 200) + "…" : post.body;
+
+  const handleSaveEdit = () => {
+    onEdit(post.id, editTitle, editBody);
+    setEditing(false);
+  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="p-5">
+        {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <img src={post.author_avatar} alt={post.author_name} className="w-10 h-10 rounded-full" />
+            <img src={post.author_avatar} alt={post.author_name} className="w-10 h-10 rounded-full flex-shrink-0" />
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-gray-900 text-sm">{post.author_name}</span>
-                <span className="text-gray-400 text-xs">{timeAgo}</span>
+                <span className="text-gray-400 text-xs">· {dateLabel}</span>
+                {post.channel && (
+                  <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full font-medium flex items-center gap-1">
+                    📣 {post.channel}
+                  </span>
+                )}
               </div>
-              <span className="text-gray-500 text-xs">Posted in {post.channel}</span>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {post.pinned && (
+              <span className="flex items-center gap-1 text-xs text-orange-500 font-semibold">
+                <Pin className="w-3.5 h-3.5 fill-orange-500" />
+                Pinned
+              </span>
+            )}
             <button
               onClick={() => onToggleBookmark(post.id)}
               className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
-                post.isBookmarked ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
+                post.isBookmarked ? "text-violet-600" : "text-gray-400 hover:text-gray-600"
               }`}
-              title={post.isBookmarked ? "Remove bookmark" : "Bookmark"}
             >
               <Bookmark className="w-4 h-4" fill={post.isBookmarked ? "currentColor" : "none"} />
             </button>
@@ -69,20 +87,38 @@ const PostCard = ({ post, onToggleLike, onToggleBookmark, onDelete }: PostCardPr
                 <MoreHorizontal className="w-4 h-4" />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[140px]">
-                  {post.isOwner && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[160px]">
+                  {(post.isOwner || isAdmin) && (
+                    <button
+                      onClick={() => { setEditing(true); setMenuOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      Edit post
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => { onTogglePin(post.id, !post.pinned); setMenuOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <Pin className="w-3.5 h-3.5" />
+                      {post.pinned ? "Unpin post" : "Pin post"}
+                    </button>
+                  )}
+                  {(post.isOwner || isAdmin) && (
                     <button
                       onClick={() => { onDelete(post.id); setMenuOpen(false); }}
-                      className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                      className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       Delete post
                     </button>
                   )}
-                  {!post.isOwner && (
+                  {!post.isOwner && !isAdmin && (
                     <button
                       onClick={() => setMenuOpen(false)}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     >
                       Report post
                     </button>
@@ -93,191 +129,293 @@ const PostCard = ({ post, onToggleLike, onToggleBookmark, onDelete }: PostCardPr
           </div>
         </div>
 
-        {post.title && (
-          <h3 className="font-bold text-gray-900 text-base mb-2">{post.title}</h3>
+        {/* Edit mode */}
+        {editing ? (
+          <div className="space-y-2">
+            <input
+              className="w-full text-base font-semibold text-gray-900 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-violet-300"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Title (optional)"
+            />
+            <textarea
+              className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-violet-300 resize-none"
+              rows={4}
+              value={editBody}
+              onChange={(e) => setEditBody(e.target.value)}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setEditing(false)}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <X className="w-3.5 h-3.5" /> Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-white bg-violet-600 rounded-lg hover:bg-violet-700"
+              >
+                <Check className="w-3.5 h-3.5" /> Save
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {post.title && (
+              <h3 className="font-bold text-gray-900 text-base mb-2 flex items-start gap-2">
+                <span className="w-2 h-2 rounded-full bg-violet-500 flex-shrink-0 mt-[6px]" />
+                {post.title}
+              </h3>
+            )}
+            <p className="text-gray-600 text-sm leading-relaxed">
+              {expanded ? post.body : preview}
+              {!expanded && post.body.length > 200 && (
+                <button onClick={() => setExpanded(true)} className="ml-1 text-violet-600 font-medium hover:underline">
+                  See more
+                </button>
+              )}
+            </p>
+          </>
         )}
-        <p className="text-gray-600 text-sm leading-relaxed">
-          {expanded ? post.body : preview}
-          {!expanded && post.body.length > 160 && (
-            <button
-              onClick={() => setExpanded(true)}
-              className="ml-1 text-blue-600 font-medium hover:underline"
-            >
-              See more
-            </button>
-          )}
-        </p>
 
-        {/* Like button */}
-        <div className="mt-3 flex items-center gap-1">
-          <button
-            onClick={() => onToggleLike(post.id)}
-            className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors ${
-              post.isLiked
-                ? "text-blue-600 bg-blue-50 hover:bg-blue-100"
-                : "text-gray-500 hover:bg-gray-100"
-            }`}
-          >
-            <ThumbsUp className="w-3.5 h-3.5" fill={post.isLiked ? "currentColor" : "none"} />
-            {post.likes > 0 && <span>{post.likes}</span>}
-            <span>{post.isLiked ? "Liked" : "Like"}</span>
-          </button>
-        </div>
+        {!editing && (
+          <div className="mt-3 flex items-center gap-1">
+            <button
+              onClick={() => onToggleLike(post.id)}
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors ${
+                post.isLiked
+                  ? "text-violet-600 bg-violet-50 hover:bg-violet-100"
+                  : "text-gray-500 hover:bg-gray-100"
+              }`}
+            >
+              <ThumbsUp className="w-3.5 h-3.5" fill={post.isLiked ? "currentColor" : "none"} />
+              {post.likes > 0 && <span>{post.likes}</span>}
+              <span>{post.isLiked ? "Liked" : "Like"}</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {post.image_url && (
+      {post.image_url && !editing && (
         <div className="border-t border-gray-100">
-          <img
-            src={post.image_url}
-            alt="Post attachment"
-            className="w-full h-52 object-cover"
-          />
+          <img src={post.image_url} alt="Post attachment" className="w-full h-52 object-cover" />
         </div>
       )}
     </div>
   );
 };
 
-const CommunityFeed = () => {
-  const [sortOpen, setSortOpen] = useState(false);
-  const [sort, setSort] = useState("Latest");
+// Announcements grouped card (yellow background)
+const AnnouncementsCard = ({ posts }: { posts: CommunityPost[] }) => {
+  if (posts.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
+      <div className="px-5 py-4 flex items-center gap-2 border-b border-amber-200">
+        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <Megaphone className="w-4 h-4 text-white" />
+        </div>
+        <h3 className="font-bold text-gray-900 text-base">Announcements</h3>
+      </div>
+      <div className="divide-y divide-amber-100">
+        {posts.map((post) => {
+          const dateLabel = format(new Date(post.created_at), "MMM d");
+          const preview = post.body.length > 120 ? post.body.slice(0, 120) + "…" : post.body;
+          return (
+            <div key={post.id} className="px-5 py-3 flex items-start gap-3">
+              <img src={post.author_avatar} alt={post.author_name} className="w-9 h-9 rounded-full flex-shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-gray-900 text-sm leading-snug">
+                  {post.title || post.body.slice(0, 80)}
+                </p>
+                <p className="text-gray-500 text-xs mt-0.5 leading-relaxed line-clamp-2">{preview}</p>
+                <p className="text-orange-500 text-xs mt-1 font-medium">
+                  {post.author_name} · {dateLabel}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+interface CommunityFeedProps {
+  activeChannel: string;
+}
+
+const CommunityFeed = ({ activeChannel }: CommunityFeedProps) => {
+  const [feedTab, setFeedTab] = useState<FeedTab>("Recent");
+  const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { isAdmin } = useIsAdmin();
 
-  const { posts, loading, createPost, deletePost, toggleLike, toggleBookmark } = useCommunityPosts();
+  const { posts, loading, createPost, deletePost, toggleLike, toggleBookmark, updatePost, togglePin } =
+    useCommunityPosts();
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setSortOpen(false);
-      }
-    };
-    if (sortOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [sortOpen]);
+  // Filter by channel
+  const channelFiltered = useMemo(() => {
+    if (activeChannel === "All Posts" || activeChannel === "Community") return posts;
+    return posts.filter((p) => p.channel === activeChannel);
+  }, [posts, activeChannel]);
 
+  // Filter by search
+  const searchFiltered = useMemo(() => {
+    if (!search.trim()) return channelFiltered;
+    const q = search.toLowerCase();
+    return channelFiltered.filter(
+      (p) =>
+        p.title?.toLowerCase().includes(q) ||
+        p.body.toLowerCase().includes(q) ||
+        p.author_name.toLowerCase().includes(q)
+    );
+  }, [channelFiltered, search]);
+
+  // Sort by tab
   const sortedPosts = useMemo(() => {
-    const arr = [...posts];
-    switch (sort) {
-      case "Alphabetical":
-        return arr.sort((a, b) => (a.title ?? a.body).localeCompare(b.title ?? b.body));
-      case "Oldest":
-        return arr.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      case "Likes":
-      case "Popular":
-        return arr.sort((a, b) => b.likes - a.likes);
-      case "Latest":
-      case "New activity":
-        return arr.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      default:
-        return arr;
-    }
-  }, [posts, sort]);
+    const arr = [...searchFiltered];
+    if (feedTab === "Trending") return arr.sort((a, b) => b.likes - a.likes);
+    if (feedTab === "Most Discussed") return arr.sort((a, b) => b.likes - a.likes); // proxy
+    // Recent: pinned first, then by date
+    return arr.sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [searchFiltered, feedTab]);
 
-  const handlePublish = async (title: string, body: string, channel: string) => {
-    const ok = await createPost(title, body, channel);
+  // Grouped announcements card only shown in "All Posts" view
+  const announcementPosts = useMemo(
+    () =>
+      activeChannel === "All Posts"
+        ? sortedPosts.filter((p) => p.channel === "Announcements")
+        : [],
+    [sortedPosts, activeChannel]
+  );
+
+  // Regular full post cards — exclude announcements only in "All Posts" view (they show in the grouped card)
+  const regularPosts = useMemo(
+    () =>
+      activeChannel === "All Posts"
+        ? sortedPosts.filter((p) => p.channel !== "Announcements")
+        : sortedPosts,
+    [sortedPosts, activeChannel]
+  );
+
+  const handlePublish = async (title: string, body: string, channel: string, imageUrl?: string) => {
+    const ok = await createPost(title, body, channel, imageUrl);
     if (ok) setModalOpen(false);
   };
 
+  const defaultChannel = activeChannel === "All Posts" ? "General Discussion" : activeChannel;
+
   return (
     <div className="space-y-4">
-      <CreatePostModal open={modalOpen} onClose={() => setModalOpen(false)} onPublish={handlePublish} />
+      <CreatePostModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onPublish={handlePublish}
+        defaultChannel={defaultChannel}
+      />
 
-      {/* Feed header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Feed</h2>
-        <div className="flex items-center gap-2">
-          {/* Sort dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setSortOpen((o) => !o)}
-              className="flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 bg-white border border-gray-200 rounded-lg px-3 py-1.5 transition-colors select-none"
-            >
-              {sort}
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${sortOpen ? "rotate-180" : ""}`} />
-            </button>
-            <div
-              className={`absolute right-0 top-full mt-2 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-150 origin-top-right ${
-                sortOpen ? "opacity-100 scale-100 translate-y-0 pointer-events-auto" : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
-              }`}
-              style={{ width: "340px" }}
-            >
-              <div className="py-2">
-                {SORT_OPTIONS.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => { setSort(option); setSortOpen(false); }}
-                    className={`w-full flex items-center justify-between text-left transition-colors hover:bg-gray-50 ${
-                      sort === option ? "font-semibold text-gray-900" : "font-normal text-gray-800"
-                    }`}
-                    style={{ fontSize: "18px", paddingLeft: "24px", paddingRight: "20px", paddingTop: "14px", paddingBottom: "14px" }}
-                  >
-                    {option}
-                    {sort === option && <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+      {/* Search bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search posts by title, content, or author..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all"
+        />
+      </div>
 
+      {/* Feed tabs */}
+      <div className="flex items-center gap-2">
+        {(["Recent", "Trending", "Most Discussed"] as FeedTab[]).map((tab) => (
           <button
-            onClick={() => setModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-1.5 rounded-full transition-colors"
+            key={tab}
+            onClick={() => setFeedTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              feedTab === tab
+                ? "bg-violet-600 text-white"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+            }`}
           >
-            New post
+            {tab === "Recent" && "🕐"}
+            {tab === "Trending" && "🔥"}
+            {tab === "Most Discussed" && "💬"}
+            {tab}
           </button>
-        </div>
+        ))}
       </div>
 
       {/* Post composer */}
       <div
-        className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center gap-3 cursor-pointer group"
+        className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center gap-3 cursor-pointer"
         onClick={() => setModalOpen(true)}
       >
         <img
-          src="https://ui-avatars.com/api/?name=Me&background=2563EB&color=fff&size=40"
+          src="https://ui-avatars.com/api/?name=Me&background=7c3aed&color=fff&size=40"
           alt="me"
           className="w-10 h-10 rounded-full flex-shrink-0"
         />
-        <span className="flex-1 text-sm text-gray-400 select-none">Start a post…</span>
-        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
+        <span className="flex-1 text-sm text-gray-400 select-none">
+          Share something with the community...
+        </span>
+        <button
+          onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
+          className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors whitespace-nowrap"
+        >
+          <Plus className="w-4 h-4" />
+          New Post
+        </button>
       </div>
 
-      {/* Loading state */}
+      {/* Upcoming event banner */}
+      <div className="bg-white border border-gray-200 rounded-xl px-5 py-3 flex items-center justify-center gap-2 text-sm text-gray-700 shadow-sm">
+        <CalendarDays className="w-4 h-4 text-gray-500 flex-shrink-0" />
+        <span>
+          <span className="font-semibold text-gray-900">Mindset Call with Coach Hope</span>
+          {" "}is happening in about 2 hours
+        </span>
+      </div>
+
+      {/* Loading */}
       {loading && (
         <div className="flex justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
         </div>
       )}
 
-      {/* Empty state */}
-      {!loading && sortedPosts.length === 0 && (
+      {/* Announcements grouped card */}
+      {!loading && announcementPosts.length > 0 && (
+        <AnnouncementsCard posts={announcementPosts} />
+      )}
+
+      {/* Regular post cards */}
+      {!loading && regularPosts.length === 0 && announcementPosts.length === 0 && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
           <p className="text-gray-500 text-sm">No posts yet. Be the first to share something!</p>
           <button
             onClick={() => setModalOpen(true)}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
+            className="mt-4 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
           >
             Create a post
           </button>
         </div>
       )}
 
-      {/* Post cards */}
-      {!loading && sortedPosts.map((post) => (
+      {!loading && regularPosts.map((post) => (
         <PostCard
           key={post.id}
           post={post}
           onToggleLike={toggleLike}
           onToggleBookmark={toggleBookmark}
           onDelete={deletePost}
+          onEdit={updatePost}
+          onTogglePin={togglePin}
+          isAdmin={isAdmin}
         />
       ))}
     </div>

@@ -1,14 +1,11 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import CommunityTopNav from "@/components/community/CommunityTopNav";
 import CommunityLeftSidebar from "@/components/community/CommunityLeftSidebar";
-import CommunityRightSidebar from "@/components/community/CommunityRightSidebar";
 import CommunityFeed from "@/components/community/CommunityFeed";
-import UpdatesFeed from "@/components/community/UpdatesFeed";
-import CoursesPage from "@/components/community/CoursesPage";
-import EventsPage from "@/components/community/EventsPage";
 import CalendarPage from "@/components/community/CalendarPage";
 import MembersPage from "@/components/community/MembersPage";
+import CoursesPage from "@/components/community/CoursesPage";
 
 interface CommunityState {
   name: string;
@@ -21,32 +18,36 @@ interface CommunityState {
 
 const CommunityHub = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const community: CommunityState = location.state?.community ?? {
-    name: "Data Freelancers",
-    tagline: "Where data professionals build their business",
+    name: "EZ Shield AI",
+    tagline: "Where builders grow together",
     description: "",
     category: "Technology",
     website: "",
     logo: null,
   };
 
-  const [activeTab, setActiveTab] = useState("Home");
-  const [activeSidebarItem, setActiveSidebarItem] = useState("Community");
-
-  const renderContent = () => {
-    switch (activeSidebarItem) {
-      case "Updates":
-        return <UpdatesFeed />;
-      case "Events":
-        return <EventsPage />;
-      default:
-        return <CommunityFeed />;
-    }
-  };
+  const [activeTab, setActiveTab] = useState("Community");
+  const [activeChannel, setActiveChannel] = useState("All Posts");
 
   // Full-width tabs without sidebars
-  if (activeTab === "Courses" || activeTab === "Calendar" || activeTab === "Members") {
+  if (activeTab === "Courses") {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <CommunityTopNav
+          communityName={community.name}
+          logo={community.logo}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        <div className="pt-14">
+          <CoursesPage />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === "Members") {
     return (
       <div className="min-h-screen bg-background">
         <CommunityTopNav
@@ -56,16 +57,46 @@ const CommunityHub = () => {
           onTabChange={setActiveTab}
         />
         <div className="pt-14">
-          {activeTab === "Courses" && <CoursesPage />}
-          {activeTab === "Calendar" && <CalendarPage />}
-          {activeTab === "Members" && <MembersPage />}
+          <MembersPage />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === "Calendar") {
+    return (
+      <div className="min-h-screen bg-background">
+        <CommunityTopNav
+          communityName={community.name}
+          logo={community.logo}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        <div className="pt-14">
+          <CalendarPage />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === "Map" || activeTab === "Pods" || activeTab === "Support Center") {
+    return (
+      <div className="min-h-screen bg-background">
+        <CommunityTopNav
+          communityName={community.name}
+          logo={community.logo}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        <div className="pt-14 flex items-center justify-center text-gray-400 h-[80vh]">
+          {activeTab} coming soon
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-gray-50">
       <CommunityTopNav
         communityName={community.name}
         logo={community.logo}
@@ -76,17 +107,14 @@ const CommunityHub = () => {
       <div className="flex pt-14">
         {/* Left sidebar */}
         <CommunityLeftSidebar
-          activeItem={activeSidebarItem}
-          onItemClick={setActiveSidebarItem}
+          activeChannel={activeChannel}
+          onChannelClick={setActiveChannel}
         />
 
         {/* Main content */}
-        <main className={`ml-[260px] ${activeSidebarItem === "Community" ? "mr-[260px]" : ""} flex-1 min-w-0 py-8 px-6`}>
-          {renderContent()}
+        <main className="ml-[240px] flex-1 min-w-0 py-6 px-6 max-w-3xl">
+          <CommunityFeed activeChannel={activeChannel} />
         </main>
-
-        {/* Right sidebar — only on Community tab */}
-        {activeSidebarItem === "Community" && <CommunityRightSidebar />}
       </div>
     </div>
   );

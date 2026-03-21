@@ -23,6 +23,7 @@ import {
   FileText,
   GripVertical,
   Info,
+  Paperclip,
   Play,
   Plus,
   Trash2,
@@ -76,6 +77,7 @@ interface SortableItemProps {
   uploadVideo: (itemId: string, file: File) => Promise<void>;
   uploadArticle: (itemId: string, file: File) => Promise<void>;
   updateItemContent: (itemId: string, content: string) => void;
+  uploadAttachment: (itemId: string, file: File) => Promise<void>;
   expandedItemIds: Set<string>;
   toggleItemExpanded: (id: string) => void;
 }
@@ -95,13 +97,17 @@ const SortableItem = ({
   uploadVideo,
   uploadArticle,
   updateItemContent,
+  uploadAttachment,
   expandedItemIds,
   toggleItemExpanded,
 }: SortableItemProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const articleInputRef = useRef<HTMLInputElement>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadingArticle, setUploadingArticle] = useState(false);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [attachments, setAttachments] = useState<{ name: string; url: string }[]>([]);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
   });
@@ -117,6 +123,22 @@ const SortableItem = ({
 
   return (
     <>
+      {/* Hidden attachment input */}
+      <input
+        ref={attachmentInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.mp3,.mp4"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          e.currentTarget.value = "";
+          if (!file) return;
+          setUploadingAttachment(true);
+          await uploadAttachment(item.id, file);
+          setAttachments((prev) => [...prev, { name: file.name, url: "" }]);
+          setUploadingAttachment(false);
+        }}
+      />
       {/* keep the file input mounted so selecting "Video" can open the picker immediately */}
       <input
         ref={fileInputRef}
@@ -321,6 +343,55 @@ const SortableItem = ({
                   placeholder={"Write your lecture content using Markdown...\n\nSupports **bold**, _italic_, `code`, code blocks with syntax highlighting, lists, and more."}
                 />
               </div>
+
+              {/* Attachments / Materials */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium text-foreground">Attachments & Materials</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 border-primary text-primary hover:bg-primary/5 h-8"
+                    onClick={() => attachmentInputRef.current?.click()}
+                    disabled={uploadingAttachment}
+                  >
+                    {uploadingAttachment ? (
+                      <Upload className="h-3.5 w-3.5 animate-bounce" />
+                    ) : (
+                      <Paperclip className="h-3.5 w-3.5" />
+                    )}
+                    {uploadingAttachment ? "Uploading…" : "Add file"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Attach PDFs, slides, spreadsheets, zip files or any supplementary materials. Max 50MB per file.
+                </p>
+                {attachments.length > 0 ? (
+                  <div className="space-y-2">
+                    {attachments.map((att, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2.5 border border-border rounded-lg bg-background">
+                        <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-sm text-foreground truncate flex-1">{att.name}</span>
+                        <button
+                          onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== idx))}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="border-2 border-dashed border-border rounded-lg p-6 text-center text-muted-foreground text-sm cursor-pointer hover:border-primary/40 transition-colors"
+                    onClick={() => attachmentInputRef.current?.click()}
+                  >
+                    <Paperclip className="h-6 w-6 mx-auto mb-1.5 opacity-50" />
+                    Click to attach files · PDF, DOCX, PPTX, XLSX, ZIP, MP3
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -434,6 +505,7 @@ const CurriculumStep = ({ courseId }: Props) => {
     reorderItems,
     uploadVideo,
     uploadArticle,
+    uploadAttachment,
     updateItemContent,
   } = useCourseCurriculum(courseId);
 
@@ -648,6 +720,7 @@ const CurriculumStep = ({ courseId }: Props) => {
                             updateItemMediaType={updateItemMediaType}
                             uploadVideo={uploadVideo}
                             uploadArticle={uploadArticle}
+                            uploadAttachment={uploadAttachment}
                             updateItemContent={updateItemContent}
                             expandedItemIds={expandedItemIds}
                             toggleItemExpanded={toggleItemExpanded}

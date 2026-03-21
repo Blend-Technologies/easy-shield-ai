@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, Settings } from "lucide-react";
+import { ArrowLeft, Pencil, Settings, Loader2, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,17 @@ import { toast } from "@/hooks/use-toast";
 import CourseBuilderSidebar, { type StepId } from "@/components/community/CourseBuilderSidebar";
 import IntendedLearnersStep from "@/components/community/coursebuilder/IntendedLearnersStep";
 import CurriculumStep from "@/components/community/coursebuilder/CurriculumStep";
+import LandingPageStep, { type LandingPageData } from "@/components/community/coursebuilder/LandingPageStep";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const makeSections = (completed: Record<StepId, boolean>) => [
   {
@@ -46,18 +57,12 @@ const INITIAL_COMPLETED: Record<StepId, boolean> = {
   captions: false,
   accessibility: true,
   "landing-page": false,
-  pricing: false,
+  pricing: true,
   promotions: true,
-  "course-messages": false,
+  "course-messages": true,
 };
 
-const REQUIRED_STEPS: StepId[] = [
-  "intended-learners",
-  "curriculum",
-  "landing-page",
-  "pricing",
-  "course-messages",
-];
+const REQUIRED_STEPS: StepId[] = ["intended-learners", "curriculum", "landing-page"];
 
 const PlaceholderStep = ({ label }: { label: string }) => (
   <div className="max-w-3xl">
@@ -71,76 +76,133 @@ const CourseBuilder = () => {
   const navigate = useNavigate();
   const { courseId } = useParams<{ courseId: string }>();
   const { isAdmin, loading } = useIsAdmin();
-  const [activeStep, setActiveStep] = useState<StepId>("intended-learners");
-  const [completed, setCompleted] = useState(INITIAL_COMPLETED);
 
-  // Course data from DB
+  const [activeStep, setActiveStep] = useState<StepId>("landing-page");
+  const [completed, setCompleted] = useState(INITIAL_COMPLETED);
   const [courseTitle, setCourseTitle] = useState("Untitled Course");
-  const [objectives, setObjectives] = useState<string[]>([""]);
-  const [savingObjectives, setSavingObjectives] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
-  // Load course data
+  const [saving, setSaving] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Intended learners
+  const [objectives, setObjectives] = useState<string[]>(["", "", "", ""]);
+
+  // Landing page data
+  const [landingPage, setLandingPage] = useState<LandingPageData>({
+    title: "",
+    subtitle: "",
+    description: "",
+    category: "",
+    website: "",
+    is_private: false,
+    logo_url: null,
+  });
+
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Load course ──────────────────────────────────────────────────────────────
   const loadCourse = useCallback(async () => {
     if (!courseId) return;
-    const { data, error } = await supabase
-      .from("courses")
-      .select("*")
-      .eq("id", courseId)
-      .single();
+    const { data, error } = await supabase.from("courses").select("*").eq("id", courseId).single();
     if (error || !data) return;
+
     setCourseTitle(data.title);
-    // Load objectives from DB
-    const obj = (data as any).objectives;
+    setLandingPage({
+      title: data.title ?? "",
+      subtitle: data.subtitle ?? "",
+      description: data.description ?? "",
+      category: data.category ?? "",
+      website: data.website ?? "",
+      is_private: data.is_private ?? false,
+      logo_url: data.logo_url ?? null,
+    });
+
+    const obj = (data as { objectives?: unknown }).objectives;
     if (Array.isArray(obj) && obj.length > 0) {
       setObjectives(obj as string[]);
       setCompleted((prev) => ({ ...prev, "intended-learners": true }));
     }
+
+    if (data.subtitle || data.description) {
+      setCompleted((prev) => ({ ...prev, "landing-page": true }));
+    }
   }, [courseId]);
 
-  useEffect(() => {
-    loadCourse();
-  }, [loadCourse]);
-
+  useEffect(() => { loadCourse(); }, [loadCourse]);
   useEffect(() => {
     if (!loading && !isAdmin) navigate("/community/hub", { replace: true });
   }, [loading, isAdmin, navigate]);
 
-  // Save objectives to DB
-  const handleObjectivesChange = useCallback(
-    async (newObjectives: string[]) => {
-      setObjectives(newObjectives);
-      if (!courseId) return;
-
-      // Mark completed if at least 4 non-empty objectives
-      const filled = newObjectives.filter((o) => o.trim().length > 0);
-      setCompleted((prev) => ({ ...prev, "intended-learners": filled.length >= 4 }));
-
-      // Debounced save
-      setSavingObjectives(true);
-      const { error } = await supabase
-        .from("courses")
-        .update({ objectives: newObjectives } as any)
-        .eq("id", courseId);
-      setSavingObjectives(false);
-      if (error) {
-        toast({ title: "Error saving objectives", description: error.message, variant: "destructive" });
-      }
-    },
-    [courseId]
-  );
-
-  // Save course title
-  const handleSave = async () => {
+  // ── Save landing page to DB ──────────────────────────────────────────────────
+  const saveLandingPage = useCallback(async (data: LandingPageData) => {
     if (!courseId) return;
-    const { error } = await supabase
-      .from("courses")
-      .update({ title: courseTitle } as any)
-      .eq("id", courseId);
+    setSaving(true);
+    const { error } = await supabase.from("courses").update({
+      title: data.title || "Untitled Course",
+      subtitle: data.subtitle ?? "",          // NOT NULL — never send null
+      description: data.description || null,
+      category: data.category || null,
+      website: data.website || null,
+      is_private: data.is_private,
+      logo_url: data.logo_url,
+    }).eq("id", courseId);
+    setSaving(false);
+
     if (error) {
       toast({ title: "Error saving", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Course saved!" });
+      return;
     }
+
+    const isComplete = !!(data.title && (data.subtitle || data.description));
+    setCompleted((prev) => ({ ...prev, "landing-page": isComplete }));
+  }, [courseId]);
+
+  // ── Auto-save landing page with debounce ─────────────────────────────────────
+  const handleLandingPageChange = useCallback((data: LandingPageData) => {
+    setLandingPage(data);
+    setCourseTitle(data.title || courseTitle);
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => saveLandingPage(data), 1000);
+  }, [courseTitle, saveLandingPage]);
+
+  // ── Auto-save objectives ─────────────────────────────────────────────────────
+  const handleObjectivesChange = useCallback(async (newObjectives: string[]) => {
+    setObjectives(newObjectives);
+    if (!courseId) return;
+    const filled = newObjectives.filter((o) => o.trim().length > 0);
+    setCompleted((prev) => ({ ...prev, "intended-learners": filled.length >= 4 }));
+    setSaving(true);
+    const { error } = await supabase.from("courses").update({ objectives: newObjectives as never }).eq("id", courseId);
+    setSaving(false);
+    if (error) toast({ title: "Error saving objectives", description: error.message, variant: "destructive" });
+  }, [courseId]);
+
+  // ── Save title from top bar ──────────────────────────────────────────────────
+  const handleSaveTitle = async () => {
+    if (!courseId) return;
+    const { error } = await supabase.from("courses").update({ title: courseTitle }).eq("id", courseId);
+    if (error) {
+      toast({ title: "Error saving title", description: error.message, variant: "destructive" });
+      return;
+    }
+    setLandingPage((prev) => ({ ...prev, title: courseTitle }));
+    toast({ title: "Saved" });
+  };
+
+  // ── Delete course ────────────────────────────────────────────────────────────
+  const handleDeleteCourse = async () => {
+    if (!courseId) return;
+    setDeleting(true);
+    const { error } = await supabase.from("courses").delete().eq("id", courseId);
+    setDeleting(false);
+    if (error) {
+      toast({ title: "Error deleting course", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Course deleted" });
+    navigate("/community/hub");
   };
 
   if (loading) return null;
@@ -148,9 +210,7 @@ const CourseBuilder = () => {
 
   const sections = makeSections(completed);
   const allRequiredDone = REQUIRED_STEPS.every((s) => completed[s]);
-
-  const activeLabel =
-    sections.flatMap((s) => s.items).find((i) => i.id === activeStep)?.label ?? "";
+  const activeLabel = sections.flatMap((s) => s.items).find((i) => i.id === activeStep)?.label ?? "";
 
   const renderStep = () => {
     switch (activeStep) {
@@ -158,6 +218,12 @@ const CourseBuilder = () => {
         return <IntendedLearnersStep objectives={objectives} onChange={handleObjectivesChange} />;
       case "curriculum":
         return courseId ? <CurriculumStep courseId={courseId} /> : <PlaceholderStep label="No course selected" />;
+      case "landing-page":
+        return courseId ? (
+          <LandingPageStep courseId={courseId} data={landingPage} onChange={handleLandingPageChange} />
+        ) : (
+          <PlaceholderStep label="No course selected" />
+        );
       default:
         return <PlaceholderStep label={activeLabel} />;
     }
@@ -181,8 +247,8 @@ const CourseBuilder = () => {
               autoFocus
               value={courseTitle}
               onChange={(e) => setCourseTitle(e.target.value)}
-              onBlur={() => { setEditingTitle(false); handleSave(); }}
-              onKeyDown={(e) => { if (e.key === "Enter") { setEditingTitle(false); handleSave(); } }}
+              onBlur={() => { setEditingTitle(false); handleSaveTitle(); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { setEditingTitle(false); handleSaveTitle(); } }}
               className="h-8 text-sm font-semibold max-w-md bg-background/10 border-muted-foreground/30 text-background"
             />
           ) : (
@@ -197,8 +263,10 @@ const CourseBuilder = () => {
           <Badge variant="secondary" className="bg-muted-foreground/20 text-muted-foreground text-[10px] uppercase tracking-wider shrink-0">
             Draft
           </Badge>
-          {savingObjectives && (
-            <span className="text-muted-foreground text-xs shrink-0">Saving…</span>
+          {saving && (
+            <span className="text-muted-foreground text-xs shrink-0 flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" /> Saving…
+            </span>
           )}
         </div>
 
@@ -207,10 +275,18 @@ const CourseBuilder = () => {
             type="button"
             size="sm"
             className="bg-muted-foreground/30 hover:bg-muted-foreground/40 text-background border-0 rounded-full px-5"
-            onClick={handleSave}
+            onClick={() => saveLandingPage(landingPage)}
+            disabled={saving}
           >
-            Save
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
           </Button>
+          <button
+            onClick={() => setShowDeleteDialog(true)}
+            title="Delete course"
+            className="text-muted-foreground hover:text-red-400 transition-colors"
+          >
+            <Trash2 className="h-5 w-5" />
+          </button>
           <button className="text-muted-foreground hover:text-background">
             <Settings className="h-5 w-5" />
           </button>
@@ -225,11 +301,32 @@ const CourseBuilder = () => {
           onStepClick={setActiveStep}
           allRequiredDone={allRequiredDone}
         />
-
         <main className="flex-1 overflow-y-auto p-8">
           {renderStep()}
         </main>
       </div>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete course</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{courseTitle}"? This will permanently remove the course and all its content.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCourse}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

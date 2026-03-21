@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL as string | undefined;
+
 export function useIsAdmin() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -10,6 +12,13 @@ export function useIsAdmin() {
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setIsAdmin(false); setLoading(false); return; }
+
+      // Env-variable override — grants admin to a specific email without needing user_roles row
+      if (ADMIN_EMAIL && user.email === ADMIN_EMAIL) {
+        if (!cancelled) { setIsAdmin(true); setLoading(false); }
+        return;
+      }
+
       const { data } = await supabase
         .from("user_roles")
         .select("role")

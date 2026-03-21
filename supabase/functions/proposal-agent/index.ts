@@ -1,3 +1,5 @@
+// @ts-nocheck — Deno edge function: VS Code TS checker doesn't understand Deno globals.
+// Runtime type safety is handled by Deno's own checker on deploy.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
 
@@ -8,6 +10,99 @@ const corsHeaders = {
 };
 
 type RFPDocument = { name: string; content: string };
+
+// ── Robust JSON extractor ─────────────────────────────────────────────────────
+// Claude sometimes puts literal newlines / control chars inside string values,
+// which makes JSON.parse throw. repairJSON fixes ONLY chars inside strings by
+// scanning character-by-character — structural whitespace is left intact.
+function repairJSON(raw: string): string {
+  let out = "";
+  let inStr = false;
+  let escaped = false;
+
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+
+    if (escaped) {
+      out += ch;
+      escaped = false;
+      continue;
+    }
+
+    if (ch === "\\" && inStr) {
+      out += ch;
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inStr = !inStr;
+      out += ch;
+      continue;
+    }
+
+    if (inStr) {
+      // Replace bare control characters with proper JSON escape sequences
+      const code = ch.charCodeAt(0);
+      if (ch === "\n") { out += "\\n"; continue; }
+      if (ch === "\r") { out += "\\r"; continue; }
+      if (ch === "\t") { out += "\\t"; continue; }
+      if (code < 0x20) {
+        out += "\\u" + code.toString(16).padStart(4, "0");
+        continue;
+      }
+    }
+
+    out += ch;
+  }
+
+  return out;
+}
+
+function extractJSON(text: string): any {
+  // Helper: try to extract the outermost {...} block
+  const slice = (s: string) => {
+    const start = s.indexOf("{");
+    const end = s.lastIndexOf("}");
+    if (start === -1 || end <= start) throw new Error("no braces");
+    return s.slice(start, end + 1);
+  };
+
+  const attempts: Array<() => any> = [
+    // 1. Direct parse
+    () => JSON.parse(text.trim()),
+    // 2. Extract from markdown code fence, then parse
+    () => {
+      const m = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (!m) throw new Error("no fence");
+      return JSON.parse(m[1].trim());
+    },
+    // 3. Outermost { … } slice
+    () => JSON.parse(slice(text)),
+    // 4. Repair control chars in strings, then slice + parse
+    () => JSON.parse(slice(repairJSON(text))),
+    // 5. Repair from inside a code fence
+    () => {
+      const m = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (!m) throw new Error("no fence");
+      return JSON.parse(repairJSON(m[1].trim()));
+    },
+  ];
+
+  for (const attempt of attempts) {
+    try { return attempt(); } catch { /* try next */ }
+  }
+  // Log what Claude returned so we can debug the failure
+  console.error("extractJSON failed. Raw response (first 500 chars):", text.slice(0, 500));
+  throw new Error("Failed to parse JSON from AI response");
+}
+
+// ~8 000 chars ≈ ~2 000 tokens per doc — keeps total prompt within fast-response range
+const MAX_DOC_CHARS = 8_000;
+function truncateDoc(content: string): string {
+  if (content.length <= MAX_DOC_CHARS) return content;
+  return content.slice(0, MAX_DOC_CHARS) + "\n\n[... document truncated for length ...]";
+}
 
 // ── Embedding helper ──────────────────────────────────────────────────────────
 
@@ -82,22 +177,85 @@ async function queryRelevantChunks(
 
 // ── Step 1: Extract Requirements ─────────────────────────────────────────────
 
-async function callAzureOpenAI(azureEndpoint: string, apiKey: string, chatDeployment: string, apiVersion: string, messages: object[], tools?: object[], toolChoice?: object): Promise<any> {
-  const url = `${azureEndpoint}/openai/deployments/${chatDeployment}/chat/completions?api-version=${apiVersion}`;
-  const body: any = { messages };
-  if (tools) { body.tools = tools; body.tool_choice = toolChoice; }
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "api-key": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
+// ── Claude (Anthropic) chat helper ───────────────────────────────────────────
+// Claude separates the system prompt from the messages array and requires max_tokens.
+// Messages must alternate user/assistant — no system role allowed in messages[].
+
+async function callClaude(
+  anthropicApiKey: string,
+  model: string,
+  messages: { role: string; content: string }[],
+  step = "unknown",
+  maxRetries = 2,
+  maxTokens = 8192,
+): Promise<string> {
+  const systemMsg = messages.find((m) => m.role === "system");
+  const chatMessages = messages.filter((m) => m.role !== "system");
+
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: maxTokens,
+    messages: chatMessages,
+  };
+  if (systemMsg) body.system = systemMsg.content;
+
+  const bodyStr = JSON.stringify(body);
+  let _lastStatus = 0;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      // Longer backoff for overload (529) vs gateway errors (502/503)
+      const delay = _lastStatus === 529 ? 15_000 * attempt : 3_000 * attempt;
+      console.log(`[${step}] Retry ${attempt}/${maxRetries} after ${delay}ms (last status: ${_lastStatus})...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+
+    console.log(`[${step}] POST https://api.anthropic.com/v1/messages model=${model} (attempt ${attempt + 1})`);
+
+    let response: Response;
+    try {
+      response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": anthropicApiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: bodyStr,
+      });
+    } catch (networkErr) {
+      if (attempt < maxRetries) continue; // retry on network error
+      throw new Error(`[${step}] Network error calling Claude: ${networkErr}`);
+    }
+
+    if (response.ok) {
+      const data = await response.json();
+      const stopReason = data.stop_reason;
+      if (stopReason === "max_tokens") {
+        console.warn(`[${step}] WARNING: response hit max_tokens (${maxTokens}) and was truncated`);
+      }
+      return data.content?.[0]?.text ?? "";
+    }
+
     const status = response.status;
-    if (status === 429) throw new Error("Rate limit exceeded. Please try again.");
-    if (status === 402) throw new Error("Azure OpenAI usage limit reached.");
-    throw new Error(`Azure OpenAI error (status ${status})`);
+    _lastStatus = status;
+    const errorBody = await response.text();
+    console.error(`[${step}] Claude ${status} (attempt ${attempt + 1}):`, errorBody.slice(0, 300));
+
+    // Retry on 5xx (502, 503, 529 overloaded) but not on 4xx
+    if (status >= 500 && attempt < maxRetries) continue;
+
+    if (status === 429) throw new Error(`[${step}] Rate limit exceeded. Please try again in a moment.`);
+
+    let claudeMsg = errorBody.slice(0, 400);
+    try {
+      const parsed = JSON.parse(errorBody);
+      claudeMsg = parsed?.error?.message ?? claudeMsg;
+    } catch { /* ignore */ }
+    throw new Error(`[${step}] Claude error (${status}): ${claudeMsg}`);
   }
-  return response.json();
+
+  throw new Error(`[${step}] Claude failed after ${maxRetries + 1} attempts`);
 }
 
 type PreExtractedItem = {
@@ -110,10 +268,8 @@ type PreExtractedItem = {
 async function executeExtractRequirements(
   preExtractedItems: PreExtractedItem[],
   sectionHeadings: string[],
-  azureEndpoint: string,
-  apiKey: string,
-  chatDeployment: string,
-  apiVersion: string,
+  anthropicApiKey: string,
+  claudeModel: string,
 ) {
   const totalShall = preExtractedItems.filter((i) => i.type === "shall").length;
   const totalMust = preExtractedItems.filter((i) => i.type === "must").length;
@@ -170,18 +326,14 @@ Include an entry for every ID listed. Do not include any other fields.`;
 
   const userPrompt = `Assign sections for these ${itemsWithIds.length} requirements (${totalShall} shall, ${totalMust} must):\n\n${itemLines}`;
 
-  const data = await callAzureOpenAI(azureEndpoint, apiKey, chatDeployment, apiVersion, [
+  const raw = await callClaude(anthropicApiKey, claudeModel, [
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt },
-  ]);
-
-  const raw = data.choices?.[0]?.message?.content || "";
-  const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, raw];
-
+  ], "step1_extract");
   let assignments: Record<string, string> = {};
   let summary = `Found ${totalShall} shall and ${totalMust} must requirements.`;
   try {
-    const parsed = JSON.parse(jsonMatch[1].trim());
+    const parsed = extractJSON(raw);
     assignments = parsed.assignments ?? {};
     if (parsed.summary) summary = parsed.summary;
   } catch {
@@ -208,19 +360,17 @@ async function executeEvaluateRFP(
   supplementaryDocument: RFPDocument | null,
   proposalType: string,
   retrievedContext: string,
-  azureEndpoint: string,
-  apiKey: string,
-  chatDeployment: string,
-  apiVersion: string,
+  anthropicApiKey: string,
+  claudeModel: string,
 ) {
   const supplementaryLabel = proposalType === "enterprise" ? "Resume" : "Capability Statement";
 
   const rfpContext = rfpDocuments
-    .map((d, i) => `--- RFP Document ${i + 1}: ${d.name} ---\n${d.content}`)
+    .map((d, i) => `--- RFP Document ${i + 1}: ${d.name} ---\n${truncateDoc(d.content)}`)
     .join("\n\n");
 
   const supplementaryContext = supplementaryDocument
-    ? `--- ${supplementaryLabel}: ${supplementaryDocument.name} ---\n${supplementaryDocument.content}`
+    ? `--- ${supplementaryLabel}: ${supplementaryDocument.name} ---\n${truncateDoc(supplementaryDocument.content)}`
     : "";
 
   const systemPrompt = `You are an expert proposal evaluator and RFP analyst. You evaluate how well an applicant's qualifications match a Request for Proposal (RFP).
@@ -236,7 +386,13 @@ Respond with this exact JSON structure:
   "strengths": ["<strength 1>", "<strength 2>", ...],
   "weaknesses": ["<weakness 1>", "<weakness 2>", ...],
   "recommendations": ["<recommendation 1>", "<recommendation 2>", ...],
-  "summary": "<2-3 sentence executive summary of the match>"
+  "summary": "<2-3 sentence executive summary of the match>",
+  "technicalSkills": [
+    { "skill": "<name>", "level": "required", "reason": "<brief reason>" }
+  ],
+  "techStack": [
+    { "name": "<technology>", "category": "<Language|Framework|Cloud|Database|DevOps|Security|Integration|Other>", "required": true }
+  ]
 }
 
 Categories to evaluate (score each 0-100):
@@ -247,7 +403,7 @@ Categories to evaluate (score each 0-100):
 5. Compliance with Mandatory Requirements
 6. Competitive Positioning
 
-Be thorough, specific, and reference actual content from the documents. Each strength, weakness, and recommendation should be a detailed sentence.`;
+Keep each strength, weakness, recommendation to 1 sentence. Keep reasons brief (10 words max). List up to 10 technicalSkills and up to 15 techStack items.`;
 
   const userPrompt = `Evaluate the following RFP against the applicant's ${supplementaryLabel}.
 ${retrievedContext}
@@ -257,15 +413,13 @@ ${rfpContext || "No RFP documents provided."}
 Applicant's ${supplementaryLabel}:
 ${supplementaryContext || `No ${supplementaryLabel} provided.`}
 
-Analyze how well the applicant's qualifications match the RFP requirements. Score on a scale of 0-100 and provide detailed strengths, weaknesses, and actionable recommendations.`;
+Analyze how well the applicant's qualifications match the RFP requirements. Score each category 0-100, identify strengths and weaknesses, provide actionable recommendations, and extract the complete list of technical skills and tech stack required by this RFP.`;
 
-  const data = await callAzureOpenAI(azureEndpoint, apiKey, chatDeployment, apiVersion, [
+  const content = await callClaude(anthropicApiKey, claudeModel, [
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt },
-  ]);
-  const content = data.choices?.[0]?.message?.content || "";
-  const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
-  return JSON.parse(jsonMatch[1].trim());
+  ], "step2_evaluate");
+  return extractJSON(content);
 }
 
 // ── Step 3: Generate Solution ─────────────────────────────────────────────────
@@ -277,10 +431,8 @@ async function executeGenerateSolution(
   evaluationSummary: string,
   cloudProvider: string,
   retrievedContext: string,
-  azureEndpoint: string,
-  apiKey: string,
-  chatDeployment: string,
-  apiVersion: string,
+  anthropicApiKey: string,
+  claudeModel: string,
 ) {
   const providerName = cloudProvider === "azure"
     ? "Microsoft Azure"
@@ -291,19 +443,54 @@ async function executeGenerateSolution(
   const providerConstraint = `IMPORTANT: The solution MUST use ${providerName} services exclusively. All components, services, and architecture elements should be from ${providerName}. Use the appropriate service names and colors for ${providerName}.`;
 
   const rfpContext = rfpDocuments?.length > 0
-    ? rfpDocuments.map((d, i) => `--- RFP Document ${i + 1}: ${d.name} ---\n${d.content}`).join("\n\n")
+    ? rfpDocuments.map((d, i) => `--- RFP Document ${i + 1}: ${d.name} ---\n${truncateDoc(d.content)}`).join("\n\n")
     : "";
 
   const supplementaryLabel = proposalType === "enterprise" ? "Resume" : "Capability Statement";
   const supplementaryContext = supplementaryDocument
-    ? `--- ${supplementaryLabel}: ${supplementaryDocument.name} ---\n${supplementaryDocument.content}`
+    ? `--- ${supplementaryLabel}: ${supplementaryDocument.name} ---\n${truncateDoc(supplementaryDocument.content)}`
     : "";
 
   const systemPrompt = `You are an expert solution architect. Given an RFP and evaluation results, generate a comprehensive technical solution and an architecture diagram.
 
 ${providerConstraint}
 
-You MUST respond by calling the generate_solution tool. Do not respond with plain text.
+You MUST respond with valid JSON only. No markdown fences, no text outside the JSON.
+
+Output this exact JSON structure:
+{
+  "solutionTitle": "<concise title for the proposed solution>",
+  "solutionOverview": "<3-5 paragraph solution overview in markdown format>",
+  "keyComponents": [
+    {
+      "name": "<component name>",
+      "description": "<description using ${providerName} services>",
+      "cloudProvider": "${cloudProvider}",
+      "rfpQuotes": ["<exact quote from RFP>", "<exact quote from RFP>"]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "<unique id>",
+      "label": "<service/component name>",
+      "abbr": "<2-4 letter abbreviation>",
+      "description": "<short description>",
+      "x": <number>,
+      "y": <number>,
+      "color": "<hex color or tailwind bg class>",
+      "textColor": "text-white"
+    }
+  ],
+  "edges": [
+    {
+      "id": "<unique id>",
+      "source": "<node id>",
+      "target": "<node id>",
+      "animated": <true|false>,
+      "label": "<optional flow description>"
+    }
+  ]
+}
 
 Solution guidelines:
 - Provide a clear, actionable solution overview (3-5 paragraphs)
@@ -316,11 +503,9 @@ Solution guidelines:
 Architecture diagram guidelines:
 - Generate 5-10 nodes representing the key components of the solution using ${providerName} services
 - Use realistic ${providerName} service names (e.g. ${cloudProvider === "aws" ? "EC2, S3, Lambda, RDS, CloudFront, SQS, SNS, DynamoDB" : cloudProvider === "azure" ? "App Service, Blob Storage, Functions, SQL Database, Front Door, Service Bus, Cosmos DB" : "Compute Engine, Cloud Storage, Cloud Functions, Cloud SQL, Cloud CDN, Pub/Sub, Firestore"})
-- Each node needs: id, label (service/component name), abbr (2-4 letter abbreviation), description (short), x (position), y (position), color (hex color), textColor (always "text-white")
 - Space nodes with ~300px horizontal gaps and ~180px vertical gaps
 - Connect nodes logically to show data/request flow
-- Each edge needs: id, source (node id), target (node id), animated (boolean), label (optional flow description)
-- Use animated edges for primary data flows
+- Use animated: true for primary data flows
 
 Cloud service colors for ${providerName}:
 ${cloudProvider === "aws" ? '- bg-[#FF9900] (compute), bg-[#3B48CC] (database), bg-[#E7157B] (analytics), bg-[#7B61FF] (ML/AI), bg-[#1A9C55] (storage), bg-[#DD344C] (security), bg-[#E7157B] (networking)' : cloudProvider === "azure" ? '- bg-[#0078D4] (compute), bg-[#50E6FF] (data), bg-[#00BCF2] (networking), bg-[#7FBA00] (DevOps), bg-[#FF8C00] (AI/ML), bg-[#E81123] (security), bg-[#68217A] (integration)' : '- bg-[#4285F4] (compute), bg-[#DB4437] (data), bg-[#F4B400] (ML/AI), bg-[#0F9D58] (networking), bg-[#185ABC] (security), bg-[#EA4335] (analytics), bg-[#34A853] (storage)'}
@@ -337,81 +522,15 @@ ${evaluationSummary ? `Previous Evaluation Summary:\n${evaluationSummary}\n` : "
 
 Generate a solution that addresses the RFP requirements with a practical architecture diagram showing the key components, services, and their interactions.`;
 
-  const data = await callAzureOpenAI(azureEndpoint, apiKey, chatDeployment, apiVersion, [
+  const content = await callClaude(anthropicApiKey, claudeModel, [
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt },
-  ], [
-        {
-          type: "function",
-          function: {
-            name: "generate_solution",
-            description: "Generate a solution description and architecture diagram for the RFP",
-            parameters: {
-              type: "object",
-              properties: {
-                solutionTitle: { type: "string", description: "A concise title for the proposed solution" },
-                solutionOverview: { type: "string", description: "3-5 paragraph solution overview in markdown format" },
-                keyComponents: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string" },
-                      description: { type: "string" },
-                      cloudProvider: { type: "string", description: "aws, azure, gcp, or generic" },
-                      rfpQuotes: {
-                        type: "array",
-                        items: { type: "string" },
-                        description: "1-3 exact sentences or phrases extracted verbatim from the RFP documents that justify or request this component",
-                      },
-                    },
-                    required: ["name", "description", "cloudProvider", "rfpQuotes"],
-                    additionalProperties: false,
-                  },
-                },
-                nodes: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      id: { type: "string" },
-                      label: { type: "string" },
-                      abbr: { type: "string" },
-                      description: { type: "string" },
-                      x: { type: "number" },
-                      y: { type: "number" },
-                      color: { type: "string" },
-                      textColor: { type: "string" },
-                    },
-                    required: ["id", "label", "abbr", "description", "x", "y", "color", "textColor"],
-                    additionalProperties: false,
-                  },
-                },
-                edges: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      id: { type: "string" },
-                      source: { type: "string" },
-                      target: { type: "string" },
-                      animated: { type: "boolean" },
-                      label: { type: "string" },
-                    },
-                    required: ["id", "source", "target", "animated"],
-                    additionalProperties: false,
-                  },
-                },
-              },
-              required: ["solutionTitle", "solutionOverview", "keyComponents", "nodes", "edges"],
-              additionalProperties: false,
-            },
-          },
-        },
-  ], { type: "function", function: { name: "generate_solution" } });
-  const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-  if (!toolCall) throw new Error("AI did not return structured solution data");
-  return JSON.parse(toolCall.function.arguments);
+  ], "step3_solution");
+  const parsed = extractJSON(content);
+  if (!parsed.solutionTitle || !parsed.nodes || !parsed.edges) {
+    throw new Error("AI did not return structured solution data");
+  }
+  return parsed;
 }
 
 // ── Agent Orchestrator ────────────────────────────────────────────────────────
@@ -424,9 +543,10 @@ async function runAgent(
   proposalType: string,
   cloudProvider: string,
   sessionId: string,
+  anthropicApiKey: string,
+  claudeModel: string,
   azureEndpoint: string,
-  apiKey: string,
-  chatDeployment: string,
+  azureApiKey: string,
   embeddingDeployment: string,
   apiVersion: string,
   pgUrl: string,
@@ -434,10 +554,11 @@ async function runAgent(
   sectionHeadings: string[],
 ) {
   try {
-    // Step 1
+    // Step 1 — use Haiku for simple section-assignment JSON (faster, less overloaded)
+    const haikuModel = "claude-haiku-4-5-20251001";
     await sendEvent({ type: "tool_start", tool: "extract_requirements", message: `Processing ${preExtractedRequirements.length} pre-extracted SHALL & MUST requirements...` });
     const requirementsResult = await executeExtractRequirements(
-      preExtractedRequirements, sectionHeadings, azureEndpoint, apiKey, chatDeployment, apiVersion,
+      preExtractedRequirements, sectionHeadings, anthropicApiKey, haikuModel,
     );
     await sendEvent({ type: "tool_result", tool: "extract_requirements", data: requirementsResult });
 
@@ -445,12 +566,12 @@ async function runAgent(
     await sendEvent({ type: "tool_start", tool: "evaluate_rfp", message: "Retrieving relevant context for fit evaluation..." });
     const evaluationContext = await queryRelevantChunks(
       "qualifications experience technical capability past performance evaluation",
-      sessionId, pgUrl, azureEndpoint, apiKey, embeddingDeployment, apiVersion,
+      sessionId, pgUrl, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion,
     );
 
     await sendEvent({ type: "tool_start", tool: "evaluate_rfp", message: "Evaluating fit against your qualifications..." });
     const evaluationResult = await executeEvaluateRFP(
-      rfpDocuments, supplementaryDocument, proposalType, evaluationContext, azureEndpoint, apiKey, chatDeployment, apiVersion,
+      rfpDocuments, supplementaryDocument, proposalType, evaluationContext, anthropicApiKey, claudeModel,
     );
     await sendEvent({ type: "tool_result", tool: "evaluate_rfp", data: evaluationResult });
 
@@ -458,13 +579,13 @@ async function runAgent(
     await sendEvent({ type: "tool_start", tool: "generate_solution", message: "Retrieving relevant context for solution architecture..." });
     const solutionContext = await queryRelevantChunks(
       "solution architecture technical approach implementation services cloud infrastructure",
-      sessionId, pgUrl, azureEndpoint, apiKey, embeddingDeployment, apiVersion,
+      sessionId, pgUrl, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion,
     );
 
     await sendEvent({ type: "tool_start", tool: "generate_solution", message: "Generating architecture solution and diagram..." });
     const evaluationSummary = `Score: ${evaluationResult.overallScore}/100. ${evaluationResult.summary}`;
     const solutionResult = await executeGenerateSolution(
-      rfpDocuments, supplementaryDocument, proposalType, evaluationSummary, cloudProvider, solutionContext, azureEndpoint, apiKey, chatDeployment, apiVersion,
+      rfpDocuments, supplementaryDocument, proposalType, evaluationSummary, cloudProvider, solutionContext, anthropicApiKey, claudeModel,
     );
     await sendEvent({ type: "tool_result", tool: "generate_solution", data: solutionResult });
 
@@ -487,15 +608,17 @@ serve(async (req) => {
     const { rfpDocuments, supplementaryDocument, proposalType, cloudProvider, sessionId, preExtractedRequirements, sectionHeadings } =
       await req.json();
 
-    const AZURE_OPENAI_ENDPOINT = Deno.env.get("AZURE_OPENAI_ENDPOINT") ?? "";
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+    const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") ?? "claude-sonnet-4-6";
+    // Azure is still used for embeddings (pgvector retrieval)
+    const AZURE_OPENAI_ENDPOINT = (Deno.env.get("AZURE_OPENAI_ENDPOINT") ?? "").replace(/\/+$/, "");
     const AZURE_OPENAI_API_KEY = Deno.env.get("AZURE_OPENAI_API_KEY") ?? "";
-    const AZURE_OPENAI_CHAT_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_CHAT_DEPLOYMENT") ?? "gpt-4o";
-    const AZURE_OPENAI_EMBEDDING_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT") ?? "text-embedding-3-small";
+    const AZURE_OPENAI_EMBEDDING_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT") ?? "text-embedding-ada-002";
     const AZURE_OPENAI_API_VERSION = Deno.env.get("AZURE_OPENAI_API_VERSION") ?? "2024-08-01-preview";
     const AZURE_POSTGRES_URL = Deno.env.get("AZURE_POSTGRES_URL") ?? "";
 
-    if (!AZURE_OPENAI_ENDPOINT || !AZURE_OPENAI_API_KEY) {
-      return new Response(JSON.stringify({ error: "AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY are not configured" }), {
+    if (!ANTHROPIC_API_KEY) {
+      return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY is not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -520,9 +643,10 @@ serve(async (req) => {
       rfpDocuments, supplementaryDocument,
       proposalType, cloudProvider ?? "aws",
       sessionId ?? "",
+      ANTHROPIC_API_KEY, CLAUDE_MODEL,
       AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY,
-      AZURE_OPENAI_CHAT_DEPLOYMENT, AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
-      AZURE_OPENAI_API_VERSION, AZURE_POSTGRES_URL,
+      AZURE_OPENAI_EMBEDDING_DEPLOYMENT, AZURE_OPENAI_API_VERSION,
+      AZURE_POSTGRES_URL,
       preExtractedRequirements ?? [],
       sectionHeadings ?? [],
     );

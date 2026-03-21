@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileUp, Loader2, X, FileText, BarChart3, ArrowLeft, ListChecks, ChevronDown, ChevronUp, Lightbulb, Cloud, Bot, CheckCircle2, Sparkles, AlertCircle, Database, Send, MessageSquare, User } from "lucide-react";
+import { FileUp, Loader2, X, FileText, ArrowLeft, ListChecks, ChevronDown, ChevronUp, Cloud, Bot, CheckCircle2, Sparkles, AlertCircle, Send, MessageSquare, User, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { EvaluatorDashboard, type EvaluationResult } from "@/components/proposal/EvaluatorDashboard";
@@ -40,27 +40,62 @@ type RequirementsResult = {
   summary: string;
 };
 
+// ── localStorage persistence helpers ─────────────────────────────────────────
+const SK = "proposal-evaluator"; // storage key prefix
+
+function lsGet<T>(key: string): T | null {
+  try {
+    const v = localStorage.getItem(`${SK}:${key}`);
+    return v ? (JSON.parse(v) as T) : null;
+  } catch { return null; }
+}
+
+function lsSet(key: string, value: unknown) {
+  try { localStorage.setItem(`${SK}:${key}`, JSON.stringify(value)); } catch { /* quota */ }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const ProposalEvaluator = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [proposalType, setProposalType] = useState("enterprise");
+  const [proposalType, setProposalType] = useState<string>(() => lsGet<string>("proposalType") ?? "enterprise");
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [supplementaryFile, setSupplementaryFile] = useState<UploadedFile | null>(null);
-  const [requirementsResult, setRequirementsResult] = useState<RequirementsResult | null>(null);
+  const [requirementsResult, setRequirementsResult] = useState<RequirementsResult | null>(() => lsGet<RequirementsResult>("requirementsResult"));
   const [requirementsExpanded, setRequirementsExpanded] = useState(true);
-  const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
-  const [solutionResult, setSolutionResult] = useState<SolutionResult | null>(null);
-  const [cloudProvider, setCloudProvider] = useState<string>("aws");
-  const [diagramId, setDiagramId] = useState<string | null>(null);
+  const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(() => lsGet<EvaluationResult>("evaluationResult"));
+  const [solutionResult, setSolutionResult] = useState<SolutionResult | null>(() => lsGet<SolutionResult>("solutionResult"));
+  const [cloudProvider, setCloudProvider] = useState<string>(() => lsGet<string>("cloudProvider") ?? "aws");
+  const [diagramId, setDiagramId] = useState<string | null>(() => lsGet<string>("diagramId"));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supplementaryFileRef = useRef<HTMLInputElement>(null);
   const [isAgentRunning, setIsAgentRunning] = useState(false);
-  const [agentLog, setAgentLog] = useState<Array<{ type: string; message: string; tool?: string; timestamp: number }>>([]);
+  const [agentLog, setAgentLog] = useState<Array<{ type: string; message: string; tool?: string; timestamp: number }>>(
+    () => lsGet<Array<{ type: string; message: string; tool?: string; timestamp: number }>>("agentLog") ?? []
+  );
   const agentLogRef = useRef<HTMLDivElement>(null);
   const agentAbortRef = useRef<AbortController | null>(null);
   const [isIndexing, setIsIndexing] = useState(false);
   const [indexedChunks, setIndexedChunks] = useState<number | null>(null);
-  const sessionId = useMemo(() => crypto.randomUUID(), []);
+
+  // Stable session ID — persisted so pgvector chunks survive navigation
+  const sessionId = useMemo(() => {
+    const stored = lsGet<string>("sessionId");
+    if (stored) return stored;
+    const id = crypto.randomUUID();
+    lsSet("sessionId", id);
+    return id;
+  }, []);
+
+  // Persist state changes to localStorage
+  useEffect(() => { lsSet("proposalType", proposalType); }, [proposalType]);
+  useEffect(() => { lsSet("cloudProvider", cloudProvider); }, [cloudProvider]);
+  useEffect(() => { lsSet("requirementsResult", requirementsResult); }, [requirementsResult]);
+  useEffect(() => { lsSet("evaluationResult", evaluationResult); }, [evaluationResult]);
+  useEffect(() => { lsSet("solutionResult", solutionResult); }, [solutionResult]);
+  useEffect(() => { lsSet("diagramId", diagramId); }, [diagramId]);
+  useEffect(() => { lsSet("agentLog", agentLog); }, [agentLog]);
 
   // Document chat
   type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -369,12 +404,33 @@ const ProposalEvaluator = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/spark/Testing")} className="shrink-0">
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="font-heading text-2xl font-bold text-foreground">Proposal Evaluator</h1>
             <p className="text-muted-foreground mt-1">
               Evaluate your fit against an RFP before writing a proposal.
             </p>
           </div>
+          {(requirementsResult || evaluationResult || solutionResult) && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 text-destructive hover:text-destructive"
+              onClick={() => {
+                ["sessionId","proposalType","cloudProvider","requirementsResult","evaluationResult","solutionResult","diagramId","agentLog"].forEach(k => localStorage.removeItem(`${SK}:${k}`));
+                setRequirementsResult(null);
+                setEvaluationResult(null);
+                setSolutionResult(null);
+                setDiagramId(null);
+                setAgentLog([]);
+                setFiles([]);
+                setSupplementaryFile(null);
+                setIndexedChunks(null);
+              }}
+            >
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              Clear Session
+            </Button>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -598,22 +654,40 @@ const ProposalEvaluator = () => {
                     ref={agentLogRef}
                     className="max-h-[220px] overflow-y-auto space-y-1.5 rounded-lg bg-background border border-border p-3"
                   >
-                    {agentLog.map((entry, i) => (
-                      <div key={i} className="flex items-start gap-2 text-xs">
-                        {entry.type === "tool_start" && (
-                          <><Loader2 className="w-3 h-3 animate-spin text-primary mt-0.5 shrink-0" /><span className="text-foreground">{entry.message}</span></>
-                        )}
-                        {entry.type === "tool_result" && (
-                          <><CheckCircle2 className="w-3 h-3 text-green-500 mt-0.5 shrink-0" /><span className="text-green-600 dark:text-green-400">{entry.message}</span></>
-                        )}
-                        {entry.type === "agent_done" && (
-                          <><Sparkles className="w-3 h-3 text-primary mt-0.5 shrink-0" /><span className="text-primary font-medium">{entry.message}</span></>
-                        )}
-                        {entry.type === "agent_error" && (
-                          <><AlertCircle className="w-3 h-3 text-destructive mt-0.5 shrink-0" /><span className="text-destructive">{entry.message}</span></>
-                        )}
+                    {(() => {
+                      // Build a set of tools that have received a result event
+                      const completedTools = new Set(
+                        agentLog.filter(e => e.type === "tool_result").map(e => e.tool)
+                      );
+                      return agentLog.map((entry, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs">
+                          {entry.type === "tool_start" && (() => {
+                            const done = completedTools.has(entry.tool);
+                            if (done)
+                              return <><CheckCircle2 className="w-3 h-3 text-green-500 mt-0.5 shrink-0" /><span className="text-muted-foreground">{entry.message}</span></>;
+                            if (!isAgentRunning && !done)
+                              return <><AlertCircle className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" /><span className="text-amber-600 dark:text-amber-400">{entry.message}</span></>;
+                            return <><Loader2 className="w-3 h-3 animate-spin text-primary mt-0.5 shrink-0" /><span className="text-foreground">{entry.message}</span></>;
+                          })()}
+                          {entry.type === "tool_result" && (
+                            <><CheckCircle2 className="w-3 h-3 text-green-500 mt-0.5 shrink-0" /><span className="text-green-600 dark:text-green-400">{entry.message}</span></>
+                          )}
+                          {entry.type === "agent_done" && (
+                            <><Sparkles className="w-3 h-3 text-primary mt-0.5 shrink-0" /><span className="text-primary font-medium">{entry.message}</span></>
+                          )}
+                          {entry.type === "agent_error" && (
+                            <><AlertCircle className="w-3 h-3 text-destructive mt-0.5 shrink-0" /><span className="text-destructive">{entry.message}</span></>
+                          )}
+                        </div>
+                      ));
+                    })()}
+                    {/* Show a clear message if agent ended without completing all steps */}
+                    {!isAgentRunning && !agentLog.some(e => e.type === "agent_done" || e.type === "agent_error") && agentLog.length > 0 && (
+                      <div className="flex items-start gap-2 text-xs mt-1 pt-1 border-t border-border">
+                        <AlertCircle className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" />
+                        <span className="text-amber-600 dark:text-amber-400">Agent ended without completing all steps. Try running again.</span>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               )}

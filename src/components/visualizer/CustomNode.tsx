@@ -18,7 +18,7 @@ const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData 
   return (
     <div
       className={`
-        bg-background border-2 rounded-xl px-4 py-3 min-w-[160px] shadow-md
+        bg-background border-2 rounded-lg px-2.5 py-1.5 min-w-[120px] max-w-[180px] shadow-md
         transition-all duration-200 cursor-grab active:cursor-grabbing
         ${selected ? "border-electric-sapphire-400 shadow-electric-sapphire-400/20 shadow-lg" : "border-border hover:border-electric-sapphire-300/50"}
       `}
@@ -26,29 +26,29 @@ const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData 
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !bg-sky-aqua-400 !border-2 !border-background"
+        className="!w-2 !h-2 !bg-sky-aqua-400 !border-2 !border-background"
       />
       <Handle
         type="target"
         position={Position.Left}
         id="left"
-        className="!w-3 !h-3 !bg-sky-aqua-400 !border-2 !border-background"
+        className="!w-2 !h-2 !bg-sky-aqua-400 !border-2 !border-background"
       />
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-1.5">
         <div
-          className={`w-9 h-9 rounded-lg ${badgeColor} ${badgeText} flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm`}
+          className={`w-6 h-6 rounded-md ${badgeColor} ${badgeText} flex items-center justify-center text-[9px] font-bold shrink-0 shadow-sm`}
         >
           {serviceIcon ? (
-            <img src={serviceIcon} alt={data.label} className="w-5 h-5" />
+            <img src={serviceIcon} alt={data.label} className="w-3.5 h-3.5" />
           ) : (
             data.icon
           )}
         </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground leading-tight">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold text-foreground leading-tight truncate">
             {data.label}
           </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-[9px] text-muted-foreground mt-0.5 line-clamp-2 leading-tight">
             {data.description}
           </p>
         </div>
@@ -56,13 +56,13 @@ const CustomNode = memo(({ data, selected }: NodeProps & { data: CustomNodeData 
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-3 !h-3 !bg-neon-pink-400 !border-2 !border-background"
+        className="!w-2 !h-2 !bg-neon-pink-400 !border-2 !border-background"
       />
       <Handle
         type="source"
         position={Position.Right}
         id="right"
-        className="!w-3 !h-3 !bg-neon-pink-400 !border-2 !border-background"
+        className="!w-2 !h-2 !bg-neon-pink-400 !border-2 !border-background"
       />
     </div>
   );

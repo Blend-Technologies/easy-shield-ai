@@ -358,6 +358,8 @@ const ProposalEvaluator = () => {
                 setRequirementsResult(event.data);
               } else if (event.tool === "evaluate_rfp" && event.data) {
                 setEvaluationResult(event.data);
+              } else if (event.tool === "recommend_tech_stack" && event.data) {
+                setEvaluationResult(prev => prev ? { ...prev, ...event.data } : event.data);
               } else if (event.tool === "generate_solution" && event.data) {
                 setSolutionResult(event.data);
                 try {

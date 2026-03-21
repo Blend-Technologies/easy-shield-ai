@@ -386,13 +386,7 @@ Respond with this exact JSON structure:
   "strengths": ["<strength 1>", "<strength 2>", ...],
   "weaknesses": ["<weakness 1>", "<weakness 2>", ...],
   "recommendations": ["<recommendation 1>", "<recommendation 2>", ...],
-  "summary": "<2-3 sentence executive summary of the match>",
-  "technicalSkills": [
-    { "skill": "<name>", "level": "required", "reason": "<brief reason>" }
-  ],
-  "techStack": [
-    { "name": "<technology>", "category": "<Language|Framework|Cloud|Database|DevOps|Security|Integration|Other>", "required": true }
-  ]
+  "summary": "<2-3 sentence executive summary of the match>"
 }
 
 Categories to evaluate (score each 0-100):
@@ -403,7 +397,7 @@ Categories to evaluate (score each 0-100):
 5. Compliance with Mandatory Requirements
 6. Competitive Positioning
 
-Keep each strength, weakness, recommendation to 1 sentence. Keep reasons brief (10 words max). List up to 10 technicalSkills and up to 15 techStack items.`;
+Keep each strength, weakness, recommendation to 1 sentence.`;
 
   const userPrompt = `Evaluate the following RFP against the applicant's ${supplementaryLabel}.
 ${retrievedContext}
@@ -413,7 +407,7 @@ ${rfpContext || "No RFP documents provided."}
 Applicant's ${supplementaryLabel}:
 ${supplementaryContext || `No ${supplementaryLabel} provided.`}
 
-Analyze how well the applicant's qualifications match the RFP requirements. Score each category 0-100, identify strengths and weaknesses, provide actionable recommendations, and extract the complete list of technical skills and tech stack required by this RFP.`;
+Analyze how well the applicant's qualifications match the RFP requirements. Score each category 0-100, identify strengths and weaknesses, and provide actionable recommendations.`;
 
   const content = await callClaude(anthropicApiKey, claudeModel, [
     { role: "system", content: systemPrompt },
@@ -422,7 +416,60 @@ Analyze how well the applicant's qualifications match the RFP requirements. Scor
   return extractJSON(content);
 }
 
-// ── Step 3: Generate Solution ─────────────────────────────────────────────────
+// ── Step 3: Recommend Tech Stack ──────────────────────────────────────────────
+
+async function executeRecommendTechStack(
+  rfpDocuments: RFPDocument[],
+  supplementaryDocument: RFPDocument | null,
+  proposalType: string,
+  retrievedContext: string,
+  anthropicApiKey: string,
+  claudeModel: string,
+) {
+  const supplementaryLabel = proposalType === "enterprise" ? "Resume" : "Capability Statement";
+
+  const rfpContext = rfpDocuments
+    .map((d, i) => `--- RFP Document ${i + 1}: ${d.name} ---\n${truncateDoc(d.content)}`)
+    .join("\n\n");
+
+  const supplementaryContext = supplementaryDocument
+    ? `--- ${supplementaryLabel}: ${supplementaryDocument.name} ---\n${truncateDoc(supplementaryDocument.content)}`
+    : "";
+
+  const systemPrompt = `You are a technical architect specializing in proposal analysis. Extract the technical skills and technology stack required by an RFP.
+
+You MUST respond with valid JSON only. No markdown, no explanation outside the JSON.
+
+Respond with this exact JSON structure:
+{
+  "technicalSkills": [
+    { "skill": "<name>", "level": "required", "reason": "<brief reason, 10 words max>" }
+  ],
+  "techStack": [
+    { "name": "<technology>", "category": "<Language|Framework|Cloud|Database|DevOps|Security|Integration|Other>", "required": true }
+  ]
+}
+
+List up to 10 technicalSkills and up to 15 techStack items. Use "required" or "preferred" for skill level.`;
+
+  const userPrompt = `Analyze the following RFP and identify the complete technical skills and technology stack required to fulfil it.
+${retrievedContext}
+RFP / Reference Documents:
+${rfpContext || "No RFP documents provided."}
+
+Applicant's ${supplementaryLabel}:
+${supplementaryContext || `No ${supplementaryLabel} provided.`}
+
+Extract all technical skills (programming languages, certifications, domain expertise) and technology stack items (frameworks, cloud services, databases, tools) explicitly or implicitly required by this RFP.`;
+
+  const content = await callClaude(anthropicApiKey, claudeModel, [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
+  ], "step3_techstack");
+  return extractJSON(content);
+}
+
+// ── Step 4: Generate Solution ─────────────────────────────────────────────────
 
 async function executeGenerateSolution(
   rfpDocuments: RFPDocument[],
@@ -575,7 +622,20 @@ async function runAgent(
     );
     await sendEvent({ type: "tool_result", tool: "evaluate_rfp", data: evaluationResult });
 
-    // Step 3
+    // Step 3 — Tech Stack Recommendation
+    await sendEvent({ type: "tool_start", tool: "recommend_tech_stack", message: "Retrieving relevant context for tech stack analysis..." });
+    const techStackContext = await queryRelevantChunks(
+      "technology requirements technical stack programming languages frameworks tools cloud services security",
+      sessionId, pgUrl, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion,
+    );
+
+    await sendEvent({ type: "tool_start", tool: "recommend_tech_stack", message: "Identifying required technical skills and tech stack..." });
+    const techStackResult = await executeRecommendTechStack(
+      rfpDocuments, supplementaryDocument, proposalType, techStackContext, anthropicApiKey, claudeModel,
+    );
+    await sendEvent({ type: "tool_result", tool: "recommend_tech_stack", data: techStackResult });
+
+    // Step 4 — Architecture Diagram
     await sendEvent({ type: "tool_start", tool: "generate_solution", message: "Retrieving relevant context for solution architecture..." });
     const solutionContext = await queryRelevantChunks(
       "solution architecture technical approach implementation services cloud infrastructure",

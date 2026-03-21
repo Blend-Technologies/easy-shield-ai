@@ -665,11 +665,9 @@ const ProposalEvaluator = () => {
                       return agentLog.map((entry, i) => (
                         <div key={i} className="flex items-start gap-2 text-xs">
                           {entry.type === "tool_start" && (() => {
-                            const done = completedTools.has(entry.tool) || agentDone;
+                            const done = completedTools.has(entry.tool) || agentDone || !isAgentRunning;
                             if (done)
                               return <><CheckCircle2 className="w-3 h-3 text-green-500 mt-0.5 shrink-0" /><span className="text-muted-foreground">{entry.message}</span></>;
-                            if (!isAgentRunning && !done)
-                              return <><AlertCircle className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" /><span className="text-amber-600 dark:text-amber-400">{entry.message}</span></>;
                             return <><Loader2 className="w-3 h-3 animate-spin text-primary mt-0.5 shrink-0" /><span className="text-foreground">{entry.message}</span></>;
                           })()}
                           {entry.type === "tool_result" && (

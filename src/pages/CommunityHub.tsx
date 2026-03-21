@@ -7,13 +7,13 @@ import CalendarPage from "@/components/community/CalendarPage";
 import MembersPage from "@/components/community/MembersPage";
 import CoursesPage from "@/components/community/CoursesPage";
 
-interface CommunityData {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string | null;
-  category: string | null;
-  logo_url: string | null;
+interface CommunityState {
+  name: string;
+  tagline?: string;
+  description?: string | null;
+  category?: string | null;
+  website?: string;
+  logo?: string | null;
 }
 
 const CommunityHub = () => {
@@ -30,7 +30,6 @@ const CommunityHub = () => {
   const [activeTab, setActiveTab] = useState("Community");
   const [activeChannel, setActiveChannel] = useState("All Posts");
 
-  // Full-width tabs without sidebars
   if (activeTab === "Courses") {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -98,13 +97,13 @@ const CommunityHub = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <CommunityTopNav
-        communityName={community.title}
-        logo={community.logo_url}
+        communityName={community.name}
+        logo={community.logo ?? null}
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
 
-      <div className={`flex ${topOffset}`}>
+      <div className="flex pt-14">
         <CommunityLeftSidebar
           activeChannel={activeChannel}
           onChannelClick={setActiveChannel}

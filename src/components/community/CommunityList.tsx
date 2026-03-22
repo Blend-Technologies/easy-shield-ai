@@ -81,61 +81,77 @@ const CommunityList = ({ communities, onRefresh, showActions = false }: Props) =
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2">
         {communities.map((c) => (
           <button
             key={c.id}
             onClick={() => navigate(`/community/hub/${c.id}`)}
-            className="text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 hover:shadow-md transition-all group relative"
+            className="text-left border border-border rounded-2xl bg-card hover:border-primary/50 hover:shadow-lg transition-all group relative overflow-hidden"
           >
-            {showActions && (
-              <div className="absolute top-3 right-3 flex gap-1">
-                <span
-                  role="button"
-                  title="Copy invite link"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const link = `${window.location.origin}/signup?community=${c.id}`;
-                    navigator.clipboard.writeText(link);
-                    toast({ title: "Invite link copied!", description: "Share this link with anyone you'd like to invite." });
-                  }}
-                  className="p-1.5 rounded-md bg-muted hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Link2 className="w-3.5 h-3.5" />
-                </span>
-                <span
-                  role="button"
-                  onClick={(e) => openEdit(c, e)}
-                  className="p-1.5 rounded-md bg-muted hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </span>
-                <span
-                  role="button"
-                  onClick={(e) => { e.stopPropagation(); setDeleteItem(c); }}
-                  className="p-1.5 rounded-md bg-muted hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </span>
-              </div>
-            )}
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg overflow-hidden bg-primary/10 flex items-center justify-center flex-shrink-0">
+            {/* Colored header banner */}
+            <div className="h-24 bg-gradient-to-br from-primary/80 via-primary to-violet-700 flex items-end px-6 pb-4 relative">
+              {c.logo_url && (
+                <img src={c.logo_url} alt={c.title} className="absolute inset-0 w-full h-full object-cover opacity-30" />
+              )}
+              <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/20 border-2 border-white/40 flex items-center justify-center flex-shrink-0 absolute -bottom-7 left-6 shadow-md">
                 {c.logo_url ? (
                   <img src={c.logo_url} alt={c.title} className="w-full h-full object-cover" />
                 ) : (
-                  <Sparkles className="w-5 h-5 text-primary" />
+                  <Sparkles className="w-7 h-7 text-white" />
                 )}
               </div>
-              <div className="min-w-0">
-                <p className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{c.title}</p>
-                <p className="text-muted-foreground text-xs truncate">{c.subtitle}</p>
+              {/* Admin actions */}
+              {showActions && (
+                <div className="absolute top-3 right-3 flex gap-1.5">
+                  <span
+                    role="button"
+                    title="Copy invite link"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const link = `${window.location.origin}/signup?community=${c.id}`;
+                      navigator.clipboard.writeText(link);
+                      toast({ title: "Invite link copied!", description: "Share this link with anyone you'd like to invite." });
+                    }}
+                    className="p-1.5 rounded-lg bg-white/20 hover:bg-white/40 text-white transition-colors"
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                  </span>
+                  <span
+                    role="button"
+                    onClick={(e) => openEdit(c, e)}
+                    className="p-1.5 rounded-lg bg-white/20 hover:bg-white/40 text-white transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </span>
+                  <span
+                    role="button"
+                    onClick={(e) => { e.stopPropagation(); setDeleteItem(c); }}
+                    className="p-1.5 rounded-lg bg-white/20 hover:bg-red-500/80 text-white transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Card body */}
+            <div className="pt-10 pb-6 px-6">
+              <div className="mb-3">
+                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors leading-snug">{c.title}</h3>
+                {c.subtitle && <p className="text-sm text-muted-foreground mt-0.5">{c.subtitle}</p>}
+              </div>
+              {c.description && (
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{c.description}</p>
+              )}
+              <div className="flex items-center justify-between">
+                {c.category && (
+                  <span className="text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">{c.category}</span>
+                )}
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {new Date(c.created_at).toLocaleDateString(undefined, { month: "short", year: "numeric" })}
+                </span>
               </div>
             </div>
-            {c.description && <p className="text-muted-foreground text-sm line-clamp-2 mb-3">{c.description}</p>}
-            {c.category && (
-              <span className="inline-block text-[10px] font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">{c.category}</span>
-            )}
           </button>
         ))}
       </div>

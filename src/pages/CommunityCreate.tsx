@@ -81,7 +81,7 @@ const CommunityCreate = () => {
         <span className="font-semibold text-foreground">Communities</span>
       </header>
 
-      <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
+      <div className="flex-1 p-6 max-w-5xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Your Communities</h1>

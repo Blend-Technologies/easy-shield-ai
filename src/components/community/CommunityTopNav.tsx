@@ -13,7 +13,7 @@ interface CommunityTopNavProps {
 
 const NAV_TABS = [
   { label: "Community" },
-  { label: "Courses" },
+  { label: "Programs" },
   { label: "Members" },
   { label: "Calendar" },
   { label: "Map" },
@@ -110,7 +110,7 @@ const CommunityTopNav = ({ communityName, logo, activeTab, onTabChange }: Commun
         {/* Avatar with dropdown */}
         <div className="relative" ref={avatarMenuRef}>
           <img
-            src="https://ui-avatars.com/api/?name=Me&background=7c3aed&color=fff&size=32"
+            src={userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=7c3aed&color=fff&size=32`}
             alt="avatar"
             className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-violet-400 transition-all"
             onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}

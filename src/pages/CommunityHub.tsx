@@ -30,7 +30,7 @@ const CommunityHub = () => {
   const [activeTab, setActiveTab] = useState("Community");
   const [activeChannel, setActiveChannel] = useState("All Posts");
 
-  if (activeTab === "Courses") {
+  if (activeTab === "Programs") {
     return (
       <div className="min-h-screen bg-gray-50">
         <CommunityTopNav

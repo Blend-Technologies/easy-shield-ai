@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import {
-  Search, Plus, Bookmark, MoreHorizontal, ThumbsUp, Trash2,
+  Search, Plus, MoreHorizontal, ThumbsUp, Trash2,
   Loader2, CalendarDays, Pin, Megaphone, Pencil, Check, X,
 } from "lucide-react";
 import CreatePostModal from "./CreatePostModal";
@@ -9,6 +9,28 @@ import { format } from "date-fns";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 type FeedTab = "Recent" | "Trending" | "Most Discussed";
+
+// Converts plain-text URLs into clickable <a> links
+const linkifyText = (text: string) => {
+  const URL_RE = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(URL_RE);
+  return parts.map((part, i) =>
+    URL_RE.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-violet-600 underline hover:text-violet-800 break-all"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    )
+  );
+};
 
 interface PostCardProps {
   post: CommunityPost;
@@ -167,8 +189,8 @@ const PostCard = ({ post, onToggleLike, onToggleBookmark, onDelete, onEdit, onTo
                 {post.title}
               </h3>
             )}
-            <p className="text-gray-600 text-sm leading-relaxed">
-              {expanded ? post.body : preview}
+            <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
+              {expanded ? linkifyText(post.body) : linkifyText(preview)}
               {!expanded && post.body.length > 200 && (
                 <button onClick={() => setExpanded(true)} className="ml-1 text-violet-600 font-medium hover:underline">
                   See more
@@ -198,7 +220,7 @@ const PostCard = ({ post, onToggleLike, onToggleBookmark, onDelete, onEdit, onTo
 
       {post.image_url && !editing && (
         <div className="border-t border-gray-100">
-          <img src={post.image_url} alt="Post attachment" className="w-full h-52 object-cover" />
+          <img src={post.image_url} alt="Post attachment" className="w-full h-auto object-contain max-h-[600px]" />
         </div>
       )}
     </div>

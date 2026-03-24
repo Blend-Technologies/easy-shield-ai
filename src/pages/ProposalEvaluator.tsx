@@ -650,25 +650,25 @@ const ProposalEvaluator = () => {
                 </div>
               </div>
               <Button
-                className="w-full"
+                className="w-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 text-white border-0 shadow-md shadow-violet-500/20"
                 size="lg"
                 onClick={runAgent}
                 disabled={isAgentRunning || files.length === 0}
               >
                 {isAgentRunning ? (
-                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Agent Running...</>
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2 text-violet-200" /> Agent Running...</>
                 ) : (
-                  <><Bot className="w-4 h-4 mr-2" /> Run AI Agent (All Steps)</>
+                  <><Bot className="w-4 h-4 mr-2 text-yellow-300 drop-shadow" /> Run AI Agent (All Steps)</>
                 )}
               </Button>
               {isAgentRunning && (
                 <Button
-                  className="w-full"
+                  className="w-full border-red-400/60 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 hover:border-red-500"
                   size="lg"
                   variant="outline"
                   onClick={() => agentAbortRef.current?.abort()}
                 >
-                  <OctagonX className="w-4 h-4 mr-2" /> Stop Agent
+                  <OctagonX className="w-4 h-4 mr-2 text-red-500" /> Stop Agent
                 </Button>
               )}
               {agentLog.length > 0 && (

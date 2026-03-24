@@ -1,0 +1,1 @@
+ALTER TABLE spark_projects ADD COLUMN IF NOT EXISTS state text DEFAULT NULL;

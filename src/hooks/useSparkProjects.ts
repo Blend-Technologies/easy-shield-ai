@@ -13,6 +13,7 @@ export type SparkProject = {
   user_id: string;
   is_favorite: boolean;
   priority: Priority;
+  state: string | null;
 };
 
 export function useSparkProjects() {
@@ -69,7 +70,7 @@ export function useSparkProjects() {
     return true;
   };
 
-  const updateProject = async (id: string, name: string, description?: string) => {
+  const updateProject = async (id: string, name: string, description?: string, state?: string) => {
     const trimmedName = name.trim();
     if (!trimmedName) return false;
     const { data, error } = await supabase
@@ -77,6 +78,7 @@ export function useSparkProjects() {
       .update({
         name: trimmedName,
         description: description?.trim() || null,
+        state: state?.trim() || null,
         updated_at: new Date().toISOString(),
       } as any)
       .eq("id", id)

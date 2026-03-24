@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Sparkles, ArrowLeft, AlertTriangle, Pencil, Heart, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Sparkles, ArrowLeft, AlertTriangle, Pencil, Heart, ChevronDown, MapPin, Search, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { SparkProject, Priority } from "@/hooks/useSparkProjects";
+
+// ── US States ────────────────────────────────────────────────────────────────
+const US_STATES = [
+  "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut",
+  "Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa",
+  "Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan",
+  "Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire",
+  "New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio",
+  "Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota",
+  "Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia",
+  "Wisconsin","Wyoming","District of Columbia",
+];
 
 // ── Project color palette ────────────────────────────────────────────────────
 const COLORS = [
@@ -60,7 +77,7 @@ type Props = {
   onSelect: (project: SparkProject) => void;
   onCreate: (name: string, description?: string) => Promise<SparkProject | null>;
   onDelete: (id: string) => Promise<boolean>;
-  onUpdate: (id: string, name: string, description?: string) => Promise<boolean>;
+  onUpdate: (id: string, name: string, description?: string, state?: string) => Promise<boolean>;
   onToggleFavorite: (id: string, current: boolean) => Promise<boolean>;
   onSetPriority: (id: string, priority: Priority) => Promise<boolean>;
 };
@@ -80,6 +97,9 @@ const ProjectSelector = ({
   const [editTarget, setEditTarget] = useState<SparkProject | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editState, setEditState] = useState("");
+  const [stateSearch, setStateSearch] = useState("");
+  const [statePickerOpen, setStatePickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Delete dialog
@@ -104,15 +124,17 @@ const ProjectSelector = ({
     e.stopPropagation();
     setEditName(project.name);
     setEditDescription(project.description ?? "");
+    setEditState(project.state ?? "");
+    setStateSearch("");
     setEditTarget(project);
   };
 
   const handleUpdate = async () => {
     if (!editTarget || !editName.trim()) return;
     setSaving(true);
-    const ok = await onUpdate(editTarget.id, editName, editDescription);
+    const ok = await onUpdate(editTarget.id, editName, editDescription, editState);
     setSaving(false);
-    if (ok) setEditTarget(null);
+    if (ok) { setEditTarget(null); setStatePickerOpen(false); }
   };
 
   const handleDelete = async () => {
@@ -259,6 +281,13 @@ const ProjectSelector = ({
                           </DropdownMenuContent>
                         </DropdownMenu>
 
+                        {project.state && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                            <MapPin className="w-2.5 h-2.5" />
+                            {project.state}
+                          </span>
+                        )}
+
                         <span className="text-[11px] text-muted-foreground/60">
                           Updated {new Date(project.updated_at).toLocaleDateString()}
                         </span>
@@ -311,7 +340,7 @@ const ProjectSelector = ({
       </motion.div>
 
       {/* Edit Project dialog */}
-      <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+      <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) { setEditTarget(null); setStatePickerOpen(false); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Project</DialogTitle>
@@ -329,9 +358,64 @@ const ProjectSelector = ({
               onChange={(e) => setEditDescription(e.target.value)}
               rows={3}
             />
+            {/* State picker */}
+            <div>
+              <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-left hover:bg-accent transition-colors"
+                  >
+                    <span className={editState ? "text-foreground" : "text-muted-foreground"}>
+                      {editState || "Select state (optional)"}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {editState && (
+                        <span
+                          role="button"
+                          onClick={(e) => { e.stopPropagation(); setEditState(""); }}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                      <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <div className="p-2 border-b border-border">
+                    <div className="flex items-center gap-2 px-2">
+                      <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <input
+                        className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                        placeholder="Search states…"
+                        value={stateSearch}
+                        onChange={(e) => setStateSearch(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto py-1">
+                    {US_STATES.filter((s) =>
+                      s.toLowerCase().includes(stateSearch.toLowerCase())
+                    ).map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className={`w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors ${editState === s ? "bg-primary/10 text-primary font-medium" : ""}`}
+                        onClick={() => { setEditState(s); setStatePickerOpen(false); setStateSearch(""); }}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => { setEditTarget(null); setStatePickerOpen(false); }}>Cancel</Button>
             <Button disabled={!editName.trim() || saving} onClick={handleUpdate}>
               {saving ? "Saving..." : "Save"}
             </Button>

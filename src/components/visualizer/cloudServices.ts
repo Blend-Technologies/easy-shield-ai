@@ -173,6 +173,16 @@ const azure: CloudProvider = {
         { id: "az-apim", label: "API Management", abbr: "APM", description: "API Gateway", color: "bg-[#0078D4]", textColor: "text-white" },
       ],
     },
+    {
+      name: "DevOps",
+      services: [
+        { id: "az-devops", label: "Azure DevOps", abbr: "ADO", description: "CI/CD & Project Tools", color: "bg-[#0078D4]", textColor: "text-white" },
+        { id: "az-pipelines", label: "Azure Pipelines", abbr: "PIP", description: "CI/CD Pipelines", color: "bg-[#0078D4]", textColor: "text-white" },
+        { id: "az-repos", label: "Azure Repos", abbr: "REP", description: "Git Repositories", color: "bg-[#0078D4]", textColor: "text-white" },
+        { id: "az-boards", label: "Azure Boards", abbr: "BRD", description: "Agile Work Tracking", color: "bg-[#0078D4]", textColor: "text-white" },
+        { id: "az-artifacts", label: "Azure Artifacts", abbr: "ART", description: "Package Management", color: "bg-[#0078D4]", textColor: "text-white" },
+      ],
+    },
   ],
 };
 

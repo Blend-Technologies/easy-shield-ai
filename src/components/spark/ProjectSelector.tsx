@@ -22,10 +22,10 @@ type Props = {
   onSelect: (project: SparkProject) => void;
   onCreate: (name: string, description?: string) => Promise<SparkProject | null>;
   onDelete: (id: string) => Promise<boolean>;
-  onRename: (id: string, newName: string) => Promise<boolean>;
+  onUpdate: (id: string, name: string, description?: string) => Promise<boolean>;
 };
 
-const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete, onRename }: Props) => {
+const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete, onUpdate }: Props) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -34,9 +34,10 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete, onRe
   const [deleteTarget, setDeleteTarget] = useState<SparkProject | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleting, setDeleting] = useState(false);
-  const [renameTarget, setRenameTarget] = useState<SparkProject | null>(null);
-  const [renameName, setRenameName] = useState("");
-  const [renaming, setRenaming] = useState(false);
+  const [editTarget, setEditTarget] = useState<SparkProject | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const handleCreate = async () => {
     if (!name.trim()) return;
@@ -60,18 +61,19 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete, onRe
     setDeleteConfirmName("");
   };
 
-  const openRename = (project: SparkProject, e: React.MouseEvent) => {
+  const openEdit = (project: SparkProject, e: React.MouseEvent) => {
     e.stopPropagation();
-    setRenameName(project.name);
-    setRenameTarget(project);
+    setEditName(project.name);
+    setEditDescription(project.description ?? "");
+    setEditTarget(project);
   };
 
-  const handleRename = async () => {
-    if (!renameTarget || !renameName.trim()) return;
-    setRenaming(true);
-    const ok = await onRename(renameTarget.id, renameName);
-    setRenaming(false);
-    if (ok) setRenameTarget(null);
+  const handleUpdate = async () => {
+    if (!editTarget || !editName.trim()) return;
+    setSaving(true);
+    const ok = await onUpdate(editTarget.id, editName, editDescription);
+    setSaving(false);
+    if (ok) setEditTarget(null);
   };
 
   return (
@@ -175,7 +177,7 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete, onRe
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                      onClick={(e) => openRename(project, e)}
+                      onClick={(e) => openEdit(project, e)}
                     >
                       <Pencil className="w-4 h-4" />
                     </Button>
@@ -198,25 +200,30 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete, onRe
         )}
       </motion.div>
 
-      {/* Rename dialog */}
-      <Dialog open={!!renameTarget} onOpenChange={(open) => { if (!open) setRenameTarget(null); }}>
+      {/* Edit Project dialog */}
+      <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename Project</DialogTitle>
+            <DialogTitle>Edit Project</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <Input
-              placeholder="New project name"
-              value={renameName}
-              onChange={(e) => setRenameName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleRename()}
+              placeholder="Project name"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
               autoFocus
+            />
+            <Textarea
+              placeholder="Description (optional)"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              rows={3}
             />
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setRenameTarget(null)}>Cancel</Button>
-            <Button disabled={!renameName.trim() || renaming} onClick={handleRename}>
-              {renaming ? "Saving..." : "Save"}
+            <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+            <Button disabled={!editName.trim() || saving} onClick={handleUpdate}>
+              {saving ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

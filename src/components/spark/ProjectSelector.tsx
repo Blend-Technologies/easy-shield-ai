@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, FolderOpen, Trash2, Sparkles, ArrowLeft, AlertTriangle } from "lucide-react";
+import { Plus, FolderOpen, Trash2, Sparkles, ArrowLeft, AlertTriangle, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,9 +22,10 @@ type Props = {
   onSelect: (project: SparkProject) => void;
   onCreate: (name: string, description?: string) => Promise<SparkProject | null>;
   onDelete: (id: string) => Promise<boolean>;
+  onRename: (id: string, newName: string) => Promise<boolean>;
 };
 
-const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Props) => {
+const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete, onRename }: Props) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -33,6 +34,9 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Pr
   const [deleteTarget, setDeleteTarget] = useState<SparkProject | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<SparkProject | null>(null);
+  const [renameName, setRenameName] = useState("");
+  const [renaming, setRenaming] = useState(false);
 
   const handleCreate = async () => {
     if (!name.trim()) return;
@@ -54,6 +58,20 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Pr
     setDeleting(false);
     setDeleteTarget(null);
     setDeleteConfirmName("");
+  };
+
+  const openRename = (project: SparkProject, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRenameName(project.name);
+    setRenameTarget(project);
+  };
+
+  const handleRename = async () => {
+    if (!renameTarget || !renameName.trim()) return;
+    setRenaming(true);
+    const ok = await onRename(renameTarget.id, renameName);
+    setRenaming(false);
+    if (ok) setRenameTarget(null);
   };
 
   return (
@@ -152,23 +170,57 @@ const ProjectSelector = ({ projects, loading, onSelect, onCreate, onDelete }: Pr
                       Updated {new Date(project.updated_at).toLocaleDateString()}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteTarget(project);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => openRename(project, e)}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget(project);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
         )}
       </motion.div>
+
+      {/* Rename dialog */}
+      <Dialog open={!!renameTarget} onOpenChange={(open) => { if (!open) setRenameTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Project</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <Input
+              placeholder="New project name"
+              value={renameName}
+              onChange={(e) => setRenameName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleRename()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setRenameTarget(null)}>Cancel</Button>
+            <Button disabled={!renameName.trim() || renaming} onClick={handleRename}>
+              {renaming ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirmation dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeleteConfirmName(""); } }}>

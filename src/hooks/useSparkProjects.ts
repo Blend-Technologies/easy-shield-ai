@@ -65,9 +65,27 @@ export function useSparkProjects() {
     return true;
   };
 
+  const renameProject = async (id: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return false;
+    const { data, error } = await supabase
+      .from("spark_projects")
+      .update({ name: trimmed, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+      return false;
+    }
+    setProjects((prev) => prev.map((p) => (p.id === id ? (data as SparkProject) : p)));
+    toast({ title: "Project renamed" });
+    return true;
+  };
+
   useEffect(() => {
     fetchProjects();
   }, []);
 
-  return { projects, loading, createProject, deleteProject, refetch: fetchProjects };
+  return { projects, loading, createProject, deleteProject, renameProject, refetch: fetchProjects };
 }

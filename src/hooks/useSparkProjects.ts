@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+export type Priority = "none" | "low" | "medium" | "high" | "critical";
+
 export type SparkProject = {
   id: string;
   name: string;
@@ -9,6 +11,8 @@ export type SparkProject = {
   created_at: string;
   updated_at: string;
   user_id: string;
+  is_favorite: boolean;
+  priority: Priority;
 };
 
 export function useSparkProjects() {
@@ -26,7 +30,7 @@ export function useSparkProjects() {
     if (error) {
       toast({ variant: "destructive", title: "Error", description: error.message });
     } else {
-      setProjects(data || []);
+      setProjects((data || []) as unknown as SparkProject[]);
     }
     setLoading(false);
   };
@@ -40,7 +44,7 @@ export function useSparkProjects() {
 
     const { data, error } = await supabase
       .from("spark_projects")
-      .insert({ name, description: description || null, user_id: user.id })
+      .insert({ name, description: description || null, user_id: user.id } as any)
       .select()
       .single();
 
@@ -50,8 +54,8 @@ export function useSparkProjects() {
     }
 
     toast({ title: "Project created", description: `"${name}" has been created.` });
-    setProjects((prev) => [data, ...prev]);
-    return data as SparkProject;
+    setProjects((prev) => [data as unknown as SparkProject, ...prev]);
+    return data as unknown as SparkProject;
   };
 
   const deleteProject = async (id: string) => {
@@ -74,7 +78,7 @@ export function useSparkProjects() {
         name: trimmedName,
         description: description?.trim() || null,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", id)
       .select()
       .single();
@@ -82,8 +86,38 @@ export function useSparkProjects() {
       toast({ variant: "destructive", title: "Error", description: error.message });
       return false;
     }
-    setProjects((prev) => prev.map((p) => (p.id === id ? (data as SparkProject) : p)));
+    setProjects((prev) => prev.map((p) => (p.id === id ? (data as unknown as SparkProject) : p)));
     toast({ title: "Project updated" });
+    return true;
+  };
+
+  const toggleFavorite = async (id: string, current: boolean) => {
+    const { data, error } = await supabase
+      .from("spark_projects")
+      .update({ is_favorite: !current } as any)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+      return false;
+    }
+    setProjects((prev) => prev.map((p) => (p.id === id ? (data as unknown as SparkProject) : p)));
+    return true;
+  };
+
+  const setPriority = async (id: string, priority: Priority) => {
+    const { data, error } = await supabase
+      .from("spark_projects")
+      .update({ priority } as any)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+      return false;
+    }
+    setProjects((prev) => prev.map((p) => (p.id === id ? (data as unknown as SparkProject) : p)));
     return true;
   };
 
@@ -91,5 +125,5 @@ export function useSparkProjects() {
     fetchProjects();
   }, []);
 
-  return { projects, loading, createProject, deleteProject, updateProject, refetch: fetchProjects };
+  return { projects, loading, createProject, deleteProject, updateProject, toggleFavorite, setPriority, refetch: fetchProjects };
 }

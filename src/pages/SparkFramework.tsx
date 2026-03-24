@@ -10,7 +10,7 @@ import { Team } from "@/hooks/useTeams";
 import { supabase } from "@/integrations/supabase/client";
 
 const SparkFramework = () => {
-  const { projects, loading, createProject, deleteProject, updateProject } = useSparkProjects();
+  const { projects, loading, createProject, deleteProject, updateProject, toggleFavorite, setPriority } = useSparkProjects();
   const [selectedProject, setSelectedProject] = useState<SparkProject | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -70,6 +70,8 @@ const SparkFramework = () => {
           onCreate={createProject}
           onDelete={deleteProject}
           onUpdate={updateProject}
+          onToggleFavorite={toggleFavorite}
+          onSetPriority={setPriority}
         />
       </div>
     );

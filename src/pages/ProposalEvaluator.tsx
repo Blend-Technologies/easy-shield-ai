@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileUp, Loader2, X, FileText, ArrowLeft, ListChecks, ChevronDown, ChevronUp, Cloud, Bot, CheckCircle2, Sparkles, AlertCircle, Send, MessageSquare, User, Trash2 } from "lucide-react";
+import { FileUp, Loader2, X, OctagonX, FileText, ArrowLeft, ListChecks, ChevronDown, ChevronUp, Cloud, Bot, CheckCircle2, Sparkles, AlertCircle, Send, MessageSquare, User, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { EvaluatorDashboard, type EvaluationResult } from "@/components/proposal/EvaluatorDashboard";
@@ -657,7 +657,7 @@ const ProposalEvaluator = () => {
                   variant="outline"
                   onClick={() => agentAbortRef.current?.abort()}
                 >
-                  <X className="w-4 h-4 mr-2" /> Stop Agent
+                  <OctagonX className="w-4 h-4 mr-2" /> Stop Agent
                 </Button>
               )}
               {agentLog.length > 0 && (

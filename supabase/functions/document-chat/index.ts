@@ -1,6 +1,5 @@
 // @ts-nocheck — Deno edge function: VS Code TS checker doesn't understand Deno globals.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,66 +8,16 @@ const corsHeaders = {
 };
 
 type Message = { role: "user" | "assistant"; content: string };
-
-async function generateEmbedding(
-  text: string,
-  azureEndpoint: string,
-  apiKey: string,
-  embeddingDeployment: string,
-  apiVersion: string,
-): Promise<number[]> {
-  const url = `${azureEndpoint}/openai/deployments/${embeddingDeployment}/embeddings?api-version=${apiVersion}`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "api-key": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ input: text.slice(0, 8000) }),
-  });
-  if (!response.ok) throw new Error(`Embedding error (${response.status})`);
-  const data = await response.json();
-  return data.data[0].embedding as number[];
-}
-
-async function retrieveContext(
-  question: string,
-  sessionId: string,
-  pgUrl: string,
-  azureEndpoint: string,
-  apiKey: string,
-  embeddingDeployment: string,
-  apiVersion: string,
-  topK = 6,
-): Promise<string> {
-  if (!sessionId || !pgUrl) return "";
-  const client = new Client(pgUrl);
-  await client.connect();
-  try {
-    const embedding = await generateEmbedding(question, azureEndpoint, apiKey, embeddingDeployment, apiVersion);
-    const embStr = `[${embedding.join(",")}]`;
-    const result = await client.queryObject<{ content: string; document_name: string }>(
-      `SELECT content, document_name FROM document_chunks
-       WHERE session_id = $1 ORDER BY embedding <=> $2::vector LIMIT $3`,
-      [sessionId, embStr, topK],
-    );
-    if (result.rows.length === 0) return "";
-    return result.rows
-      .map((r) => `[${r.document_name}]\n${r.content}`)
-      .join("\n\n---\n\n");
-  } catch (e) {
-    console.warn("pgvector retrieval failed:", e);
-    return "";
-  } finally {
-    await client.end();
-  }
-}
+type DocumentInput = { name: string; content: string };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { question, sessionId, history } = await req.json() as {
+    const { question, history, documents } = await req.json() as {
       question: string;
-      sessionId: string;
-      history: Message[];
+      history?: Message[];
+      documents?: DocumentInput[];
     };
 
     if (!question?.trim()) {
@@ -77,54 +26,65 @@ serve(async (req) => {
       });
     }
 
-    const AZURE_OPENAI_ENDPOINT = (Deno.env.get("AZURE_OPENAI_ENDPOINT") ?? "").replace(/\/+$/, "");
-    const AZURE_OPENAI_API_KEY = Deno.env.get("AZURE_OPENAI_API_KEY") ?? "";
-    const AZURE_OPENAI_CHAT_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_CHAT_DEPLOYMENT") ?? "gpt-4o";
-    const AZURE_OPENAI_EMBEDDING_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT") ?? "text-embedding-ada-002";
-    const AZURE_OPENAI_API_VERSION = Deno.env.get("AZURE_OPENAI_API_VERSION") ?? "2024-08-01-preview";
-    const AZURE_POSTGRES_URL = Deno.env.get("AZURE_POSTGRES_URL") ?? "";
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY secret is not configured");
 
-    // Retrieve relevant chunks from pgvector
-    const context = await retrieveContext(
-      question, sessionId, AZURE_POSTGRES_URL,
-      AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY,
-      AZURE_OPENAI_EMBEDDING_DEPLOYMENT, AZURE_OPENAI_API_VERSION,
-    );
+    // Build document context string (cap each doc at 12 000 chars to stay within token budget)
+    const docContext = (documents ?? [])
+      .filter((d) => d.content?.trim())
+      .map((d) => `=== ${d.name} ===\n${d.content.slice(0, 12_000)}`)
+      .join("\n\n");
 
-    const systemPrompt = `You are a helpful AI assistant that answers questions about uploaded RFP and capability documents.
-${context ? `\nThe following excerpts were retrieved from the uploaded documents to help answer the question:\n\n${context}\n\nAnswer based on these excerpts. If the answer is not in the documents, say so clearly.` : "\nNo document context was retrieved. Answer based on your general knowledge and note that you could not find specific information in the uploaded documents."}
+    const systemPrompt = docContext
+      ? `You are a helpful AI assistant that answers questions about uploaded RFP and capability documents.
+
+The following documents have been provided:
+
+${docContext}
 
 Guidelines:
-- Be concise and direct. Use bullet points for lists.
-- Quote or reference specific parts of the documents when relevant.
-- If asked about requirements, refer to the specific section or clause.
-- Do not fabricate information not present in the documents.`;
+- Answer based on the document content above. Quote or reference specific sections when relevant.
+- If the answer is not in the documents, say so clearly.
+- Be concise. Use bullet points for lists.
+- Do not fabricate information not present in the documents.`
+      : `You are a helpful AI assistant that answers questions about RFP and proposal documents.
+No documents were provided with this request. Ask the user to upload documents first, or answer based on general knowledge while noting that no documents are available.`;
 
-    const messages = [
-      { role: "system", content: systemPrompt },
-      ...((history ?? []).slice(-6)), // keep last 6 turns for context
+    // Build messages array: history + current question (no system role in messages[])
+    const chatMessages: { role: string; content: string }[] = [
+      ...((history ?? []).slice(-6).filter((m) => m.role === "user" || m.role === "assistant")),
       { role: "user", content: question },
     ];
 
-    // Stream the response
-    const url = `${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_CHAT_DEPLOYMENT}/chat/completions?api-version=${AZURE_OPENAI_API_VERSION}`;
-    const azureResp = await fetch(url, {
+    // Call Anthropic Claude with streaming
+    const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "api-key": AZURE_OPENAI_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, stream: true, max_tokens: 1024 }),
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: chatMessages,
+        stream: true,
+      }),
     });
 
-    if (!azureResp.ok) {
-      throw new Error(`Azure OpenAI error (${azureResp.status})`);
+    if (!anthropicResp.ok) {
+      const errBody = await anthropicResp.text();
+      throw new Error(`Anthropic error (${anthropicResp.status}): ${errBody.slice(0, 300)}`);
     }
 
-    // Pipe the Azure SSE stream directly to the client, re-emitting only text tokens
+    // Transform Anthropic SSE stream → frontend token stream
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const encoder = new TextEncoder();
 
     (async () => {
-      const reader = azureResp.body!.getReader();
+      const reader = anthropicResp.body!.getReader();
       const decoder = new TextDecoder();
       let buf = "";
       try {
@@ -132,18 +92,22 @@ Guidelines:
           const { value, done } = await reader.read();
           if (done) break;
           buf += decoder.decode(value, { stream: true });
-          const parts = buf.split("\n");
-          buf = parts.pop() ?? "";
-          for (const line of parts) {
+          const lines = buf.split("\n");
+          buf = lines.pop() ?? "";
+
+          for (const line of lines) {
             const trimmed = line.trim();
             if (!trimmed.startsWith("data:")) continue;
             const data = trimmed.slice(5).trim();
             if (data === "[DONE]") continue;
             try {
               const parsed = JSON.parse(data);
-              const token = parsed.choices?.[0]?.delta?.content ?? "";
-              if (token) {
-                await writer.write(encoder.encode(`data: ${JSON.stringify({ token })}\n\n`));
+              // Anthropic streaming: content_block_delta carries the text
+              if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
+                const token = parsed.delta.text ?? "";
+                if (token) {
+                  await writer.write(encoder.encode(`data: ${JSON.stringify({ token })}\n\n`));
+                }
               }
             } catch { /* skip malformed chunks */ }
           }

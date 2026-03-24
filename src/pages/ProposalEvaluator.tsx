@@ -211,6 +211,17 @@ const ProposalEvaluator = () => {
     setChatMessages((prev) => [...prev, assistantPlaceholder]);
 
     try {
+      // Gather all uploaded document content (cap each at 12 000 chars to stay within token budget)
+      const allDocs = [
+        ...files.filter((f) => f.status === "done").map((f) => ({
+          name: f.file.name,
+          content: f.content.slice(0, 12_000),
+        })),
+        ...(supplementaryFile?.status === "done"
+          ? [{ name: supplementaryFile.file.name, content: supplementaryFile.content.slice(0, 8_000) }]
+          : []),
+      ];
+
       const resp = await fetch(
         `${import.meta.env.VITE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL}/functions/v1/document-chat`,
         {
@@ -221,8 +232,8 @@ const ProposalEvaluator = () => {
           },
           body: JSON.stringify({
             question,
-            sessionId,
             history: chatMessages.slice(-6),
+            documents: allDocs,
           }),
         }
       );

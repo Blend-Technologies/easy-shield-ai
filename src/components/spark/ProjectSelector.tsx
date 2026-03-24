@@ -75,7 +75,7 @@ type Props = {
   projects: SparkProject[];
   loading: boolean;
   onSelect: (project: SparkProject) => void;
-  onCreate: (name: string, description?: string) => Promise<SparkProject | null>;
+  onCreate: (name: string, description?: string, state?: string) => Promise<SparkProject | null>;
   onDelete: (id: string) => Promise<boolean>;
   onUpdate: (id: string, name: string, description?: string, state?: string) => Promise<boolean>;
   onToggleFavorite: (id: string, current: boolean) => Promise<boolean>;
@@ -91,6 +91,9 @@ const ProjectSelector = ({
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [createState, setCreateState] = useState("");
+  const [createStateSearch, setCreateStateSearch] = useState("");
+  const [createStatePickerOpen, setCreateStatePickerOpen] = useState(false);
   const [creating, setCreating] = useState(false);
 
   // Edit dialog
@@ -110,11 +113,13 @@ const ProjectSelector = ({
   const handleCreate = async () => {
     if (!name.trim()) return;
     setCreating(true);
-    const project = await onCreate(name.trim(), description.trim());
+    const project = await onCreate(name.trim(), description.trim(), createState);
     if (project) {
       setOpen(false);
       setName("");
       setDescription("");
+      setCreateState("");
+      setCreateStateSearch("");
       onSelect(project);
     }
     setCreating(false);
@@ -176,7 +181,7 @@ const ProjectSelector = ({
         </div>
 
         <div className="mb-4 flex justify-end">
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setCreateState(""); setCreateStateSearch(""); setCreateStatePickerOpen(false); } }}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-2">
                 <Plus className="w-4 h-4" />
@@ -200,6 +205,59 @@ const ProjectSelector = ({
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
                 />
+                {/* State picker */}
+                <Popover open={createStatePickerOpen} onOpenChange={setCreateStatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-left hover:bg-accent transition-colors"
+                    >
+                      <span className={createState ? "text-foreground" : "text-muted-foreground"}>
+                        {createState || "Select state (optional)"}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {createState && (
+                          <span
+                            role="button"
+                            onClick={(e) => { e.stopPropagation(); setCreateState(""); }}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                        <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <div className="p-2 border-b border-border">
+                      <div className="flex items-center gap-2 px-2">
+                        <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <input
+                          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                          placeholder="Search states…"
+                          value={createStateSearch}
+                          onChange={(e) => setCreateStateSearch(e.target.value)}
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto py-1">
+                      {US_STATES.filter((s) =>
+                        s.toLowerCase().includes(createStateSearch.toLowerCase())
+                      ).map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          className={`w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors ${createState === s ? "bg-primary/10 text-primary font-medium" : ""}`}
+                          onClick={() => { setCreateState(s); setCreateStatePickerOpen(false); setCreateStateSearch(""); }}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <Button onClick={handleCreate} disabled={!name.trim() || creating} className="w-full">
                   {creating ? "Creating..." : "Create Project"}
                 </Button>

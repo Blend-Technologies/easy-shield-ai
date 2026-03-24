@@ -36,7 +36,7 @@ export function useSparkProjects() {
     setLoading(false);
   };
 
-  const createProject = async (name: string, description?: string) => {
+  const createProject = async (name: string, description?: string, state?: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({ variant: "destructive", title: "Error", description: "You must be logged in." });
@@ -45,7 +45,7 @@ export function useSparkProjects() {
 
     const { data, error } = await supabase
       .from("spark_projects")
-      .insert({ name, description: description || null, user_id: user.id } as any)
+      .insert({ name, description: description || null, state: state?.trim() || null, user_id: user.id } as any)
       .select()
       .single();
 

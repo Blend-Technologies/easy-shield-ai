@@ -36,6 +36,7 @@ const DiagramEditorInner = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [title, setTitle] = useState("Untitled Diagram");
+  const [diagramSource, setDiagramSource] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -93,6 +94,7 @@ const DiagramEditorInner = () => {
       setNodes(loadedNodes);
       setEdges(loadedEdges);
       setTitle(data.title || "Untitled Diagram");
+      setDiagramSource((data as any).source ?? null);
       setLoaded(true);
       setTimeout(() => fitView({ padding: 0.3 }), 200);
     };
@@ -320,6 +322,11 @@ const DiagramEditorInner = () => {
         onExportPDF={onExportPDF}
         title={title}
         onTitleChange={setTitle}
+        onBack={() =>
+          diagramSource === "proposal-evaluator"
+            ? navigate("/dashboard/proposal-evaluator")
+            : navigate(-1)
+        }
       />
       {/* Save bar */}
       <div className="h-10 border-b border-border bg-muted/30 flex items-center justify-between px-4 gap-2 shrink-0">

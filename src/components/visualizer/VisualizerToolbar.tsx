@@ -19,6 +19,7 @@ type Props = {
   onExportPDF: () => void;
   title: string;
   onTitleChange: (t: string) => void;
+  onBack?: () => void;
 };
 
 const VisualizerToolbar = ({
@@ -31,6 +32,7 @@ const VisualizerToolbar = ({
   onExportPDF,
   title,
   onTitleChange,
+  onBack,
 }: Props) => {
   const navigate = useNavigate();
 
@@ -41,8 +43,8 @@ const VisualizerToolbar = ({
           variant="ghost"
           size="icon"
           className="h-8 w-8"
-          onClick={() => navigate(-1)}
-          title="Back to S.P.A.R.K.™ Framework"
+          onClick={() => onBack ? onBack() : navigate(-1)}
+          title="Go back"
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>

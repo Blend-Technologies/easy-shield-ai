@@ -1,5 +1,6 @@
 import awsLambdaIcon from "@/assets/aws-lambda.svg";
 import awsRdsIcon from "@/assets/aws-rds.svg";
+import powerPlatformIcon from "@/assets/power-platform.svg";
 
 /**
  * Maps lowercase label substrings to icon URLs.
@@ -8,6 +9,7 @@ import awsRdsIcon from "@/assets/aws-rds.svg";
 const SERVICE_ICON_MAP: [pattern: string, icon: string][] = [
   ["lambda", awsLambdaIcon],
   ["rds", awsRdsIcon],
+  ["power platform", powerPlatformIcon],
 ];
 
 /** Returns the icon URL for a known cloud service label, or null if none. */

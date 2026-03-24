@@ -263,7 +263,8 @@ export const genericCategories: CloudCategory[] = [
       { id: "outsystems", label: "OutSystems", abbr: "OS", description: "Low-Code Platform", color: "bg-[#CF272D]", textColor: "text-white" },
       { id: "mendix", label: "Mendix", abbr: "MX", description: "App Development", color: "bg-[#0595DB]", textColor: "text-white" },
       { id: "bubble", label: "Bubble", abbr: "BB", description: "No-Code Builder", color: "bg-[#3D3D3D]", textColor: "text-white" },
-      { id: "power-apps", label: "Power Apps", abbr: "PA", description: "Microsoft Platform", color: "bg-[#742774]", textColor: "text-white" },
+      { id: "power-platform", label: "Power Platform", abbr: "PP", description: "Microsoft Power Platform", color: "bg-[#007a84]", textColor: "text-white" },
+      { id: "power-apps", label: "Power Apps", abbr: "PA", description: "Low-code app builder", color: "bg-[#742774]", textColor: "text-white" },
     ],
   },
   {

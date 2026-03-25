@@ -190,7 +190,7 @@ const WorkItems = () => {
       {/* BACK + TAB BAR */}
       <div className={`flex items-center h-11 ${barBg} border-b ${barBorder} px-4 overflow-x-auto`}>
         <button
-          onClick={() => navigate(projectName ? `/dashboard/${encodeURIComponent(projectName)}` : "/dashboard/spark")}
+          onClick={() => navigate("/dashboard/spark")}
           className={`flex items-center gap-1 mr-3 px-2 py-1 rounded text-sm ${textMuted} hover:${textDark} transition-colors flex-shrink-0`}
         >
           <ArrowLeft className="w-4 h-4" />

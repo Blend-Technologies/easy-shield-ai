@@ -131,7 +131,7 @@ const KanbanBoard = () => {
       {/* TOP TAB BAR */}
       <div className="flex items-center h-11 bg-white border-b border-[#E5E5E5] px-4 flex-shrink-0">
         <button
-          onClick={() => navigate(projectName ? `/dashboard/${encodeURIComponent(projectName)}` : "/dashboard/spark")}
+          onClick={() => navigate("/dashboard/spark")}
           className="flex items-center gap-1 mr-3 px-2 py-1 rounded text-sm text-[#999] hover:text-[#1A1A1A] transition-colors flex-shrink-0"
         >
           <ArrowLeft className="w-4 h-4" />

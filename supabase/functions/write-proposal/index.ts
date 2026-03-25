@@ -98,6 +98,36 @@ async function queryRelevantChunks(
   }
 }
 
+async function queryKnowledgeBaseChunks(
+  query: string, pgUrl: string,
+  azureEndpoint: string, azureApiKey: string, embeddingDeployment: string, apiVersion: string,
+  topK = 5,
+): Promise<string> {
+  if (!pgUrl || !azureEndpoint || !azureApiKey) return "";
+  const client = new Client(pgUrl);
+  await client.connect();
+  try {
+    const embedding = await generateEmbeddingAzure(query, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion);
+    const embeddingStr = `[${embedding.join(",")}]`;
+    const result = await client.queryObject<{ content: string; document_name: string; category: string }>(
+      `SELECT content, document_name, category FROM knowledge_base_chunks
+       ORDER BY embedding <=> $1::vector LIMIT $2`,
+      [embeddingStr, topK],
+    );
+    if (result.rows.length === 0) return "";
+    return (
+      "\n--- Style & Reference Templates (permanent knowledge base) ---\n" +
+      result.rows.map((r) => `[${r.document_name} | ${r.category}]:\n${r.content}`).join("\n\n---\n\n") +
+      "\n--- End of style templates ---\n"
+    );
+  } catch (e) {
+    console.warn("knowledge_base_chunks query failed:", e);
+    return "";
+  } finally {
+    await client.end();
+  }
+}
+
 // ── Claude helper (non-streaming) ────────────────────────────────────────────
 async function callClaude(
   apiKey: string, model: string,
@@ -427,10 +457,15 @@ async function runAgent(
       requirementsResult.requirements.slice(0, 5).map((r: any) => r.text).join(" "),
       sessionId, pgUrl, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion, 6,
     );
-    const combinedContext = [capabilityContext, requirementsContext].filter(Boolean).join("\n\n");
+    // Also query the permanent style/reference knowledge base
+    const styleTemplateContext = await queryKnowledgeBaseChunks(
+      "proposal format style template management plan staffing past performance technical approach",
+      pgUrl, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion, 5,
+    );
+    const combinedContext = [capabilityContext, requirementsContext, styleTemplateContext].filter(Boolean).join("\n\n");
 
     await sendEvent({ type: "tool_start", tool: "retrieve_context",
-      message: `Retrieved ${combinedContext ? "relevant capability context" : "context (knowledge base may not be indexed yet)"} from PostgreSQL.` });
+      message: `Retrieved ${combinedContext ? "capability + style template context" : "context (knowledge base may not be indexed yet)"} from PostgreSQL.` });
 
     // ── Step 3: Build outline ──
     await sendEvent({ type: "tool_start", tool: "build_outline",

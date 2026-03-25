@@ -11,7 +11,7 @@ import {
   FileUp, Sparkles, Download, Loader2, X, FileText, ArrowLeft,
   ImagePlus, Palette, Building2, BookOpen, OctagonX, CheckCircle2,
   Layers, LayoutTemplate, Users, TrendingUp, Database, Bot,
-  AlertCircle, ListChecks,
+  AlertCircle, ListChecks, Library,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -121,6 +121,8 @@ const ProposalWriter = () => {
   const [isAgentRunning,    setIsAgentRunning]    = useState(false);
   const [isIndexing,        setIsIndexing]        = useState(false);
   const [indexedChunks,     setIndexedChunks]     = useState<number | null>(null);
+  const [isSeeding,         setIsSeeding]         = useState(false);
+  const [seededChunks,      setSeededChunks]      = useState<number | null>(() => lsGet<number>("seededChunks"));
   const [agentLog,          setAgentLog]          = useState<AgentLogEntry[]>(() => lsGet<AgentLogEntry[]>("agentLog") ?? []);
   const [requirementsResult, setRequirementsResult] = useState<RequirementsResult | null>(() => lsGet<RequirementsResult>("requirementsResult"));
   const [proposal,          setProposal]          = useState<string>(() => lsGet<string>("proposal") ?? "");
@@ -144,6 +146,7 @@ const ProposalWriter = () => {
   useEffect(() => { lsSet("agentLog", agentLog); }, [agentLog]);
   useEffect(() => { lsSet("requirementsResult", requirementsResult); }, [requirementsResult]);
   useEffect(() => { lsSet("proposal", proposal); }, [proposal]);
+  useEffect(() => { if (seededChunks !== null) lsSet("seededChunks", seededChunks); }, [seededChunks]);
 
   // Auto-scroll agent log
   useEffect(() => {
@@ -184,6 +187,41 @@ const ProposalWriter = () => {
       setIsIndexing(false);
     }
   }, [sessionId]);
+
+  // ── Seed permanent knowledge base ─────────────────────────────────────────
+  const seedKnowledgeBase = useCallback(async () => {
+    const readyDocs = capFiles.filter((f) => f.status === "done").map((f) => ({ name: f.file.name, content: f.content }));
+    if (readyDocs.length === 0) {
+      toast({ title: "No company documents to seed", description: "Upload at least one capability/reference document first.", variant: "destructive" });
+      return;
+    }
+    setIsSeeding(true);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-knowledge-base`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ documents: readyDocs.map((d) => ({ ...d, content: d.content.slice(0, 100_000) })), category: "style_template", clearExisting: true }),
+        }
+      );
+      if (resp.ok) {
+        const result = await resp.json();
+        setSeededChunks(result.totalChunks ?? 0);
+        toast({ title: "Knowledge base seeded!", description: `${result.totalChunks} chunks stored permanently from ${result.documentsSeeded} document(s).` });
+      } else {
+        const err = await resp.json().catch(() => ({ error: "Seeding failed" }));
+        toast({ title: "Seeding failed", description: err.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Seeding error", description: e.message, variant: "destructive" });
+    } finally {
+      setIsSeeding(false);
+    }
+  }, [capFiles, toast]);
 
   // ── File upload handlers ───────────────────────────────────────────────────
   const handleRfpUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -600,6 +638,29 @@ const ProposalWriter = () => {
                     {indexedChunks} chunks indexed in PostgreSQL
                   </div>
                 )}
+
+                {/* Seed permanent knowledge base */}
+                <div className="pt-1 border-t border-border/50">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs gap-1.5"
+                    onClick={seedKnowledgeBase}
+                    disabled={isSeeding || capFiles.filter(f => f.status === "done").length === 0}
+                  >
+                    {isSeeding ? <Loader2 className="w-3 h-3 animate-spin" /> : <Library className="w-3 h-3" />}
+                    {isSeeding ? "Seeding…" : "Seed Style Templates"}
+                  </Button>
+                  {seededChunks !== null && !isSeeding && (
+                    <p className="text-[10px] text-green-600 flex items-center gap-1 mt-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {seededChunks} chunks in permanent KB
+                    </p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Saves company docs as permanent style templates used by all future proposals.
+                  </p>
+                </div>
               </CardContent>
             </Card>
 

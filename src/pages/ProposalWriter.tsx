@@ -190,11 +190,6 @@ const ProposalWriter = () => {
 
   // ── Seed permanent knowledge base ─────────────────────────────────────────
   const seedKnowledgeBase = useCallback(async () => {
-    const readyDocs = capFiles.filter((f) => f.status === "done").map((f) => ({ name: f.file.name, content: f.content }));
-    if (readyDocs.length === 0) {
-      toast({ title: "No company documents to seed", description: "Upload at least one capability/reference document first.", variant: "destructive" });
-      return;
-    }
     setIsSeeding(true);
     try {
       const resp = await fetch(
@@ -205,23 +200,22 @@ const ProposalWriter = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ documents: readyDocs.map((d) => ({ ...d, content: d.content.slice(0, 100_000) })), category: "style_template", clearExisting: true }),
+          body: JSON.stringify({}),
         }
       );
-      if (resp.ok) {
-        const result = await resp.json();
+      const result = await resp.json();
+      if (result.success) {
         setSeededChunks(result.totalChunks ?? 0);
-        toast({ title: "Knowledge base seeded!", description: `${result.totalChunks} chunks stored permanently from ${result.documentsSeeded} document(s).` });
+        toast({ title: "Style templates seeded!", description: `${result.totalChunks} chunks indexed from ${result.documents?.length ?? 3} reference documents.` });
       } else {
-        const err = await resp.json().catch(() => ({ error: "Seeding failed" }));
-        toast({ title: "Seeding failed", description: err.error, variant: "destructive" });
+        throw new Error(result.error ?? "Seeding failed");
       }
     } catch (e: any) {
-      toast({ title: "Seeding error", description: e.message, variant: "destructive" });
+      toast({ title: "Seeding failed", description: e.message, variant: "destructive" });
     } finally {
       setIsSeeding(false);
     }
-  }, [capFiles, toast]);
+  }, [toast]);
 
   // ── File upload handlers ───────────────────────────────────────────────────
   const handleRfpUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

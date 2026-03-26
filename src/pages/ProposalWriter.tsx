@@ -18,6 +18,7 @@ import {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun,
 } from "docx";
 import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
 import ReactMarkdown from "react-markdown";
 import { readFileAsText } from "@/lib/fileReader";
 import { extractShallMust, extractSectionHeadings } from "@/lib/requirementsExtractor";
@@ -448,6 +449,89 @@ const ProposalWriter = () => {
     toast({ title: "Downloaded!", description: "Proposal saved as Word document." });
   }, [proposal, companyName, palette, logoDataUrl, toast]);
 
+  // ── Download as PDF ────────────────────────────────────────────────────────
+  const downloadAsPdf = useCallback(async () => {
+    if (!proposal) return;
+    const doc = new jsPDF({ unit: "pt", format: "letter" });
+    const marginL = 72, marginR = 72, marginT = 72, marginB = 72;
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const usableW = pageW - marginL - marginR;
+    let y = marginT;
+
+    const newPage = () => { doc.addPage(); y = marginT; };
+    const checkSpace = (needed: number) => { if (y + needed > pageH - marginB) newPage(); };
+
+    // Cover page
+    if (logoDataUrl) {
+      try {
+        const ext = (logoDataUrl.match(/data:image\/(\w+);/)?.[1] ?? "PNG").toUpperCase();
+        doc.addImage(logoDataUrl, ext as any, pageW / 2 - 60, y, 120, 48);
+        y += 64;
+      } catch { /* skip */ }
+    }
+    y += 20;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(26);
+    doc.setTextColor(palette.primary);
+    doc.text(companyName || "Our Company", pageW / 2, y, { align: "center" });
+    y += 32;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(16);
+    doc.setTextColor(palette.secondary);
+    doc.text("Technical Proposal", pageW / 2, y, { align: "center" });
+    y += 22;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor("#777777");
+    doc.text(new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), pageW / 2, y, { align: "center" });
+    y += 14;
+    doc.text("CONFIDENTIAL AND PROPRIETARY", pageW / 2, y, { align: "center" });
+    doc.addPage();
+    y = marginT;
+
+    // Body
+    const lines = proposal.split("\n");
+    for (const line of lines) {
+      if (line.startsWith("# ")) {
+        checkSpace(30);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(palette.primary);
+        const wrapped = doc.splitTextToSize(line.slice(2), usableW);
+        doc.text(wrapped, marginL, y); y += wrapped.length * 20 + 8;
+      } else if (line.startsWith("## ")) {
+        checkSpace(24);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(palette.secondary);
+        const wrapped = doc.splitTextToSize(line.slice(3), usableW);
+        doc.text(wrapped, marginL, y); y += wrapped.length * 17 + 6;
+      } else if (line.startsWith("### ")) {
+        checkSpace(20);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(palette.accent);
+        const wrapped = doc.splitTextToSize(line.slice(4), usableW);
+        doc.text(wrapped, marginL, y); y += wrapped.length * 15 + 4;
+      } else if (line.startsWith("---")) {
+        checkSpace(10);
+        doc.setDrawColor("#DDDDDD"); doc.line(marginL, y, pageW - marginR, y); y += 10;
+      } else if (/^\s*[-*]\s/.test(line)) {
+        const text = "• " + line.replace(/^\s*[-*]\s/, "").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1");
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor("#1A1A1A");
+        const wrapped = doc.splitTextToSize(text, usableW - 12);
+        checkSpace(wrapped.length * 13 + 3);
+        doc.text(wrapped, marginL + 12, y); y += wrapped.length * 13 + 3;
+      } else if (line.trim() === "") {
+        y += 6;
+      } else {
+        const text = line.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1").replace(/^> /, "    ");
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor("#1A1A1A");
+        const wrapped = doc.splitTextToSize(text, usableW);
+        checkSpace(wrapped.length * 13 + 4);
+        doc.text(wrapped, marginL, y); y += wrapped.length * 13 + 4;
+      }
+    }
+
+    doc.save(`${(companyName || "proposal").replace(/\s+/g, "_")}_proposal.pdf`);
+    toast({ title: "Downloaded!", description: "Proposal saved as PDF." });
+  }, [proposal, companyName, palette, logoDataUrl, toast]);
+
   // ── Agent log entry renderer ───────────────────────────────────────────────
   const LogIcon = ({ type, tool }: { type: string; tool?: string }) => {
     if (type === "agent_done") return <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />;
@@ -738,15 +822,27 @@ const ProposalWriter = () => {
                   )}
                 </div>
                 {proposal && !isAgentRunning && (
-                  <Button
-                    size="sm"
-                    className="text-white shadow-sm"
-                    style={{ background: `linear-gradient(135deg, ${palette.primary}, ${palette.accent})` }}
-                    onClick={downloadAsWord}
-                  >
-                    <Download className="w-3.5 h-3.5 mr-1.5" />
-                    Download .docx
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="text-white shadow-sm"
+                      style={{ background: `linear-gradient(135deg, ${palette.primary}, ${palette.accent})` }}
+                      onClick={downloadAsWord}
+                    >
+                      <Download className="w-3.5 h-3.5 mr-1.5" />
+                      .docx
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="shadow-sm"
+                      style={{ borderColor: palette.primary, color: palette.primary }}
+                      onClick={downloadAsPdf}
+                    >
+                      <Download className="w-3.5 h-3.5 mr-1.5" />
+                      .pdf
+                    </Button>
+                  </div>
                 )}
               </CardHeader>
 

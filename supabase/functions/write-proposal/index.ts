@@ -53,6 +53,21 @@ const MAX_DOC_CHARS = 10_000;
 const truncateDoc = (content: string) =>
   content.length <= MAX_DOC_CHARS ? content : content.slice(0, MAX_DOC_CHARS) + "\n\n[... truncated ...]";
 
+// Remove lone Unicode surrogates that break JSON serialization
+function sanitize(text: string): string {
+  return text.replace(/[\uD800-\uDFFF]/g, (ch, offset, str) => {
+    const code = ch.charCodeAt(0);
+    if (code >= 0xD800 && code <= 0xDBFF) {
+      const next = str.charCodeAt(offset + 1);
+      if (next >= 0xDC00 && next <= 0xDFFF) return ch; // valid high surrogate
+    } else {
+      const prev = str.charCodeAt(offset - 1);
+      if (prev >= 0xD800 && prev <= 0xDBFF) return ch; // valid low surrogate
+    }
+    return ""; // lone surrogate — remove
+  });
+}
+
 // ── pgvector retrieval ────────────────────────────────────────────────────────
 async function generateEmbeddingAzure(
   text: string, endpoint: string, apiKey: string, deployment: string, apiVersion: string,
@@ -247,7 +262,7 @@ async function executeBuildOutline(
     .map((r: any) => `${r.id} [${r.type.toUpperCase()}] [${r.section}] ${r.text.slice(0, 100)}`)
     .join("\n");
 
-  const rfpSnippet = rfpDocuments.map((d) => `--- ${d.name} ---\n${truncateDoc(d.content)}`).join("\n\n");
+  const rfpSnippet = rfpDocuments.map((d) => `--- ${sanitize(d.name)} ---\n${sanitize(truncateDoc(d.content))}`).join("\n\n");
 
   const systemPrompt = `You are an expert government proposal writer. Create a structured proposal outline that addresses every mandatory requirement. Respond with valid JSON only — no markdown, no extra text.
 
@@ -308,8 +323,8 @@ async function streamProposal(
     .map((s: any) => `${s.title}\n  Requirements: ${s.requirements.join(", ") || "general"}\n  Key points: ${s.keyPoints.join("; ")}`)
     .join("\n\n");
 
-  const rfpText = rfpDocuments.map((d) => `=== ${d.name} ===\n${truncateDoc(d.content)}`).join("\n\n");
-  const capText = capabilityDocuments.map((d) => `=== ${d.name} ===\n${truncateDoc(d.content)}`).join("\n\n");
+  const rfpText = rfpDocuments.map((d) => `=== ${sanitize(d.name)} ===\n${sanitize(truncateDoc(d.content))}`).join("\n\n");
+  const capText = capabilityDocuments.map((d) => `=== ${sanitize(d.name)} ===\n${sanitize(truncateDoc(d.content))}`).join("\n\n");
 
   const systemPrompt = `You are an expert government contract proposal writer acting as a senior technical writer with 20+ years of federal contracting experience.
 

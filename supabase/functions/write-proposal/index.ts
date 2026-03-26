@@ -459,55 +459,96 @@ CRITICAL INSTRUCTIONS:
 
 BEGIN THE COMPLETE PROPOSAL NOW:`;
 
-  const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-      "anthropic-beta": "output-128k-2025-02-19",   // extended output tokens
-    },
-    body: sanitizeJson(JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 32000,   // extended — allows full multi-section proposals
-      stream: true,
-      system: sanitize(systemPrompt),
-      messages: [{ role: "user", content: sanitize(userPrompt) }],
-    })),
-  });
+  // ── Streaming helper — one pass, returns stop_reason and accumulated text ──
+  async function streamOnce(messages: { role: string; content: string }[]): Promise<{ stopReason: string; text: string }> {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+        "anthropic-beta": "output-128k-2025-02-19",
+      },
+      body: sanitizeJson(JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 32000,
+        stream: true,
+        system: sanitize(systemPrompt),
+        messages,
+      })),
+    });
 
-  if (!anthropicResp.ok) {
-    const errBody = await anthropicResp.text();
-    throw new Error(`Claude streaming error (${anthropicResp.status}): ${errBody.slice(0, 300)}`);
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      throw new Error(`Claude streaming error (${resp.status}): ${errBody.slice(0, 300)}`);
+    }
+
+    const reader = resp.body!.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    let stopReason = "end_turn";
+    let passText = "";
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const data = trimmed.slice(5).trim();
+          if (data === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
+              const token = parsed.delta.text ?? "";
+              if (token) {
+                passText += token;
+                await sendEvent({ type: "proposal_token", token });
+              }
+            }
+            // Capture why the model stopped
+            if (parsed.type === "message_delta" && parsed.delta?.stop_reason) {
+              stopReason = parsed.delta.stop_reason;
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    return { stopReason, text: passText };
   }
 
-  const reader = anthropicResp.body!.getReader();
-  const decoder = new TextDecoder();
-  let buf = "";
+  // ── Continuation loop — keeps going if the model hit max_tokens ──────────
+  const MAX_CONTINUATIONS = 4;
+  let fullText = "";
+  let messages: { role: string; content: string }[] = [
+    { role: "user", content: sanitize(userPrompt) },
+  ];
 
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      const lines = buf.split("\n");
-      buf = lines.pop() ?? "";
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith("data:")) continue;
-        const data = trimmed.slice(5).trim();
-        if (data === "[DONE]") continue;
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
-            const token = parsed.delta.text ?? "";
-            if (token) await sendEvent({ type: "proposal_token", token });
-          }
-        } catch { /* skip malformed */ }
-      }
+  for (let pass = 0; pass <= MAX_CONTINUATIONS; pass++) {
+    const { stopReason, text } = await streamOnce(messages);
+    fullText += text;
+
+    if (stopReason !== "max_tokens") break; // naturally finished
+
+    if (pass < MAX_CONTINUATIONS) {
+      await sendEvent({
+        type: "tool_start", tool: "write_proposal",
+        message: `Proposal exceeded token limit — continuing generation (pass ${pass + 2})…`,
+      });
+      // Append assistant turn and ask it to continue seamlessly
+      messages = [
+        { role: "user",      content: sanitize(userPrompt) },
+        { role: "assistant", content: sanitize(fullText) },
+        { role: "user",      content: "The proposal was cut off. Continue writing seamlessly from exactly where you stopped. Do not repeat any content already written. Continue with the next word and complete all remaining sections." },
+      ];
     }
-  } finally {
-    reader.releaseLock();
   }
 }
 

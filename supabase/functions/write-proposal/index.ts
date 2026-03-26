@@ -410,6 +410,15 @@ HORIZONTAL RULES — use --- on its own line with blank lines around it.
 
 NEVER merge address lines, contact info, or list items onto a single line.
 NEVER skip blank lines between headings and body text.
+
+GLOSSARIES AND ACRONYM LISTS — NEVER use a table. Format every glossary or acronym list as inline definition entries, one per line:
+
+**ALM** — Application Lifecycle Management
+**API** — Application Programming Interface
+**RBAC** — Role-Based Access Control
+
+TABLES — only use tables for: compliance matrices, risk registers, staffing matrices, schedule milestones, and performance metrics. Never use tables for glossaries, acronyms, or simple key-value lists.
+
 Write naturally and professionally. Do not truncate any section — write every section completely before moving to the next.`;
 
   const userPrompt = `Write a complete, professional government contract technical proposal for **${companyName || "Our Company"}**.

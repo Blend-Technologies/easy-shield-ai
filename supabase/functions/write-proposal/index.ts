@@ -53,19 +53,36 @@ const MAX_DOC_CHARS = 10_000;
 const truncateDoc = (content: string) =>
   content.length <= MAX_DOC_CHARS ? content : content.slice(0, MAX_DOC_CHARS) + "\n\n[... truncated ...]";
 
-// Remove lone Unicode surrogates that break JSON serialization
+// Remove lone Unicode surrogates that break JSON serialization.
+// Walks char-by-char so pair tracking is exact (regex replacer offsets shift).
 function sanitize(text: string): string {
-  return text.replace(/[\uD800-\uDFFF]/g, (ch, offset, str) => {
-    const code = ch.charCodeAt(0);
-    if (code >= 0xD800 && code <= 0xDBFF) {
-      const next = str.charCodeAt(offset + 1);
-      if (next >= 0xDC00 && next <= 0xDFFF) return ch; // valid high surrogate
+  let out = "";
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code >= 0xD800 && code <= 0xDBFF) {          // potential high surrogate
+      const next = text.charCodeAt(i + 1);
+      if (next >= 0xDC00 && next <= 0xDFFF) {         // valid pair — keep both
+        out += text[i] + text[i + 1];
+        i++;
+      }
+      // else lone high surrogate — drop
+    } else if (code >= 0xDC00 && code <= 0xDFFF) {    // lone low surrogate — drop
+      // skip
     } else {
-      const prev = str.charCodeAt(offset - 1);
-      if (prev >= 0xD800 && prev <= 0xDBFF) return ch; // valid low surrogate
+      out += text[i];
     }
-    return ""; // lone surrogate — remove
-  });
+  }
+  return out;
+}
+
+// Also strip JSON-escaped lone surrogates from a serialized JSON string.
+// Catches any that slipped through before stringify (e.g. inside nested objects).
+function sanitizeJson(json: string): string {
+  // Remove \uD800-\uDBFF NOT followed by \uDC00-\uDFFF  (lone high)
+  // Remove \uDC00-\uDFFF NOT preceded by \uD800-\uDBFF  (lone low)
+  return json
+    .replace(/\\u[dD][89aAbB][0-9a-fA-F]{2}(?!\\u[dD][cCdDeEfF][0-9a-fA-F]{2})/g, "")
+    .replace(/(?<!\\u[dD][89aAbB][0-9a-fA-F]{2})\\u[dD][cCdDeEfF][0-9a-fA-F]{2}/g, "");
 }
 
 // ── pgvector retrieval ────────────────────────────────────────────────────────
@@ -152,9 +169,10 @@ async function callClaude(
 ): Promise<string> {
   const systemMsg = messages.find((m) => m.role === "system");
   const chatMessages = messages.filter((m) => m.role !== "system");
-  const body: Record<string, unknown> = { model, max_tokens: maxTokens, messages: chatMessages };
-  if (systemMsg) body.system = systemMsg.content;
-  const bodyStr = JSON.stringify(body);
+  const sanitizedMessages = chatMessages.map((m) => ({ ...m, content: sanitize(m.content) }));
+  const body: Record<string, unknown> = { model, max_tokens: maxTokens, messages: sanitizedMessages };
+  if (systemMsg) body.system = sanitize(systemMsg.content);
+  const bodyStr = sanitizeJson(JSON.stringify(body));
   let lastStatus = 0;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -387,13 +405,13 @@ WRITE THE COMPLETE PROPOSAL NOW. Follow the approved outline section by section.
   const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({
+    body: sanitizeJson(JSON.stringify({
       model: "claude-sonnet-4-6",
       max_tokens: 16000,
       stream: true,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    }),
+      system: sanitize(systemPrompt),
+      messages: [{ role: "user", content: sanitize(userPrompt) }],
+    })),
   });
 
   if (!anthropicResp.ok) {

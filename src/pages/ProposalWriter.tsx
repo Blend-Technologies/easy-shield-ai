@@ -618,7 +618,7 @@ const ProposalWriter = () => {
                   >
                     {logoDataUrl ? (
                       <div className="flex items-center justify-between gap-2">
-                        <img src={logoDataUrl} alt="Logo" className="h-8 object-contain max-w-[120px]" />
+                        <img src={logoDataUrl} alt="Logo" className="h-14 object-contain max-w-[160px] rounded-xl" />
                         <button onClick={(e) => { e.stopPropagation(); setLogoDataUrl(null); }} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
                       </div>
                     ) : (
@@ -864,7 +864,7 @@ const ProposalWriter = () => {
                     {/* Cover preview */}
                     {proposal && (
                       <div className="rounded-xl mb-6 p-5 text-center space-y-1.5 border" style={{ background: palette.bg, borderColor: palette.border }}>
-                        {logoDataUrl && <img src={logoDataUrl} alt="Logo" className="h-10 object-contain mx-auto mb-2" />}
+                        {logoDataUrl && <img src={logoDataUrl} alt="Logo" className="h-20 object-contain mx-auto mb-3 rounded-2xl" />}
                         <h2 className="text-lg font-bold" style={{ color: palette.primary }}>{companyName || "Company Name"}</h2>
                         <p className="text-sm font-medium" style={{ color: palette.secondary }}>Technical Proposal</p>
                         <p className="text-[10px] text-muted-foreground pt-1">

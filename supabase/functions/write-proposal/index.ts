@@ -107,6 +107,19 @@ async function queryKnowledgeBaseChunks(
   const client = new Client(pgUrl);
   await client.connect();
   try {
+    // Ensure the table exists before querying (graceful no-op if already present)
+    await client.queryObject(`
+      CREATE TABLE IF NOT EXISTS knowledge_base_chunks (
+        id            BIGSERIAL PRIMARY KEY,
+        document_name TEXT        NOT NULL,
+        category      TEXT        NOT NULL DEFAULT 'style_template',
+        content       TEXT        NOT NULL,
+        chunk_index   INTEGER     NOT NULL DEFAULT 0,
+        embedding     vector(1536),
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `).catch(() => { /* ignore if vector extension not ready yet */ });
+
     const embedding = await generateEmbeddingAzure(query, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion);
     const embeddingStr = `[${embedding.join(",")}]`;
     const result = await client.queryObject<{ content: string; document_name: string; category: string }>(

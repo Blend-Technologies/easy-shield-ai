@@ -328,6 +328,24 @@ serve(async (req) => {
     let totalChunks = 0;
 
     try {
+      // Ensure the table exists (creates it if missing in Azure PostgreSQL)
+      await client.queryObject(`
+        CREATE EXTENSION IF NOT EXISTS vector;
+        CREATE TABLE IF NOT EXISTS knowledge_base_chunks (
+          id            BIGSERIAL PRIMARY KEY,
+          document_name TEXT        NOT NULL,
+          category      TEXT        NOT NULL DEFAULT 'style_template',
+          content       TEXT        NOT NULL,
+          chunk_index   INTEGER     NOT NULL DEFAULT 0,
+          embedding     vector(1536),
+          created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+        CREATE INDEX IF NOT EXISTS knowledge_base_chunks_embedding_idx
+          ON knowledge_base_chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 50);
+        CREATE INDEX IF NOT EXISTS knowledge_base_chunks_category_idx
+          ON knowledge_base_chunks (category);
+      `);
+
       // Clear existing entries for these categories (idempotent re-seed)
       await client.queryObject(
         `DELETE FROM knowledge_base_chunks WHERE category IN ('loi_capability_statement','sources_sought_template','technical_proposal_reference')`,

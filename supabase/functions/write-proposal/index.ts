@@ -668,22 +668,122 @@ async function runAgent(
   }
 }
 
+// ── Continuation handler (pass 2+): skip agent pipeline, stream continuation ──
+async function runContinuation(
+  sendEvent: (payload: object) => Promise<void>,
+  writer: WritableStreamDefaultWriter,
+  continuationText: string,
+  continuationPass: number,
+  companyName: string,
+  apiKey: string,
+): Promise<void> {
+  const encoder = new TextEncoder();
+  let heartbeatStopped = false;
+  const heartbeat = setInterval(async () => {
+    if (heartbeatStopped) return;
+    try { await writer.write(encoder.encode(": heartbeat\n\n")); } catch { /* stream closed */ }
+  }, 20_000);
+
+  try {
+    await sendEvent({
+      type: "tool_start", tool: "write_proposal",
+      message: `Continuing proposal — pass ${continuationPass}…`,
+    });
+
+    const systemPrompt = `You are an expert government contract proposal writer. You are continuing a proposal that was cut off mid-generation due to output length limits. Continue seamlessly from EXACTLY where it stopped — do not repeat, summarize, or restate anything already written. Write as if you are the same author continuing the same document. Maintain the same tone, heading style, and formatting (Markdown with proper blank lines around headings, bullets, and tables). When you have written all remaining sections, end with <<<END_OF_PROPOSAL>>> on its own line.`;
+
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: sanitizeJson(JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 8192,
+        stream: true,
+        system: sanitize(systemPrompt),
+        messages: [
+          { role: "user", content: sanitize(`You are writing a government proposal for ${companyName || "Our Company"}. The proposal was cut off below. Continue writing from exactly where it stopped, completing all remaining sections.\n\n--- PROPOSAL SO FAR (do NOT repeat any of this) ---\n${continuationText.slice(-8000)}\n--- END OF WHAT HAS BEEN WRITTEN SO FAR ---\n\nContinue the proposal now, picking up seamlessly from the last word above:`) },
+        ],
+      })),
+    });
+
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      throw new Error(`Claude streaming error (${resp.status}): ${errBody.slice(0, 300)}`);
+    }
+
+    const reader = resp.body!.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    let passText = "";
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const data = trimmed.slice(5).trim();
+          if (data === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
+              const token = parsed.delta.text ?? "";
+              if (token) {
+                passText += token;
+                await sendEvent({ type: "proposal_token", token });
+              }
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    const fullText = continuationText + passText;
+    if (fullText.includes("<<<END_OF_PROPOSAL>>>")) {
+      await sendEvent({ type: "proposal_strip_sentinel", sentinel: "<<<END_OF_PROPOSAL>>>" });
+    }
+
+    await sendEvent({ type: "agent_done", message: `Continuation pass ${continuationPass} complete.` });
+  } catch (err) {
+    await sendEvent({ type: "agent_error", message: err instanceof Error ? err.message : "Unknown error" });
+  } finally {
+    heartbeatStopped = true;
+    clearInterval(heartbeat);
+    await writer.close();
+  }
+}
+
 // ── Main Handler ──────────────────────────────────────────────────────────────
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const {
-      rfpDocuments, capabilityDocuments, companyName, sessionId,
-      preExtractedRequirements, sectionHeadings,
-    } = await req.json() as {
+    const body = await req.json() as {
       rfpDocuments: RFPDocument[];
       capabilityDocuments: RFPDocument[];
       companyName?: string;
       sessionId?: string;
       preExtractedRequirements?: PreExtractedItem[];
       sectionHeadings?: string[];
+      continuationText?: string;
+      continuationPass?: number;
     };
+
+    const {
+      rfpDocuments, capabilityDocuments, companyName, sessionId,
+      preExtractedRequirements, sectionHeadings,
+      continuationText, continuationPass,
+    } = body;
 
     const ANTHROPIC_API_KEY         = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
     const AZURE_OPENAI_ENDPOINT     = (Deno.env.get("AZURE_OPENAI_ENDPOINT") ?? "").replace(/\/+$/, "");
@@ -695,7 +795,6 @@ serve(async (req) => {
     const SUPABASE_DB_URL           = Deno.env.get("SUPABASE_DB_URL") ?? "";
 
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
-    if (!rfpDocuments || rfpDocuments.length === 0) throw new Error("No RFP documents provided.");
 
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
@@ -705,20 +804,32 @@ serve(async (req) => {
       await writer.write(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
     };
 
-    // Fire-and-forget
-    runAgent(
-      sendEvent, writer,
-      rfpDocuments, capabilityDocuments ?? [],
-      companyName ?? "Our Company",
-      sessionId ?? "",
-      preExtractedRequirements ?? [],
-      sectionHeadings ?? [],
-      ANTHROPIC_API_KEY,
-      AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY,
-      AZURE_EMBEDDING_DEPLOYMENT, AZURE_API_VERSION,
-      AZURE_POSTGRES_URL,
-      SUPABASE_DB_URL,
-    );
+    // Continuation passes (2+): skip the full agent pipeline, stream continuation directly
+    if (continuationText && continuationPass && continuationPass > 1) {
+      runContinuation(
+        sendEvent, writer,
+        continuationText, continuationPass,
+        companyName ?? "Our Company",
+        ANTHROPIC_API_KEY,
+      );
+    } else {
+      // Pass 1: full agent pipeline
+      if (!rfpDocuments || rfpDocuments.length === 0) throw new Error("No RFP documents provided.");
+
+      runAgent(
+        sendEvent, writer,
+        rfpDocuments, capabilityDocuments ?? [],
+        companyName ?? "Our Company",
+        sessionId ?? "",
+        preExtractedRequirements ?? [],
+        sectionHeadings ?? [],
+        ANTHROPIC_API_KEY,
+        AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY,
+        AZURE_EMBEDDING_DEPLOYMENT, AZURE_API_VERSION,
+        AZURE_POSTGRES_URL,
+        SUPABASE_DB_URL,
+      );
+    }
 
     return new Response(readable, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" },

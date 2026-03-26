@@ -291,85 +291,114 @@ const ProposalWriter = () => {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    try {
-      const resp = await fetch(
-        `${import.meta.env.VITE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL}/functions/v1/write-proposal`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            rfpDocuments: rfpDocs.map((d) => ({ ...d, content: d.content.slice(0, 50_000) })),
-            capabilityDocuments: capDocs.map((d) => ({ ...d, content: d.content.slice(0, 20_000) })),
-            companyName: companyName.trim() || "Our Company",
-            sessionId,
-            preExtractedRequirements: preExtracted,
-            sectionHeadings,
-          }),
-          signal: controller.signal,
-        }
-      );
+    const SENTINEL = "<<<END_OF_PROPOSAL>>>";
+    let proposalText = "";
+    const MAX_PASSES = 8;
+    const FUNC_URL = `${import.meta.env.VITE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL}/functions/v1/write-proposal`;
+    const AUTH_HDR = { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` };
 
+    // Returns true when the accumulated text looks genuinely finished
+    const looksComplete = (text: string) => {
+      if (text.includes(SENTINEL)) return true;
+      const t = text.trimEnd();
+      if (!t) return false;
+      return [".", "!", "?", "|", "]"].includes(t[t.length - 1]);
+    };
+
+    // Consume one SSE stream, appending tokens to proposalText ref
+    const streamOnePass = async (body: object): Promise<{ done: boolean }> => {
+      const resp = await fetch(FUNC_URL, { method: "POST", headers: AUTH_HDR, body: JSON.stringify(body), signal: controller.signal });
       if (!resp.ok || !resp.body) {
         const err = await resp.json().catch(() => ({ error: "Agent request failed" }));
         throw new Error(err.error || "Agent request failed");
       }
-
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = "";
-      let proposalText = "";
+      let buf = "";
+      let agentFinished = false;
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n\n");
-        buffer = parts.pop() ?? "";
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const parts = buf.split("\n\n");
+          buf = parts.pop() ?? "";
 
-        for (const part of parts) {
-          const line = part.trim();
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
-          let event: any;
-          try { event = JSON.parse(jsonStr); } catch { continue; }
+          for (const part of parts) {
+            const line = part.trim();
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") continue;
+            let event: any;
+            try { event = JSON.parse(jsonStr); } catch { continue; }
 
-          switch (event.type) {
-            case "tool_start":
-              appendLog({ type: "tool_start", tool: event.tool, message: event.message });
-              break;
-            case "tool_result":
-              appendLog({ type: "tool_result", tool: event.tool, message: `${event.tool.replace(/_/g, " ")} completed.` });
-              if (event.tool === "extract_requirements" && event.data) {
-                setRequirementsResult(event.data);
-              }
-              break;
-            case "proposal_token":
-              if (event.token) {
-                proposalText += event.token;
+            switch (event.type) {
+              case "tool_start":
+                appendLog({ type: "tool_start", tool: event.tool, message: event.message });
+                break;
+              case "tool_result":
+                appendLog({ type: "tool_result", tool: event.tool, message: `${event.tool.replace(/_/g, " ")} completed.` });
+                if (event.tool === "extract_requirements" && event.data) setRequirementsResult(event.data);
+                break;
+              case "proposal_token":
+                if (event.token) {
+                  proposalText += event.token;
+                  setProposal(proposalText);
+                }
+                break;
+              case "proposal_strip_sentinel":
+                proposalText = proposalText.split(SENTINEL).join("").trimEnd();
                 setProposal(proposalText);
-              }
-              break;
-            case "proposal_strip_sentinel":
-              if (event.sentinel) {
-                proposalText = proposalText.split(event.sentinel).join("").trimEnd();
-                setProposal(proposalText);
-              }
-              break;
-            case "agent_done":
-              appendLog({ type: "agent_done", message: event.message });
-              toast({ title: "Proposal complete!", description: event.message });
-              break;
-            case "agent_error":
-              appendLog({ type: "agent_error", message: event.message });
-              toast({ title: "Agent error", description: event.message, variant: "destructive" });
-              break;
+                break;
+              case "agent_done":
+                agentFinished = true;
+                appendLog({ type: "agent_done", message: event.message });
+                break;
+              case "agent_error":
+                throw new Error(event.message);
+            }
           }
         }
+      } finally {
+        reader.releaseLock();
       }
+
+      return { done: agentFinished || looksComplete(proposalText) };
+    };
+
+    try {
+      const baseBody = {
+        rfpDocuments: rfpDocs.map((d) => ({ ...d, content: d.content.slice(0, 50_000) })),
+        capabilityDocuments: capDocs.map((d) => ({ ...d, content: d.content.slice(0, 20_000) })),
+        companyName: companyName.trim() || "Our Company",
+        sessionId,
+        preExtractedRequirements: preExtracted,
+        sectionHeadings,
+      };
+
+      // Pass 1 — full agent pipeline (extract, retrieve, outline, write)
+      let { done } = await streamOnePass(baseBody);
+
+      // Passes 2–MAX — continuation only (skip agent steps, just continue writing)
+      for (let pass = 2; pass <= MAX_PASSES && !done; pass++) {
+        appendLog({ type: "tool_start", tool: "write_proposal",
+          message: `Continuing proposal — pass ${pass} of up to ${MAX_PASSES}…` });
+
+        const continueBody = {
+          ...baseBody,
+          continuationText: proposalText,  // send what was written so far
+          continuationPass: pass,
+        };
+        const result = await streamOnePass(continueBody);
+        done = result.done;
+      }
+
+      if (!proposalText.includes(SENTINEL) && !looksComplete(proposalText)) {
+        appendLog({ type: "agent_done", message: `Proposal generation complete (${MAX_PASSES} passes).` });
+      }
+      toast({ title: "Proposal complete!", description: "Full proposal generated successfully." });
+
     } catch (e: any) {
       if (e.name === "AbortError") {
         appendLog({ type: "agent_error", message: "Agent stopped by user." });

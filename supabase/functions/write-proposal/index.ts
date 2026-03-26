@@ -467,6 +467,15 @@ async function runAgent(
   pgUrl: string,
   supabaseDbUrl: string,
 ) {
+  // Keep-alive heartbeat — sends a comment every 20 s to prevent proxy/CDN
+  // from closing the SSE connection during long Claude API calls.
+  const encoder = new TextEncoder();
+  let heartbeatStopped = false;
+  const heartbeat = setInterval(async () => {
+    if (heartbeatStopped) return;
+    try { await writer.write(encoder.encode(": heartbeat\n\n")); } catch { /* stream closed */ }
+  }, 20_000);
+
   try {
     const haikuModel  = "claude-haiku-4-5-20251001";
     const sonnetModel = "claude-sonnet-4-6";
@@ -528,6 +537,8 @@ async function runAgent(
   } catch (err) {
     await sendEvent({ type: "agent_error", message: err instanceof Error ? err.message : "Unknown error" });
   } finally {
+    heartbeatStopped = true;
+    clearInterval(heartbeat);
     await writer.close();
   }
 }

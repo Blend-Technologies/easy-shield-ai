@@ -99,26 +99,14 @@ async function queryRelevantChunks(
 }
 
 async function queryKnowledgeBaseChunks(
-  query: string, pgUrl: string,
+  query: string, supabaseDbUrl: string,
   azureEndpoint: string, azureApiKey: string, embeddingDeployment: string, apiVersion: string,
   topK = 5,
 ): Promise<string> {
-  if (!pgUrl || !azureEndpoint || !azureApiKey) return "";
-  const client = new Client(pgUrl);
+  if (!supabaseDbUrl || !azureEndpoint || !azureApiKey) return "";
+  const client = new Client(supabaseDbUrl);
   await client.connect();
   try {
-    // Ensure the table exists before querying (graceful no-op if already present)
-    await client.queryObject(`
-      CREATE TABLE IF NOT EXISTS knowledge_base_chunks (
-        id            BIGSERIAL PRIMARY KEY,
-        document_name TEXT        NOT NULL,
-        category      TEXT        NOT NULL DEFAULT 'style_template',
-        content       TEXT        NOT NULL,
-        chunk_index   INTEGER     NOT NULL DEFAULT 0,
-        embedding     vector(1536),
-        created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-      );
-    `).catch(() => { /* ignore if vector extension not ready yet */ });
 
     const embedding = await generateEmbeddingAzure(query, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion);
     const embeddingStr = `[${embedding.join(",")}]`;
@@ -444,6 +432,7 @@ async function runAgent(
   embeddingDeployment: string,
   apiVersion: string,
   pgUrl: string,
+  supabaseDbUrl: string,
 ) {
   try {
     const haikuModel  = "claude-haiku-4-5-20251001";
@@ -470,10 +459,10 @@ async function runAgent(
       requirementsResult.requirements.slice(0, 5).map((r: any) => r.text).join(" "),
       sessionId, pgUrl, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion, 6,
     );
-    // Also query the permanent style/reference knowledge base
+    // Also query the permanent style/reference knowledge base (stored in Supabase)
     const styleTemplateContext = await queryKnowledgeBaseChunks(
       "proposal format style template management plan staffing past performance technical approach",
-      pgUrl, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion, 5,
+      supabaseDbUrl, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion, 5,
     );
     const combinedContext = [capabilityContext, requirementsContext, styleTemplateContext].filter(Boolean).join("\n\n");
 
@@ -533,6 +522,8 @@ serve(async (req) => {
     const AZURE_EMBEDDING_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT") ?? "text-embedding-ada-002";
     const AZURE_API_VERSION         = Deno.env.get("AZURE_OPENAI_API_VERSION") ?? "2024-08-01-preview";
     const AZURE_POSTGRES_URL        = Deno.env.get("AZURE_POSTGRES_URL") ?? "";
+    // knowledge_base_chunks lives in Supabase (admin DB, pgvector pre-enabled)
+    const SUPABASE_DB_URL           = Deno.env.get("SUPABASE_DB_URL") ?? "";
 
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
     if (!rfpDocuments || rfpDocuments.length === 0) throw new Error("No RFP documents provided.");
@@ -557,6 +548,7 @@ serve(async (req) => {
       AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY,
       AZURE_EMBEDDING_DEPLOYMENT, AZURE_API_VERSION,
       AZURE_POSTGRES_URL,
+      SUPABASE_DB_URL,
     );
 
     return new Response(readable, {

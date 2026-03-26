@@ -294,13 +294,14 @@ serve(async (req) => {
     const AZURE_OPENAI_API_KEY       = Deno.env.get("AZURE_OPENAI_API_KEY") ?? "";
     const AZURE_EMBEDDING_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT") ?? "text-embedding-ada-002";
     const AZURE_API_VERSION          = Deno.env.get("AZURE_OPENAI_API_VERSION") ?? "2024-08-01-preview";
-    const AZURE_POSTGRES_URL         = Deno.env.get("AZURE_POSTGRES_URL") ?? "";
+    // knowledge_base_chunks lives in Supabase (admin access, pgvector pre-enabled)
+    const SUPABASE_DB_URL            = Deno.env.get("SUPABASE_DB_URL") ?? "";
 
     if (!AZURE_OPENAI_ENDPOINT || !AZURE_OPENAI_API_KEY) {
       throw new Error("Azure OpenAI credentials not configured.");
     }
-    if (!AZURE_POSTGRES_URL) {
-      throw new Error("AZURE_POSTGRES_URL not configured.");
+    if (!SUPABASE_DB_URL) {
+      throw new Error("SUPABASE_DB_URL not configured.");
     }
 
     // Reference documents baked into this function
@@ -322,29 +323,12 @@ serve(async (req) => {
       },
     ];
 
-    const client = new Client(AZURE_POSTGRES_URL);
+    const client = new Client(SUPABASE_DB_URL);
     await client.connect();
 
     let totalChunks = 0;
 
     try {
-      // Ensure the table exists (creates it if missing in Azure PostgreSQL)
-      await client.queryObject(`
-        CREATE TABLE IF NOT EXISTS knowledge_base_chunks (
-          id            BIGSERIAL PRIMARY KEY,
-          document_name TEXT        NOT NULL,
-          category      TEXT        NOT NULL DEFAULT 'style_template',
-          content       TEXT        NOT NULL,
-          chunk_index   INTEGER     NOT NULL DEFAULT 0,
-          embedding     vector(1536),
-          created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-        );
-        CREATE INDEX IF NOT EXISTS knowledge_base_chunks_embedding_idx
-          ON knowledge_base_chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 50);
-        CREATE INDEX IF NOT EXISTS knowledge_base_chunks_category_idx
-          ON knowledge_base_chunks (category);
-      `);
-
       // Clear existing entries for these categories (idempotent re-seed)
       await client.queryObject(
         `DELETE FROM knowledge_base_chunks WHERE category IN ('loi_capability_statement','sources_sought_template','technical_proposal_reference')`,

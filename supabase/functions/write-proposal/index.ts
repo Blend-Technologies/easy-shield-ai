@@ -142,10 +142,13 @@ async function queryKnowledgeBaseChunks(
 }
 
 // ── Anthropic SDK streaming helper ────────────────────────────────────────────
-// Streams one Claude pass, forwarding tokens as proposal_token SSE events.
-// Returns proposalComplete=true ONLY when the sentinel marker is present —
-// stop_reason "end_turn" is NOT sufficient because Claude often ends a turn
-// mid-proposal at a sentence boundary without finishing all sections.
+// Uses client.messages.create({ stream: true }) which returns a raw
+// Stream<RawMessageStreamEvent> — a proper async iterable in Deno.
+// (client.messages.stream().textStream is Node-only and undefined in Deno.)
+//
+// Returns proposalComplete=true ONLY when the sentinel marker is present.
+// stop_reason "end_turn" is NOT sufficient — Claude regularly ends a turn at a
+// sentence boundary mid-proposal without finishing all sections.
 async function streamOnce(
   ai: Anthropic,
   sendEvent: (payload: object) => Promise<void>,
@@ -153,22 +156,24 @@ async function streamOnce(
   system: string,
   messages: Anthropic.MessageParam[],
 ): Promise<{ proposalComplete: boolean; passText: string }> {
-  const stream = ai.messages.stream({
+  const stream = await ai.messages.create({
     model,
     max_tokens: 8192,
     system: sanitize(system),
     messages,
+    stream: true,
   });
 
   let passText = "";
-  for await (const text of stream.textStream) {
-    passText += text;
-    await sendEvent({ type: "proposal_token", token: text });
+  for await (const event of stream) {
+    if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+      const token = (event.delta as any).text ?? "";
+      if (token) {
+        passText += token;
+        await sendEvent({ type: "proposal_token", token });
+      }
+    }
   }
-
-  // Wait for the full message metadata (stop_reason etc.) — textStream
-  // completes when all tokens arrive; finalMessage() just resolves the same.
-  await stream.finalMessage();
 
   const hasSentinel = passText.includes("<<<END_OF_PROPOSAL>>>");
   if (hasSentinel) {

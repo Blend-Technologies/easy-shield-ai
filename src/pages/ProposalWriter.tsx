@@ -379,6 +379,26 @@ const ProposalWriter = () => {
 
   const stopAgent = () => { abortRef.current?.abort(); setIsAgentRunning(false); };
 
+  const resetAgent = () => {
+    abortRef.current?.abort();
+    setIsAgentRunning(false);
+    setAgentLog([]);
+    setRequirementsResult(null);
+    setProposal("");
+    setIndexedChunks(null);
+    setRfpFile(null);
+    setCapFiles([]);
+    setLogoDataUrl(null);
+    setCompanyName("");
+    // Fresh session so next run indexes into a new partition
+    const newId = crypto.randomUUID();
+    lsSet("sessionId", newId);
+    lsSet("agentLog", []);
+    lsSet("requirementsResult", null);
+    lsSet("proposal", "");
+    toast({ title: "Reset complete", description: "All inputs and outputs cleared. Ready for a new run." });
+  };
+
   // ── Download as DOCX ──────────────────────────────────────────────────────
   const downloadAsWord = useCallback(async () => {
     if (!proposal) return;
@@ -742,7 +762,7 @@ const ProposalWriter = () => {
               </CardContent>
             </Card>
 
-            {/* Run / Stop */}
+            {/* Run / Stop / Reset */}
             {isAgentRunning ? (
               <Button
                 variant="outline"
@@ -761,6 +781,17 @@ const ProposalWriter = () => {
               >
                 <Bot className="w-4 h-4 mr-2" />
                 Run Agent
+              </Button>
+            )}
+            {(proposal || agentLog.length > 0 || rfpFile) && !isAgentRunning && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 text-xs"
+                onClick={resetAgent}
+              >
+                <X className="w-3.5 h-3.5 mr-1.5" />
+                Reset &amp; Start Over
               </Button>
             )}
 

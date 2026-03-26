@@ -155,7 +155,7 @@ async function streamOnce(
   model: string,
   system: string,
   messages: Anthropic.MessageParam[],
-): Promise<{ proposalComplete: boolean; passText: string }> {
+): Promise<{ proposalComplete: boolean; stopReason: string; passText: string }> {
   const stream = await ai.messages.create({
     model,
     max_tokens: 8192,
@@ -165,6 +165,8 @@ async function streamOnce(
   });
 
   let passText = "";
+  let stopReason = "end_turn";
+
   for await (const event of stream) {
     if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
       const token = (event.delta as any).text ?? "";
@@ -173,14 +175,23 @@ async function streamOnce(
         await sendEvent({ type: "proposal_token", token });
       }
     }
+    // Capture stop_reason from message_delta
+    if (event.type === "message_delta" && (event as any).delta?.stop_reason) {
+      stopReason = (event as any).delta.stop_reason;
+    }
   }
 
+  // Only treat the proposal as complete when:
+  // 1. The sentinel is present (Claude deliberately wrote it)
+  // 2. AND the model reached end_turn (not max_tokens — if truncated, sentinel is invalid)
   const hasSentinel = passText.includes("<<<END_OF_PROPOSAL>>>");
-  if (hasSentinel) {
+  const proposalComplete = hasSentinel && stopReason !== "max_tokens";
+
+  if (hasSentinel && proposalComplete) {
     await sendEvent({ type: "proposal_strip_sentinel", sentinel: "<<<END_OF_PROPOSAL>>>" });
   }
 
-  return { proposalComplete: hasSentinel, passText };
+  return { proposalComplete, stopReason, passText };
 }
 
 // ── Step 1: Assign requirements to sections ───────────────────────────────────
@@ -397,7 +408,8 @@ CRITICAL INSTRUCTIONS:
 3. Do not produce a summary or abbreviation — write the full text.
 4. After Section 1, immediately continue to Section 2, then Section 3, and so on.
 5. End with the Requirements Compliance Matrix table showing every requirement ID and which section addresses it.
-6. When the proposal is FULLY complete, write this exact marker on its own line: <<<END_OF_PROPOSAL>>>
+6. ONLY write <<<END_OF_PROPOSAL>>> after ALL ${outline.sections.length} sections are fully written AND the Requirements Compliance Matrix is complete. Do NOT write it early.
+7. If you reach your output limit before finishing, stop cleanly at the end of a sentence. Do NOT write <<<END_OF_PROPOSAL>>> unless everything is truly done.
 
 BEGIN THE COMPLETE PROPOSAL NOW:`;
 

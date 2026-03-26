@@ -347,11 +347,29 @@ const ProposalWriter = () => {
                 break;
               case "agent_done":
                 // Capture outline sections returned by pass 1 for use in continuation prompts.
-                // This tells the edge function which sections are still missing each pass.
                 if (event.outlineSections?.length) outlineSections = event.outlineSections;
-                // proposalComplete=false → edge function hit max_tokens, continue looping.
-                // proposalComplete=true  → sentinel received, stop.
-                if (event.proposalComplete === true) agentFinished = true;
+
+                if (event.proposalComplete === true) {
+                  // Validate against actual section presence before trusting the sentinel.
+                  // Claude sometimes writes <<<END_OF_PROPOSAL>>> prematurely after only
+                  // a few sections. If we have an outline, check that at least 80% of
+                  // planned sections are present in the accumulated text.
+                  if (outlineSections.length === 0) {
+                    agentFinished = true;
+                  } else {
+                    const lowerText = proposalText.toLowerCase();
+                    const cleanTitle = (t: string) => t.replace(/^\d+\.\s*/, "").toLowerCase().trim().slice(0, 25);
+                    const sectionsFound = outlineSections.filter(t => lowerText.includes(cleanTitle(t))).length;
+                    const threshold = Math.ceil(outlineSections.length * 0.8);
+                    if (sectionsFound >= threshold) {
+                      agentFinished = true;
+                    } else {
+                      // Sentinel present but too few sections written — keep going
+                      appendLog({ type: "tool_start", tool: "write_proposal",
+                        message: `Sentinel found but only ${sectionsFound}/${outlineSections.length} sections present — continuing…` });
+                    }
+                  }
+                }
                 appendLog({ type: "agent_done", message: event.message });
                 break;
               case "agent_error":
@@ -380,17 +398,18 @@ const ProposalWriter = () => {
       let { done } = await streamOnePass(baseBody);
 
       // Passes 2–MAX_PASSES — continuation only.
-      // Sends: the accumulated text tail + the planned section list so the edge
-      // function can tell Claude exactly which sections are still missing.
+      // Send a lean body: no rfpDocuments/capabilityDocuments (unused for continuation,
+      // and omitting them keeps the payload small and avoids edge function body limits).
       for (let pass = 2; pass <= MAX_PASSES && !done; pass++) {
         appendLog({ type: "tool_start", tool: "write_proposal",
-          message: `Continuing proposal — pass ${pass} of up to ${MAX_PASSES}…` });
+          message: `Continuing proposal — pass ${pass} of up to ${MAX_PASSES} (${outlineSections.length} sections planned)…` });
 
         const result = await streamOnePass({
-          ...baseBody,
+          companyName: companyName.trim() || "Our Company",
+          sessionId,
           continuationText: proposalText,
           continuationPass: pass,
-          outlineSections,           // section titles from the outline built in pass 1
+          outlineSections,
         });
         done = result.done;
       }

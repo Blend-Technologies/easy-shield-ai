@@ -293,19 +293,13 @@ const ProposalWriter = () => {
 
     const SENTINEL = "<<<END_OF_PROPOSAL>>>";
     let proposalText = "";
-    const MAX_PASSES = 8;
+    let outlineSections: string[] = [];   // populated from agent_done on pass 1
+    const MAX_PASSES = 10;
     const FUNC_URL = `${import.meta.env.VITE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL}/functions/v1/write-proposal`;
     const AUTH_HDR = { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` };
 
-    // Returns true when the accumulated text looks genuinely finished
-    const looksComplete = (text: string) => {
-      if (text.includes(SENTINEL)) return true;
-      const t = text.trimEnd();
-      if (!t) return false;
-      return [".", "!", "?", "|", "]"].includes(t[t.length - 1]);
-    };
-
-    // Consume one SSE stream, appending tokens to proposalText ref
+    // Consume one SSE stream pass, appending tokens to proposalText.
+    // Returns done=true only when the edge function sends proposalComplete=true.
     const streamOnePass = async (body: object): Promise<{ done: boolean }> => {
       const resp = await fetch(FUNC_URL, { method: "POST", headers: AUTH_HDR, body: JSON.stringify(body), signal: controller.signal });
       if (!resp.ok || !resp.body) {
@@ -352,10 +346,12 @@ const ProposalWriter = () => {
                 setProposal(proposalText);
                 break;
               case "agent_done":
-                // Only mark finished when the edge function confirms proposal is complete.
-                // proposalComplete=false means the edge function hit max_tokens and the
-                // frontend continuation loop should fire the next pass.
-                if (event.proposalComplete !== false) agentFinished = true;
+                // Capture outline sections returned by pass 1 for use in continuation prompts.
+                // This tells the edge function which sections are still missing each pass.
+                if (event.outlineSections?.length) outlineSections = event.outlineSections;
+                // proposalComplete=false → edge function hit max_tokens, continue looping.
+                // proposalComplete=true  → sentinel received, stop.
+                if (event.proposalComplete === true) agentFinished = true;
                 appendLog({ type: "agent_done", message: event.message });
                 break;
               case "agent_error":
@@ -380,25 +376,27 @@ const ProposalWriter = () => {
         sectionHeadings,
       };
 
-      // Pass 1 — full agent pipeline (extract, retrieve, outline, write)
+      // Pass 1 — full agent pipeline (extract → retrieve → outline → write)
       let { done } = await streamOnePass(baseBody);
 
-      // Passes 2–MAX — continuation only (skip agent steps, just continue writing)
+      // Passes 2–MAX_PASSES — continuation only.
+      // Sends: the accumulated text tail + the planned section list so the edge
+      // function can tell Claude exactly which sections are still missing.
       for (let pass = 2; pass <= MAX_PASSES && !done; pass++) {
         appendLog({ type: "tool_start", tool: "write_proposal",
           message: `Continuing proposal — pass ${pass} of up to ${MAX_PASSES}…` });
 
-        const continueBody = {
+        const result = await streamOnePass({
           ...baseBody,
-          continuationText: proposalText,  // send what was written so far
+          continuationText: proposalText,
           continuationPass: pass,
-        };
-        const result = await streamOnePass(continueBody);
+          outlineSections,           // section titles from the outline built in pass 1
+        });
         done = result.done;
       }
 
-      if (!proposalText.includes(SENTINEL) && !looksComplete(proposalText)) {
-        appendLog({ type: "agent_done", message: `Proposal generation complete (${MAX_PASSES} passes).` });
+      if (!done) {
+        appendLog({ type: "agent_done", message: `Proposal generation reached ${MAX_PASSES} passes.` });
       }
       toast({ title: "Proposal complete!", description: "Full proposal generated successfully." });
 

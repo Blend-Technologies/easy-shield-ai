@@ -1,6 +1,7 @@
 // @ts-nocheck — Deno edge function: VS Code TS checker doesn't understand Deno globals.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,36 +54,22 @@ const MAX_DOC_CHARS = 10_000;
 const truncateDoc = (content: string) =>
   content.length <= MAX_DOC_CHARS ? content : content.slice(0, MAX_DOC_CHARS) + "\n\n[... truncated ...]";
 
-// Remove lone Unicode surrogates that break JSON serialization.
-// Walks char-by-char so pair tracking is exact (regex replacer offsets shift).
+// Remove lone Unicode surrogates — still needed even with the SDK since we pass
+// text content in message objects and surrogates break JSON serialization.
 function sanitize(text: string): string {
   let out = "";
   for (let i = 0; i < text.length; i++) {
     const code = text.charCodeAt(i);
-    if (code >= 0xD800 && code <= 0xDBFF) {          // potential high surrogate
+    if (code >= 0xD800 && code <= 0xDBFF) {
       const next = text.charCodeAt(i + 1);
-      if (next >= 0xDC00 && next <= 0xDFFF) {         // valid pair — keep both
-        out += text[i] + text[i + 1];
-        i++;
-      }
-      // else lone high surrogate — drop
-    } else if (code >= 0xDC00 && code <= 0xDFFF) {    // lone low surrogate — drop
-      // skip
+      if (next >= 0xDC00 && next <= 0xDFFF) { out += text[i] + text[i + 1]; i++; }
+    } else if (code >= 0xDC00 && code <= 0xDFFF) {
+      // lone low surrogate — drop
     } else {
       out += text[i];
     }
   }
   return out;
-}
-
-// Also strip JSON-escaped lone surrogates from a serialized JSON string.
-// Catches any that slipped through before stringify (e.g. inside nested objects).
-function sanitizeJson(json: string): string {
-  // Remove \uD800-\uDBFF NOT followed by \uDC00-\uDFFF  (lone high)
-  // Remove \uDC00-\uDFFF NOT preceded by \uD800-\uDBFF  (lone low)
-  return json
-    .replace(/\\u[dD][89aAbB][0-9a-fA-F]{2}(?!\\u[dD][cCdDeEfF][0-9a-fA-F]{2})/g, "")
-    .replace(/(?<!\\u[dD][89aAbB][0-9a-fA-F]{2})\\u[dD][cCdDeEfF][0-9a-fA-F]{2}/g, "");
 }
 
 // ── pgvector retrieval ────────────────────────────────────────────────────────
@@ -106,27 +93,24 @@ async function queryRelevantChunks(
   topK = 6,
 ): Promise<string> {
   if (!sessionId || !pgUrl || !azureEndpoint || !azureApiKey) return "";
-  const client = new Client(pgUrl);
-  await client.connect();
+  const pg = new Client(pgUrl);
+  await pg.connect();
   try {
     const embedding = await generateEmbeddingAzure(query, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion);
-    const embeddingStr = `[${embedding.join(",")}]`;
-    const result = await client.queryObject<{ content: string; document_name: string }>(
+    const result = await pg.queryObject<{ content: string; document_name: string }>(
       `SELECT content, document_name FROM document_chunks
        WHERE session_id = $1 ORDER BY embedding <=> $2::vector LIMIT $3`,
-      [sessionId, embeddingStr, topK],
+      [sessionId, `[${embedding.join(",")}]`, topK],
     );
     if (result.rows.length === 0) return "";
-    return (
-      "\n--- Retrieved capability context ---\n" +
+    return "\n--- Retrieved capability context ---\n" +
       result.rows.map((r) => `[${r.document_name}]:\n${r.content}`).join("\n\n---\n\n") +
-      "\n--- End of retrieved context ---\n"
-    );
+      "\n--- End of retrieved context ---\n";
   } catch (e) {
     console.warn("pgvector query failed:", e);
     return "";
   } finally {
-    await client.end();
+    await pg.end();
   }
 }
 
@@ -136,81 +120,69 @@ async function queryKnowledgeBaseChunks(
   topK = 5,
 ): Promise<string> {
   if (!supabaseDbUrl || !azureEndpoint || !azureApiKey) return "";
-  const client = new Client(supabaseDbUrl);
-  await client.connect();
+  const pg = new Client(supabaseDbUrl);
+  await pg.connect();
   try {
-
     const embedding = await generateEmbeddingAzure(query, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion);
-    const embeddingStr = `[${embedding.join(",")}]`;
-    const result = await client.queryObject<{ content: string; document_name: string; category: string }>(
+    const result = await pg.queryObject<{ content: string; document_name: string; category: string }>(
       `SELECT content, document_name, category FROM knowledge_base_chunks
        ORDER BY embedding <=> $1::vector LIMIT $2`,
-      [embeddingStr, topK],
+      [`[${embedding.join(",")}]`, topK],
     );
     if (result.rows.length === 0) return "";
-    return (
-      "\n--- Style & Reference Templates (permanent knowledge base) ---\n" +
+    return "\n--- Style & Reference Templates ---\n" +
       result.rows.map((r) => `[${r.document_name} | ${r.category}]:\n${r.content}`).join("\n\n---\n\n") +
-      "\n--- End of style templates ---\n"
-    );
+      "\n--- End of style templates ---\n";
   } catch (e) {
     console.warn("knowledge_base_chunks query failed:", e);
     return "";
   } finally {
-    await client.end();
+    await pg.end();
   }
 }
 
-// ── Claude helper (non-streaming) ────────────────────────────────────────────
-async function callClaude(
-  apiKey: string, model: string,
-  messages: { role: string; content: string }[],
-  step = "unknown", maxRetries = 2, maxTokens = 8192,
-): Promise<string> {
-  const systemMsg = messages.find((m) => m.role === "system");
-  const chatMessages = messages.filter((m) => m.role !== "system");
-  const sanitizedMessages = chatMessages.map((m) => ({ ...m, content: sanitize(m.content) }));
-  const body: Record<string, unknown> = { model, max_tokens: maxTokens, messages: sanitizedMessages };
-  if (systemMsg) body.system = sanitize(systemMsg.content);
-  const bodyStr = sanitizeJson(JSON.stringify(body));
-  let lastStatus = 0;
+// ── Anthropic SDK streaming helper ────────────────────────────────────────────
+// Streams one Claude pass, forwarding tokens as proposal_token SSE events.
+// Returns proposalComplete=true ONLY when the sentinel marker is present —
+// stop_reason "end_turn" is NOT sufficient because Claude often ends a turn
+// mid-proposal at a sentence boundary without finishing all sections.
+async function streamOnce(
+  ai: Anthropic,
+  sendEvent: (payload: object) => Promise<void>,
+  model: string,
+  system: string,
+  messages: Anthropic.MessageParam[],
+): Promise<{ proposalComplete: boolean; passText: string }> {
+  const stream = ai.messages.stream({
+    model,
+    max_tokens: 8192,
+    system: sanitize(system),
+    messages,
+  });
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    if (attempt > 0) {
-      const delay = lastStatus === 529 ? 15_000 * attempt : 3_000 * attempt;
-      await new Promise((r) => setTimeout(r, delay));
-    }
-    let response: Response;
-    try {
-      response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-        body: bodyStr,
-      });
-    } catch (e) {
-      if (attempt < maxRetries) continue;
-      throw new Error(`[${step}] Network error: ${e}`);
-    }
-    if (response.ok) {
-      const data = await response.json();
-      return data.content?.[0]?.text ?? "";
-    }
-    lastStatus = response.status;
-    const errBody = await response.text();
-    console.error(`[${step}] Claude ${response.status}:`, errBody.slice(0, 300));
-    if (response.status >= 500 && attempt < maxRetries) continue;
-    if (response.status === 429) throw new Error(`[${step}] Rate limit. Please retry.`);
-    throw new Error(`[${step}] Claude error (${response.status}): ${errBody.slice(0, 200)}`);
+  let passText = "";
+  for await (const text of stream.textStream) {
+    passText += text;
+    await sendEvent({ type: "proposal_token", token: text });
   }
-  throw new Error(`[${step}] Failed after ${maxRetries + 1} attempts`);
+
+  // Wait for the full message metadata (stop_reason etc.) — textStream
+  // completes when all tokens arrive; finalMessage() just resolves the same.
+  await stream.finalMessage();
+
+  const hasSentinel = passText.includes("<<<END_OF_PROPOSAL>>>");
+  if (hasSentinel) {
+    await sendEvent({ type: "proposal_strip_sentinel", sentinel: "<<<END_OF_PROPOSAL>>>" });
+  }
+
+  return { proposalComplete: hasSentinel, passText };
 }
 
-// ── Step 1: Section-assign extracted requirements ─────────────────────────────
+// ── Step 1: Assign requirements to sections ───────────────────────────────────
 async function executeExtractRequirements(
   preExtractedItems: PreExtractedItem[],
   sectionHeadings: string[],
-  apiKey: string,
-  model: string,
+  ai: Anthropic,
 ) {
   const totalShall = preExtractedItems.filter((i) => i.type === "shall").length;
   const totalMust  = preExtractedItems.filter((i) => i.type === "must").length;
@@ -236,21 +208,14 @@ async function executeExtractRequirements(
     .map((item) => `${item.id} [${item.type.toUpperCase()}] "${item.text.slice(0, 120).replace(/"/g, "'")}..."`)
     .join("\n");
 
-  const systemPrompt = `You are an RFP compliance analyst. For each requirement ID, assign the most appropriate section heading. Respond with valid JSON only — no markdown, no extra text.
+  const response = await ai.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 4096,
+    system: sanitize(`You are an RFP compliance analyst. For each requirement ID, assign the most appropriate section heading. Respond with valid JSON only — no markdown, no extra text.\n\n${headingList}\n\nOutput format:\n{\n  "assignments": { "R-001": "<section>", "R-002": "<section>" },\n  "summary": "<2-3 sentence executive summary of requirements scope>"\n}`),
+    messages: [{ role: "user", content: sanitize(`Assign sections for these ${itemsWithIds.length} requirements (${totalShall} shall, ${totalMust} must):\n\n${itemLines}`) }],
+  });
 
-${headingList}
-
-Output format:
-{
-  "assignments": { "R-001": "<section>", "R-002": "<section>" },
-  "summary": "<2-3 sentence executive summary of requirements scope>"
-}`;
-
-  const raw = await callClaude(apiKey, model, [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: `Assign sections for these ${itemsWithIds.length} requirements (${totalShall} shall, ${totalMust} must):\n\n${itemLines}` },
-  ], "step1_sections");
-
+  const raw = response.content[0]?.text ?? "";
   let assignments: Record<string, string> = {};
   let summary = `Found ${totalShall} SHALL and ${totalMust} MUST requirements in the RFP.`;
   try {
@@ -272,40 +237,28 @@ async function executeBuildOutline(
   requirementsResult: any,
   rfpDocuments: RFPDocument[],
   capabilityContext: string,
-  apiKey: string,
-  model: string,
+  ai: Anthropic,
 ): Promise<{ sections: Array<{ title: string; requirements: string[]; keyPoints: string[] }> }> {
   const reqSummary = requirementsResult.requirements
     .slice(0, 60)
     .map((r: any) => `${r.id} [${r.type.toUpperCase()}] [${r.section}] ${r.text.slice(0, 100)}`)
     .join("\n");
 
-  const rfpSnippet = rfpDocuments.map((d) => `--- ${sanitize(d.name)} ---\n${sanitize(truncateDoc(d.content))}`).join("\n\n");
+  const rfpSnippet = rfpDocuments
+    .map((d) => `--- ${sanitize(d.name)} ---\n${sanitize(truncateDoc(d.content))}`)
+    .join("\n\n");
 
-  const systemPrompt = `You are an expert government proposal writer. Create a structured proposal outline that addresses every mandatory requirement. Respond with valid JSON only — no markdown, no extra text.
+  const response = await ai.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 4096,
+    system: sanitize(`You are an expert government proposal writer. Create a structured proposal outline that addresses every mandatory requirement. Respond with valid JSON only — no markdown, no extra text.\n\nOutput format:\n{\n  "sections": [\n    {\n      "title": "<Section number and title>",\n      "requirements": ["R-001", "R-005"],\n      "keyPoints": ["<1-sentence description of what this section will cover>"]\n    }\n  ]\n}\n\nRules:\n- Every requirement ID must appear in at least one section\n- Sections should mirror the RFP structure where possible\n- Include all standard sections: Executive Summary, Technical Approach, Management Approach, Past Performance, Schedule, Risk Management, Price/Cost Narrative, Architecture Diagram (placeholder)\n- Aim for 8-12 sections`),
+    messages: [{
+      role: "user",
+      content: sanitize(`Create a proposal outline for an RFP with ${requirementsResult.totalShall} SHALL and ${requirementsResult.totalMust} MUST requirements.\n\nRFP Summary: ${requirementsResult.summary}\n\nRequirements:\n${reqSummary}\n\nRFP Content:\n${rfpSnippet}\n\n${capabilityContext ? "Company Capability Context:\n" + capabilityContext.slice(0, 4000) : ""}`),
+    }],
+  });
 
-Output format:
-{
-  "sections": [
-    {
-      "title": "<Section number and title>",
-      "requirements": ["R-001", "R-005"],
-      "keyPoints": ["<1-sentence description of what this section will cover>"]
-    }
-  ]
-}
-
-Rules:
-- Every requirement ID must appear in at least one section
-- Sections should mirror the RFP's structure where possible
-- Include all standard government proposal sections: Executive Summary, Technical Approach, Management Approach, Past Performance, Schedule, Risk Management, Price/Cost Narrative, Architecture Diagram (placeholder)
-- Aim for 8-12 sections`;
-
-  const raw = await callClaude(apiKey, model, [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: `Create a proposal outline for an RFP with ${requirementsResult.totalShall} SHALL and ${requirementsResult.totalMust} MUST requirements.\n\nRFP Summary: ${requirementsResult.summary}\n\nRequirements:\n${reqSummary}\n\nRFP Content:\n${rfpSnippet}\n\n${capabilityContext ? "Company Capability Context:\n" + capabilityContext.slice(0, 4000) : ""}` },
-  ], "step2_outline");
-
+  const raw = response.content[0]?.text ?? "";
   try {
     return extractJSON(raw);
   } catch {
@@ -322,9 +275,7 @@ Rules:
   }
 }
 
-// ── Step 3: Stream proposal text (single pass — frontend owns continuation) ───
-// Returns proposalComplete=true only when the sentinel is present or the model
-// signalled end_turn and the text ends cleanly. The frontend loops up to 8 times.
+// ── Step 3: Stream first proposal pass ───────────────────────────────────────
 async function streamProposal(
   sendEvent: (payload: object) => Promise<void>,
   requirementsResult: any,
@@ -333,7 +284,7 @@ async function streamProposal(
   capabilityDocuments: RFPDocument[],
   companyName: string,
   capabilityContext: string,
-  apiKey: string,
+  ai: Anthropic,
 ): Promise<{ proposalComplete: boolean }> {
   const reqList = requirementsResult.requirements
     .map((r: any) => `• ${r.id} [${r.type.toUpperCase()}] [Section: ${r.section}]: ${r.text.slice(0, 200)}`)
@@ -346,31 +297,23 @@ async function streamProposal(
   const rfpText = rfpDocuments.map((d) => `=== ${sanitize(d.name)} ===\n${sanitize(truncateDoc(d.content))}`).join("\n\n");
   const capText = capabilityDocuments.map((d) => `=== ${sanitize(d.name)} ===\n${sanitize(truncateDoc(d.content))}`).join("\n\n");
 
-  const systemPrompt = `You are an expert government contract proposal writer acting as a senior technical writer with 20+ years of federal contracting experience.
+  const system = `You are an expert government contract proposal writer acting as a senior technical writer with 20+ years of federal contracting experience.
 
-MISSION DIRECTIVE (from proposal management):
-"Use the format and layouts of the provided reference documents to build a proposal based on the Request for Proposal. Make it look as much as possible like human written. The job of the agent is to take the uploaded documents, use PostgreSQL to index the information and do a retrieval, take a very detailed look at chapters, sections, important elements of 'must' and 'shall', and then generate a clear outline following point by point all the concerns, 'shall', and 'must' required by the request for proposal, and address these points using the capability statement of the company. The AI Agent will act as a human writer to accomplish this. Make the design of the proposal written professional, extremely well formatted with zero grammar mistakes. IT IS VERY IMPORTANT THAT ALL OF THE SHALL AND MUST ARE ADDRESSED. At the architecture stage, have a placeholder for the architecture diagram."
+MISSION DIRECTIVE: Use the format and layouts of the provided reference documents to build a proposal based on the RFP. Make it look as much as possible like human written. Address every 'shall' and 'must' requirement using the company capability statement. Act as a human writer — professional, extremely well formatted, zero grammar mistakes.
 
 ═══ ABSOLUTE RULES ═══
-1. EVERY SHALL and MUST requirement listed in the Requirements Compliance Matrix below MUST be explicitly addressed in the proposal body — failure to address even one is a fatal non-compliance.
-2. Write as a human: active voice, varied sentence structure, confident and specific. Never sound like AI.
-3. Zero grammar or spelling errors. Use formal professional English.
-4. Write with depth — each major section must be substantive (not one-liners).
+1. EVERY SHALL and MUST requirement MUST be explicitly addressed — failure is fatal non-compliance.
+2. Active voice, varied sentence structure, confident and specific. Never sound like AI.
+3. Zero grammar or spelling errors. Formal professional English.
+4. Each major section must be substantive — minimum 3 full paragraphs.
 5. Reference specific RFP section numbers when addressing requirements.
-6. Use the company's capability statement and retrieved context to show HOW the company will comply — never just "we will comply."
+6. Show HOW the company will comply — never just "we will comply."
 7. Architecture section MUST contain the placeholder block exactly as specified.
 
 ═══ STRICT MARKDOWN FORMATTING RULES ═══
-Every formatting element below is mandatory — no exceptions:
-
-HEADINGS:
-- # Section Title  ← one blank line before AND after every H1
-- ## Subsection    ← one blank line before AND after every H2
-- ### Sub-sub      ← one blank line before AND after every H3
-
-PARAGRAPHS: Every paragraph separated by one blank line. Never run two paragraphs together.
-
-COVER PAGE — use this exact template, one field per line, no prose:
+HEADINGS: one blank line before AND after every # H1, ## H2, ### H3
+PARAGRAPHS: separated by one blank line. Never run two paragraphs together.
+COVER PAGE — exact template:
 # [PROPOSAL TITLE]
 ## [SUBTITLE / RFP DESCRIPTION]
 **RFP Number:** [number]
@@ -390,40 +333,31 @@ COVER PAGE — use this exact template, one field per line, no prose:
 
 **Proposal Due Date:** [date and time]
 
-BULLET LISTS — every item on its own line, preceded by a blank line, one blank line after the list:
+BULLET LISTS — blank line before and after:
 - Item one
 - Item two
-- Item three
 
-NUMBERED LISTS — same spacing rules as bullets:
+NUMBERED LISTS — same spacing:
 1. First step
 2. Second step
 
-TABLES — blank line before AND after every table:
+TABLES — blank line before AND after:
+| Column A | Column B |
+|----------|----------|
+| data     | data     |
 
-| Column A | Column B | Column C |
-|----------|----------|----------|
-| data     | data     | data     |
-
-BLOCKQUOTES (architecture placeholder):
+ARCHITECTURE PLACEHOLDER:
 > [ARCHITECTURE DIAGRAM — Insert as Exhibit A]
 
-HORIZONTAL RULES — use --- on its own line with blank lines around it.
-
-NEVER merge address lines, contact info, or list items onto a single line.
-NEVER skip blank lines between headings and body text.
-
-GLOSSARIES AND ACRONYM LISTS — NEVER use a table. Format every glossary or acronym list as inline definition entries, one per line:
-
+GLOSSARIES — NEVER use a table. One definition per line:
 **ALM** — Application Lifecycle Management
 **API** — Application Programming Interface
-**RBAC** — Role-Based Access Control
 
-TABLES — only use tables for: compliance matrices, risk registers, staffing matrices, schedule milestones, and performance metrics. Never use tables for glossaries, acronyms, or simple key-value lists.
+TABLES only for: compliance matrices, risk registers, staffing matrices, schedule milestones, performance metrics.
 
-Write naturally and professionally. Do not truncate any section — write every section completely before moving to the next.`;
+Write naturally and professionally. Do not truncate — write every section completely.`;
 
-  const userPrompt = `Write a complete, professional government contract technical proposal for **${companyName || "Our Company"}**.
+  const user = `Write a complete, professional government contract technical proposal for **${companyName || "Our Company"}**.
 
 ---
 
@@ -453,89 +387,102 @@ ${capabilityContext || "No additional context available."}
 ---
 
 CRITICAL INSTRUCTIONS:
-1. Write the ENTIRE proposal from start to finish — do NOT stop after the Table of Contents or after any single section.
-2. Every section in the outline MUST be fully written with substantive content (minimum 3 paragraphs each).
-3. Do not produce a summary or abbreviation of any section — write the full text.
-4. After writing Section 1, immediately continue to Section 2, then Section 3, and so on until the last section.
-5. End the proposal with the Requirements Compliance Matrix table showing every requirement ID and which section addresses it.
-6. When the proposal is fully complete, write this exact line on its own line: <<<END_OF_PROPOSAL>>>
+1. Write the ENTIRE proposal from start to finish — do NOT stop after any single section.
+2. Every section in the outline MUST be fully written with substantive content (minimum 3 paragraphs).
+3. Do not produce a summary or abbreviation — write the full text.
+4. After Section 1, immediately continue to Section 2, then Section 3, and so on.
+5. End with the Requirements Compliance Matrix table showing every requirement ID and which section addresses it.
+6. When the proposal is FULLY complete, write this exact marker on its own line: <<<END_OF_PROPOSAL>>>
 
 BEGIN THE COMPLETE PROPOSAL NOW:`;
 
-  // ── Single Claude pass — stream tokens, capture stop_reason ─────────────────
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: sanitizeJson(JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 8192,
-      stream: true,
-      system: sanitize(systemPrompt),
-      messages: [{ role: "user", content: sanitize(userPrompt) }],
-    })),
-  });
+  return streamOnce(ai, sendEvent, "claude-sonnet-4-6", system, [
+    { role: "user", content: sanitize(user) },
+  ]);
+}
 
-  if (!resp.ok) {
-    const errBody = await resp.text();
-    throw new Error(`Claude streaming error (${resp.status}): ${errBody.slice(0, 300)}`);
-  }
-
-  const reader = resp.body!.getReader();
-  const decoder = new TextDecoder();
-  let buf = "";
-  let stopReason = "end_turn";
-  let passText = "";
+// ── Continuation pass (pass 2+) ───────────────────────────────────────────────
+// Uses the planned section list to tell Claude exactly which sections are missing.
+async function runContinuation(
+  sendEvent: (payload: object) => Promise<void>,
+  writer: WritableStreamDefaultWriter,
+  continuationText: string,
+  continuationPass: number,
+  companyName: string,
+  outlineSections: string[],
+  ai: Anthropic,
+): Promise<void> {
+  const encoder = new TextEncoder();
+  let heartbeatStopped = false;
+  const heartbeat = setInterval(async () => {
+    if (heartbeatStopped) return;
+    try { await writer.write(encoder.encode(": heartbeat\n\n")); } catch { /* stream closed */ }
+  }, 20_000);
 
   try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      const lines = buf.split("\n");
-      buf = lines.pop() ?? "";
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith("data:")) continue;
-        const data = trimmed.slice(5).trim();
-        if (data === "[DONE]") continue;
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
-            const token = parsed.delta.text ?? "";
-            if (token) {
-              passText += token;
-              await sendEvent({ type: "proposal_token", token });
-            }
-          }
-          if (parsed.type === "message_delta" && parsed.delta?.stop_reason) {
-            stopReason = parsed.delta.stop_reason;
-          }
-        } catch { /* skip malformed */ }
-      }
-    }
+    await sendEvent({
+      type: "tool_start", tool: "write_proposal",
+      message: `Continuation pass ${continuationPass} — writing remaining sections…`,
+    });
+
+    // Work out which planned sections are still missing by scanning headings
+    // already present in the accumulated text.
+    const cleanTitle = (t: string) => t.replace(/^\d+\.\s*/, "").toLowerCase().trim();
+    const alreadyWritten = outlineSections.filter((t) =>
+      continuationText.toLowerCase().includes(cleanTitle(t))
+    );
+    const stillNeeded = outlineSections.filter((t) =>
+      !continuationText.toLowerCase().includes(cleanTitle(t))
+    );
+
+    const sectionStatus = outlineSections.length > 0
+      ? `PLANNED SECTIONS:\n${outlineSections.map((s, i) => {
+          const done = alreadyWritten.includes(s);
+          return `  ${i + 1}. ${s} ${done ? "✓ written" : "← STILL NEEDED"}`;
+        }).join("\n")}`
+      : "";
+
+    const missingList = stillNeeded.length > 0
+      ? `\nSECTIONS STILL NEEDED (write ALL of these):\n${stillNeeded.map((s) => `  • ${s}`).join("\n")}\n`
+      : "\nAll planned sections appear to be present — finish any incomplete section and write the Requirements Compliance Matrix.\n";
+
+    const system = `You are an expert government contract proposal writer continuing a large proposal for ${companyName || "Our Company"}.
+
+The proposal was cut off mid-generation due to output length limits. Your job is to continue writing from EXACTLY where it stopped.
+
+RULES:
+- Do NOT repeat, summarize, or restate anything already written.
+- Pick up at the exact word where the text ends and continue seamlessly.
+- Maintain identical tone, heading style, and Markdown formatting (blank lines around headings, bullets, tables).
+- Write each missing section with full depth — minimum 3 substantive paragraphs per section.
+- After ALL sections are written, end with <<<END_OF_PROPOSAL>>> on its own line.`;
+
+    const user = `${sectionStatus}${missingList}
+THE PROPOSAL SO FAR (last portion — DO NOT REPEAT):
+${sanitize(continuationText.slice(-6000))}
+--- END OF WHAT HAS BEEN WRITTEN ---
+
+Continue writing from the exact word above. Write all remaining sections completely, then end with <<<END_OF_PROPOSAL>>>.`;
+
+    const { proposalComplete } = await streamOnce(
+      ai, sendEvent, "claude-sonnet-4-6", system,
+      [{ role: "user", content: sanitize(user) }],
+    );
+
+    await sendEvent({
+      type: "agent_done",
+      proposalComplete,
+      message: proposalComplete
+        ? `Proposal complete after pass ${continuationPass}.`
+        : `Pass ${continuationPass} done — more sections remaining…`,
+    });
+  } catch (err) {
+    await sendEvent({ type: "agent_error", message: err instanceof Error ? err.message : "Unknown error" });
   } finally {
-    reader.releaseLock();
+    heartbeatStopped = true;
+    clearInterval(heartbeat);
+    await writer.close();
   }
-
-  // Proposal is complete when sentinel present, or model hit end_turn and text
-  // ends on a sentence boundary (not cut off mid-word by max_tokens).
-  const hasSentinel = passText.includes("<<<END_OF_PROPOSAL>>>");
-  const trimmed = passText.trimEnd();
-  const endedCleanly = stopReason !== "max_tokens" &&
-    trimmed.length > 0 &&
-    [".", "!", "?", "|", "]"].includes(trimmed[trimmed.length - 1]);
-
-  const proposalComplete = hasSentinel || endedCleanly;
-
-  if (hasSentinel) {
-    await sendEvent({ type: "proposal_strip_sentinel", sentinel: "<<<END_OF_PROPOSAL>>>" });
-  }
-
-  return { proposalComplete };
 }
 
 // ── Agent Orchestrator ────────────────────────────────────────────────────────
@@ -548,7 +495,7 @@ async function runAgent(
   sessionId: string,
   preExtractedRequirements: PreExtractedItem[],
   sectionHeadings: string[],
-  apiKey: string,
+  anthropicApiKey: string,
   azureEndpoint: string,
   azureApiKey: string,
   embeddingDeployment: string,
@@ -556,8 +503,6 @@ async function runAgent(
   pgUrl: string,
   supabaseDbUrl: string,
 ) {
-  // Keep-alive heartbeat — sends a comment every 20 s to prevent proxy/CDN
-  // from closing the SSE connection during long Claude API calls.
   const encoder = new TextEncoder();
   let heartbeatStopped = false;
   const heartbeat = setInterval(async () => {
@@ -565,20 +510,21 @@ async function runAgent(
     try { await writer.write(encoder.encode(": heartbeat\n\n")); } catch { /* stream closed */ }
   }, 20_000);
 
-  try {
-    const haikuModel  = "claude-haiku-4-5-20251001";
-    const sonnetModel = "claude-sonnet-4-6";
+  // Create one Anthropic SDK client for all calls in this pipeline.
+  // maxRetries=3 gives automatic exponential-backoff retries for 5xx/429.
+  const ai = new Anthropic({ apiKey: anthropicApiKey, maxRetries: 3 });
 
-    // ── Step 1: Section-assign requirements ──
+  try {
+    // ── Step 1 ──
     await sendEvent({ type: "tool_start", tool: "extract_requirements",
       message: `Analysing ${preExtractedRequirements.filter(r => r.type === "shall").length} SHALL and ${preExtractedRequirements.filter(r => r.type === "must").length} MUST requirements — assigning sections...` });
 
     const requirementsResult = await executeExtractRequirements(
-      preExtractedRequirements, sectionHeadings, apiKey, haikuModel,
+      preExtractedRequirements, sectionHeadings, ai,
     );
     await sendEvent({ type: "tool_result", tool: "extract_requirements", data: requirementsResult });
 
-    // ── Step 2: Retrieve capability context ──
+    // ── Step 2 ──
     await sendEvent({ type: "tool_start", tool: "retrieve_context",
       message: "Querying knowledge base for relevant capability information..." });
 
@@ -590,7 +536,6 @@ async function runAgent(
       requirementsResult.requirements.slice(0, 5).map((r: any) => r.text).join(" "),
       sessionId, pgUrl, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion, 6,
     );
-    // Also query the permanent style/reference knowledge base (stored in Supabase)
     const styleTemplateContext = await queryKnowledgeBaseChunks(
       "proposal format style template management plan staffing past performance technical approach",
       supabaseDbUrl, azureEndpoint, azureApiKey, embeddingDeployment, apiVersion, 5,
@@ -598,142 +543,34 @@ async function runAgent(
     const combinedContext = [capabilityContext, requirementsContext, styleTemplateContext].filter(Boolean).join("\n\n");
 
     await sendEvent({ type: "tool_start", tool: "retrieve_context",
-      message: `Retrieved ${combinedContext ? "capability + style template context" : "context (knowledge base may not be indexed yet)"} from PostgreSQL.` });
+      message: `Retrieved ${combinedContext ? "capability + style template context" : "context (knowledge base may not be seeded yet)"} from PostgreSQL.` });
 
-    // ── Step 3: Build outline ──
+    // ── Step 3 ──
     await sendEvent({ type: "tool_start", tool: "build_outline",
       message: "Building proposal outline — mapping each requirement to a section..." });
 
-    const outline = await executeBuildOutline(
-      requirementsResult, rfpDocuments, combinedContext, apiKey, sonnetModel,
-    );
+    const outline = await executeBuildOutline(requirementsResult, rfpDocuments, combinedContext, ai);
     await sendEvent({ type: "tool_result", tool: "build_outline", data: outline });
-
     await sendEvent({ type: "tool_start", tool: "build_outline",
       message: `Outline complete — ${outline.sections.length} sections planned. Starting proposal writing...` });
 
-    // ── Step 4: Stream proposal ──
+    // ── Step 4 ──
     await sendEvent({ type: "tool_start", tool: "write_proposal",
       message: `Writing full proposal — ${requirementsResult.totalShall + requirementsResult.totalMust} requirements to address. Streaming output...` });
 
     const { proposalComplete } = await streamProposal(
       sendEvent, requirementsResult, outline,
-      rfpDocuments, capabilityDocuments, companyName, combinedContext, apiKey,
+      rfpDocuments, capabilityDocuments, companyName, combinedContext, ai,
     );
 
-    // proposalComplete=false tells the frontend to send a continuation pass
+    // Send outline section titles so the frontend can include them in continuation calls
     await sendEvent({
       type: "agent_done",
       proposalComplete,
+      outlineSections: outline.sections.map((s: any) => s.title),
       message: proposalComplete
         ? `Proposal complete. Addressed ${requirementsResult.totalShall} SHALL and ${requirementsResult.totalMust} MUST requirements.`
         : `Pass 1 complete — proposal not finished yet. Continuing…`,
-    });
-  } catch (err) {
-    await sendEvent({ type: "agent_error", message: err instanceof Error ? err.message : "Unknown error" });
-  } finally {
-    heartbeatStopped = true;
-    clearInterval(heartbeat);
-    await writer.close();
-  }
-}
-
-// ── Continuation handler (pass 2+): skip agent pipeline, stream continuation ──
-async function runContinuation(
-  sendEvent: (payload: object) => Promise<void>,
-  writer: WritableStreamDefaultWriter,
-  continuationText: string,
-  continuationPass: number,
-  companyName: string,
-  apiKey: string,
-): Promise<void> {
-  const encoder = new TextEncoder();
-  let heartbeatStopped = false;
-  const heartbeat = setInterval(async () => {
-    if (heartbeatStopped) return;
-    try { await writer.write(encoder.encode(": heartbeat\n\n")); } catch { /* stream closed */ }
-  }, 20_000);
-
-  try {
-    await sendEvent({
-      type: "tool_start", tool: "write_proposal",
-      message: `Continuing proposal — pass ${continuationPass}…`,
-    });
-
-    const systemPrompt = `You are an expert government contract proposal writer. You are continuing a proposal that was cut off mid-generation due to output length limits. Continue seamlessly from EXACTLY where it stopped — do not repeat, summarize, or restate anything already written. Write as if you are the same author continuing the same document. Maintain the same tone, heading style, and formatting (Markdown with proper blank lines around headings, bullets, and tables). When you have written all remaining sections, end with <<<END_OF_PROPOSAL>>> on its own line.`;
-
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: sanitizeJson(JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8192,
-        stream: true,
-        system: sanitize(systemPrompt),
-        messages: [
-          { role: "user", content: sanitize(`You are writing a government proposal for ${companyName || "Our Company"}. The proposal was cut off below. Continue writing from exactly where it stopped, completing all remaining sections.\n\n--- PROPOSAL SO FAR (do NOT repeat any of this) ---\n${continuationText.slice(-8000)}\n--- END OF WHAT HAS BEEN WRITTEN SO FAR ---\n\nContinue the proposal now, picking up seamlessly from the last word above:`) },
-        ],
-      })),
-    });
-
-    if (!resp.ok) {
-      const errBody = await resp.text();
-      throw new Error(`Claude streaming error (${resp.status}): ${errBody.slice(0, 300)}`);
-    }
-
-    const reader = resp.body!.getReader();
-    const decoder = new TextDecoder();
-    let buf = "";
-    let passText = "";
-
-    try {
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data:")) continue;
-          const data = trimmed.slice(5).trim();
-          if (data === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
-              const token = parsed.delta.text ?? "";
-              if (token) {
-                passText += token;
-                await sendEvent({ type: "proposal_token", token });
-              }
-            }
-          } catch { /* skip malformed */ }
-        }
-      }
-    } finally {
-      reader.releaseLock();
-    }
-
-    const hasSentinel = passText.includes("<<<END_OF_PROPOSAL>>>");
-    const trimmedPass = passText.trimEnd();
-    const endedCleanly = trimmedPass.length > 0 &&
-      [".", "!", "?", "|", "]"].includes(trimmedPass[trimmedPass.length - 1]);
-    const proposalComplete = hasSentinel || endedCleanly;
-
-    if (hasSentinel) {
-      await sendEvent({ type: "proposal_strip_sentinel", sentinel: "<<<END_OF_PROPOSAL>>>" });
-    }
-
-    await sendEvent({
-      type: "agent_done",
-      proposalComplete,
-      message: proposalComplete
-        ? `Proposal complete after pass ${continuationPass}.`
-        : `Pass ${continuationPass} done — continuing…`,
     });
   } catch (err) {
     await sendEvent({ type: "agent_error", message: err instanceof Error ? err.message : "Unknown error" });
@@ -750,70 +587,72 @@ serve(async (req) => {
 
   try {
     const body = await req.json() as {
-      rfpDocuments: RFPDocument[];
-      capabilityDocuments: RFPDocument[];
+      rfpDocuments?: RFPDocument[];
+      capabilityDocuments?: RFPDocument[];
       companyName?: string;
       sessionId?: string;
       preExtractedRequirements?: PreExtractedItem[];
       sectionHeadings?: string[];
       continuationText?: string;
       continuationPass?: number;
+      outlineSections?: string[];
     };
 
-    const {
-      rfpDocuments, capabilityDocuments, companyName, sessionId,
-      preExtractedRequirements, sectionHeadings,
-      continuationText, continuationPass,
-    } = body;
-
-    const ANTHROPIC_API_KEY         = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
-    const AZURE_OPENAI_ENDPOINT     = (Deno.env.get("AZURE_OPENAI_ENDPOINT") ?? "").replace(/\/+$/, "");
-    const AZURE_OPENAI_API_KEY      = Deno.env.get("AZURE_OPENAI_API_KEY") ?? "";
+    const ANTHROPIC_API_KEY          = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+    const AZURE_OPENAI_ENDPOINT      = (Deno.env.get("AZURE_OPENAI_ENDPOINT") ?? "").replace(/\/+$/, "");
+    const AZURE_OPENAI_API_KEY       = Deno.env.get("AZURE_OPENAI_API_KEY") ?? "";
     const AZURE_EMBEDDING_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT") ?? "text-embedding-ada-002";
-    const AZURE_API_VERSION         = Deno.env.get("AZURE_OPENAI_API_VERSION") ?? "2024-08-01-preview";
-    const AZURE_POSTGRES_URL        = Deno.env.get("AZURE_POSTGRES_URL") ?? "";
-    // knowledge_base_chunks lives in Supabase (admin DB, pgvector pre-enabled)
-    const SUPABASE_DB_URL           = Deno.env.get("SUPABASE_DB_URL") ?? "";
+    const AZURE_API_VERSION          = Deno.env.get("AZURE_OPENAI_API_VERSION") ?? "2024-08-01-preview";
+    const AZURE_POSTGRES_URL         = Deno.env.get("AZURE_POSTGRES_URL") ?? "";
+    const SUPABASE_DB_URL            = Deno.env.get("SUPABASE_DB_URL") ?? "";
 
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const encoder = new TextEncoder();
-
     const sendEvent = async (payload: object) => {
       await writer.write(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
     };
 
-    // Continuation passes (2+): skip the full agent pipeline, stream continuation directly
-    if (continuationText && continuationPass && continuationPass > 1) {
+    const ai = new Anthropic({ apiKey: ANTHROPIC_API_KEY, maxRetries: 3 });
+
+    // Continuation passes (2+): skip the full pipeline, stream directly
+    if (body.continuationText && body.continuationPass && body.continuationPass > 1) {
       runContinuation(
         sendEvent, writer,
-        continuationText, continuationPass,
-        companyName ?? "Our Company",
-        ANTHROPIC_API_KEY,
+        body.continuationText,
+        body.continuationPass,
+        body.companyName ?? "Our Company",
+        body.outlineSections ?? [],
+        ai,
       );
     } else {
       // Pass 1: full agent pipeline
-      if (!rfpDocuments || rfpDocuments.length === 0) throw new Error("No RFP documents provided.");
-
+      if (!body.rfpDocuments || body.rfpDocuments.length === 0) {
+        throw new Error("No RFP documents provided.");
+      }
       runAgent(
         sendEvent, writer,
-        rfpDocuments, capabilityDocuments ?? [],
-        companyName ?? "Our Company",
-        sessionId ?? "",
-        preExtractedRequirements ?? [],
-        sectionHeadings ?? [],
+        body.rfpDocuments, body.capabilityDocuments ?? [],
+        body.companyName ?? "Our Company",
+        body.sessionId ?? "",
+        body.preExtractedRequirements ?? [],
+        body.sectionHeadings ?? [],
         ANTHROPIC_API_KEY,
         AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY,
         AZURE_EMBEDDING_DEPLOYMENT, AZURE_API_VERSION,
-        AZURE_POSTGRES_URL,
-        SUPABASE_DB_URL,
+        AZURE_POSTGRES_URL, SUPABASE_DB_URL,
       );
     }
 
     return new Response(readable, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
+      },
     });
   } catch (e) {
     console.error("write-proposal error:", e);

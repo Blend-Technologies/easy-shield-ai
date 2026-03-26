@@ -330,7 +330,6 @@ serve(async (req) => {
     try {
       // Ensure the table exists (creates it if missing in Azure PostgreSQL)
       await client.queryObject(`
-        CREATE EXTENSION IF NOT EXISTS vector;
         CREATE TABLE IF NOT EXISTS knowledge_base_chunks (
           id            BIGSERIAL PRIMARY KEY,
           document_name TEXT        NOT NULL,

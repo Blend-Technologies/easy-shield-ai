@@ -352,7 +352,10 @@ const ProposalWriter = () => {
                 setProposal(proposalText);
                 break;
               case "agent_done":
-                agentFinished = true;
+                // Only mark finished when the edge function confirms proposal is complete.
+                // proposalComplete=false means the edge function hit max_tokens and the
+                // frontend continuation loop should fire the next pass.
+                if (event.proposalComplete !== false) agentFinished = true;
                 appendLog({ type: "agent_done", message: event.message });
                 break;
               case "agent_error":
@@ -364,7 +367,7 @@ const ProposalWriter = () => {
         reader.releaseLock();
       }
 
-      return { done: agentFinished || looksComplete(proposalText) };
+      return { done: agentFinished };
     };
 
     try {

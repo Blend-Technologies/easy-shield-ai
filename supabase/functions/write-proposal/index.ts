@@ -322,7 +322,9 @@ Rules:
   }
 }
 
-// ── Step 3: Stream proposal text ──────────────────────────────────────────────
+// ── Step 3: Stream proposal text (single pass — frontend owns continuation) ───
+// Returns proposalComplete=true only when the sentinel is present or the model
+// signalled end_turn and the text ends cleanly. The frontend loops up to 8 times.
 async function streamProposal(
   sendEvent: (payload: object) => Promise<void>,
   requirementsResult: any,
@@ -332,7 +334,7 @@ async function streamProposal(
   companyName: string,
   capabilityContext: string,
   apiKey: string,
-): Promise<void> {
+): Promise<{ proposalComplete: boolean }> {
   const reqList = requirementsResult.requirements
     .map((r: any) => `• ${r.id} [${r.type.toUpperCase()}] [Section: ${r.section}]: ${r.text.slice(0, 200)}`)
     .join("\n");
@@ -460,118 +462,80 @@ CRITICAL INSTRUCTIONS:
 
 BEGIN THE COMPLETE PROPOSAL NOW:`;
 
-  // ── Streaming helper — one pass, returns stop_reason and accumulated text ──
-  async function streamOnce(messages: { role: string; content: string }[]): Promise<{ stopReason: string; text: string }> {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: sanitizeJson(JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8192,   // safe per-pass limit; continuation loop handles the rest
-        stream: true,
-        system: sanitize(systemPrompt),
-        messages,
-      })),
-    });
+  // ── Single Claude pass — stream tokens, capture stop_reason ─────────────────
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: sanitizeJson(JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 8192,
+      stream: true,
+      system: sanitize(systemPrompt),
+      messages: [{ role: "user", content: sanitize(userPrompt) }],
+    })),
+  });
 
-    if (!resp.ok) {
-      const errBody = await resp.text();
-      throw new Error(`Claude streaming error (${resp.status}): ${errBody.slice(0, 300)}`);
-    }
+  if (!resp.ok) {
+    const errBody = await resp.text();
+    throw new Error(`Claude streaming error (${resp.status}): ${errBody.slice(0, 300)}`);
+  }
 
-    const reader = resp.body!.getReader();
-    const decoder = new TextDecoder();
-    let buf = "";
-    let stopReason = "end_turn";
-    let passText = "";
+  const reader = resp.body!.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let stopReason = "end_turn";
+  let passText = "";
 
-    try {
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data:")) continue;
-          const data = trimmed.slice(5).trim();
-          if (data === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
-              const token = parsed.delta.text ?? "";
-              if (token) {
-                passText += token;
-                await sendEvent({ type: "proposal_token", token });
-              }
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const data = trimmed.slice(5).trim();
+        if (data === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
+            const token = parsed.delta.text ?? "";
+            if (token) {
+              passText += token;
+              await sendEvent({ type: "proposal_token", token });
             }
-            // Capture why the model stopped
-            if (parsed.type === "message_delta" && parsed.delta?.stop_reason) {
-              stopReason = parsed.delta.stop_reason;
-            }
-          } catch { /* skip malformed */ }
-        }
+          }
+          if (parsed.type === "message_delta" && parsed.delta?.stop_reason) {
+            stopReason = parsed.delta.stop_reason;
+          }
+        } catch { /* skip malformed */ }
       }
-    } finally {
-      reader.releaseLock();
     }
-
-    return { stopReason, text: passText };
+  } finally {
+    reader.releaseLock();
   }
 
-  // Returns true when the proposal is genuinely complete:
-  // either the sentinel marker is present, or the text ends on a proper sentence
-  // boundary AND the last non-empty line looks like a closing element.
-  function looksComplete(text: string): boolean {
-    if (text.includes("<<<END_OF_PROPOSAL>>>")) return true;
-    const trimmed = text.trimEnd();
-    if (!trimmed) return false;
-    const lastChar = trimmed[trimmed.length - 1];
-    // Must end with sentence-ending punctuation or a table/list/rule boundary
-    return [".", "!", "?", "|", "-", "]"].includes(lastChar);
-  }
+  // Proposal is complete when sentinel present, or model hit end_turn and text
+  // ends on a sentence boundary (not cut off mid-word by max_tokens).
+  const hasSentinel = passText.includes("<<<END_OF_PROPOSAL>>>");
+  const trimmed = passText.trimEnd();
+  const endedCleanly = stopReason !== "max_tokens" &&
+    trimmed.length > 0 &&
+    [".", "!", "?", "|", "]"].includes(trimmed[trimmed.length - 1]);
 
-  // ── Continuation loop ─────────────────────────────────────────────────────
-  const MAX_CONTINUATIONS = 6;
-  let fullText = "";
-  let messages: { role: string; content: string }[] = [
-    { role: "user", content: sanitize(userPrompt) },
-  ];
+  const proposalComplete = hasSentinel || endedCleanly;
 
-  for (let pass = 0; pass <= MAX_CONTINUATIONS; pass++) {
-    const { stopReason, text } = await streamOnce(messages);
-    fullText += text;
-
-    // Proposal is done if: model signalled end_turn AND text looks complete,
-    // OR the sentinel marker is present.
-    const complete = fullText.includes("<<<END_OF_PROPOSAL>>>") ||
-      (stopReason !== "max_tokens" && looksComplete(fullText));
-
-    if (complete) break;
-
-    if (pass < MAX_CONTINUATIONS) {
-      await sendEvent({
-        type: "tool_start", tool: "write_proposal",
-        message: `Proposal continuation pass ${pass + 2} — writing remaining sections…`,
-      });
-      messages = [
-        { role: "user",      content: sanitize(userPrompt) },
-        { role: "assistant", content: sanitize(fullText) },
-        { role: "user",      content: "The proposal was cut off mid-generation. Continue writing seamlessly from the exact word where it stopped. Do not restate or repeat anything already written. Complete all remaining sections and end with <<<END_OF_PROPOSAL>>>." },
-      ];
-    }
-  }
-
-  // Strip the sentinel marker from the streamed output (already sent to client token-by-token,
-  // but we emit a correction event to remove it from the displayed text)
-  if (fullText.includes("<<<END_OF_PROPOSAL>>>")) {
+  if (hasSentinel) {
     await sendEvent({ type: "proposal_strip_sentinel", sentinel: "<<<END_OF_PROPOSAL>>>" });
   }
+
+  return { proposalComplete };
 }
 
 // ── Agent Orchestrator ────────────────────────────────────────────────────────
@@ -652,13 +616,19 @@ async function runAgent(
     await sendEvent({ type: "tool_start", tool: "write_proposal",
       message: `Writing full proposal — ${requirementsResult.totalShall + requirementsResult.totalMust} requirements to address. Streaming output...` });
 
-    await streamProposal(
+    const { proposalComplete } = await streamProposal(
       sendEvent, requirementsResult, outline,
       rfpDocuments, capabilityDocuments, companyName, combinedContext, apiKey,
     );
 
-    await sendEvent({ type: "agent_done",
-      message: `Proposal complete. Addressed ${requirementsResult.totalShall} SHALL and ${requirementsResult.totalMust} MUST requirements.` });
+    // proposalComplete=false tells the frontend to send a continuation pass
+    await sendEvent({
+      type: "agent_done",
+      proposalComplete,
+      message: proposalComplete
+        ? `Proposal complete. Addressed ${requirementsResult.totalShall} SHALL and ${requirementsResult.totalMust} MUST requirements.`
+        : `Pass 1 complete — proposal not finished yet. Continuing…`,
+    });
   } catch (err) {
     await sendEvent({ type: "agent_error", message: err instanceof Error ? err.message : "Unknown error" });
   } finally {
@@ -748,12 +718,23 @@ async function runContinuation(
       reader.releaseLock();
     }
 
-    const fullText = continuationText + passText;
-    if (fullText.includes("<<<END_OF_PROPOSAL>>>")) {
+    const hasSentinel = passText.includes("<<<END_OF_PROPOSAL>>>");
+    const trimmedPass = passText.trimEnd();
+    const endedCleanly = trimmedPass.length > 0 &&
+      [".", "!", "?", "|", "]"].includes(trimmedPass[trimmedPass.length - 1]);
+    const proposalComplete = hasSentinel || endedCleanly;
+
+    if (hasSentinel) {
       await sendEvent({ type: "proposal_strip_sentinel", sentinel: "<<<END_OF_PROPOSAL>>>" });
     }
 
-    await sendEvent({ type: "agent_done", message: `Continuation pass ${continuationPass} complete.` });
+    await sendEvent({
+      type: "agent_done",
+      proposalComplete,
+      message: proposalComplete
+        ? `Proposal complete after pass ${continuationPass}.`
+        : `Pass ${continuationPass} done — continuing…`,
+    });
   } catch (err) {
     await sendEvent({ type: "agent_error", message: err instanceof Error ? err.message : "Unknown error" });
   } finally {

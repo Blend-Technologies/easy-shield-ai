@@ -358,18 +358,59 @@ MISSION DIRECTIVE (from proposal management):
 6. Use the company's capability statement and retrieved context to show HOW the company will comply — never just "we will comply."
 7. Architecture section MUST contain the placeholder block exactly as specified.
 
-═══ OUTPUT FORMAT ═══
-Use proper Markdown throughout:
-- # for H1 section titles
-- ## for H2 subsections
-- ### for H3 sub-subsections
-- **bold** for key terms and requirement IDs
-- Tables for the compliance matrix and risk register
-- > blockquote for the architecture diagram placeholder
-- --- between major sections
-- Bullet points (- ) for lists, numbered lists (1. ) for sequences
+═══ STRICT MARKDOWN FORMATTING RULES ═══
+Every formatting element below is mandatory — no exceptions:
 
-Write naturally and professionally. Do not truncate sections. Complete every section fully.`;
+HEADINGS:
+- # Section Title  ← one blank line before AND after every H1
+- ## Subsection    ← one blank line before AND after every H2
+- ### Sub-sub      ← one blank line before AND after every H3
+
+PARAGRAPHS: Every paragraph separated by one blank line. Never run two paragraphs together.
+
+COVER PAGE — use this exact template, one field per line, no prose:
+# [PROPOSAL TITLE]
+## [SUBTITLE / RFP DESCRIPTION]
+**RFP Number:** [number]
+**Issued by:** [agency name]
+
+**Submitted by:**
+[Company Name]
+[Street Address]
+[City, State ZIP]
+**Telephone:** [phone]
+**Email:** [email]
+**UEI:** [UEI]  |  **CAGE Code:** [code]
+
+**Procurement Contact:** [name, title]
+[agency address]
+**Email:** [email]
+
+**Proposal Due Date:** [date and time]
+
+BULLET LISTS — every item on its own line, preceded by a blank line, one blank line after the list:
+- Item one
+- Item two
+- Item three
+
+NUMBERED LISTS — same spacing rules as bullets:
+1. First step
+2. Second step
+
+TABLES — blank line before AND after every table:
+
+| Column A | Column B | Column C |
+|----------|----------|----------|
+| data     | data     | data     |
+
+BLOCKQUOTES (architecture placeholder):
+> [ARCHITECTURE DIAGRAM — Insert as Exhibit A]
+
+HORIZONTAL RULES — use --- on its own line with blank lines around it.
+
+NEVER merge address lines, contact info, or list items onto a single line.
+NEVER skip blank lines between headings and body text.
+Write naturally and professionally. Do not truncate any section — write every section completely before moving to the next.`;
 
   const userPrompt = `Write a complete, professional government contract technical proposal for **${companyName || "Our Company"}**.
 
@@ -400,14 +441,26 @@ ${capabilityContext || "No additional context available."}
 
 ---
 
-WRITE THE COMPLETE PROPOSAL NOW. Follow the approved outline section by section. Address every requirement from the compliance matrix within the appropriate sections. For the Architecture section, include the placeholder block. Write the full compliance matrix as Section 2. Do not stop mid-proposal — complete every section.`;
+CRITICAL INSTRUCTIONS:
+1. Write the ENTIRE proposal from start to finish — do NOT stop after the Table of Contents or after any single section.
+2. Every section in the outline MUST be fully written with substantive content (minimum 3 paragraphs each).
+3. Do not produce a summary or abbreviation of any section — write the full text.
+4. After writing Section 1, immediately continue to Section 2, then Section 3, and so on until the last section.
+5. End the proposal with the Requirements Compliance Matrix table showing every requirement ID and which section addresses it.
+
+BEGIN THE COMPLETE PROPOSAL NOW:`;
 
   const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+      "anthropic-beta": "output-128k-2025-02-19",   // extended output tokens
+    },
     body: sanitizeJson(JSON.stringify({
       model: "claude-sonnet-4-6",
-      max_tokens: 16000,
+      max_tokens: 32000,   // extended — allows full multi-section proposals
       stream: true,
       system: sanitize(systemPrompt),
       messages: [{ role: "user", content: sanitize(userPrompt) }],

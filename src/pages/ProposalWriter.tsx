@@ -875,9 +875,44 @@ const ProposalWriter = () => {
 
                     {/* Proposal body */}
                     <style>{`
-                      .proposal-output h1 { color: ${palette.primary}; border-color: ${palette.border}; }
-                      .proposal-output h2 { color: ${palette.secondary}; }
-                      .proposal-output h3 { color: ${palette.accent}; }
+                      .proposal-output { font-size: 14px; line-height: 1.8; }
+
+                      .proposal-output h1 {
+                        color: ${palette.primary};
+                        border-bottom: 2px solid ${palette.border};
+                        font-size: 1.45rem; font-weight: 700;
+                        margin-top: 2.25rem; margin-bottom: 1rem;
+                        padding-bottom: 0.4rem;
+                      }
+                      .proposal-output h2 {
+                        color: ${palette.secondary};
+                        font-size: 1.2rem; font-weight: 600;
+                        margin-top: 1.75rem; margin-bottom: 0.75rem;
+                      }
+                      .proposal-output h3 {
+                        color: ${palette.accent};
+                        font-size: 1.05rem; font-weight: 600;
+                        margin-top: 1.25rem; margin-bottom: 0.5rem;
+                      }
+                      .proposal-output h4 {
+                        font-size: 0.95rem; font-weight: 600;
+                        margin-top: 1rem; margin-bottom: 0.4rem;
+                      }
+                      .proposal-output p {
+                        margin-top: 0.65rem; margin-bottom: 0.65rem;
+                        line-height: 1.85;
+                      }
+                      .proposal-output ul, .proposal-output ol {
+                        padding-left: 1.6rem;
+                        margin-top: 0.65rem; margin-bottom: 0.65rem;
+                      }
+                      .proposal-output li {
+                        margin-top: 0.3rem; margin-bottom: 0.3rem;
+                        line-height: 1.75;
+                      }
+                      .proposal-output li > ul, .proposal-output li > ol {
+                        margin-top: 0.25rem; margin-bottom: 0.25rem;
+                      }
                       .proposal-output blockquote {
                         border-left: 4px solid ${palette.primary};
                         background: ${palette.bg};
@@ -887,20 +922,46 @@ const ProposalWriter = () => {
                         font-size: 12px;
                         white-space: pre-wrap;
                         color: #444;
+                        margin: 1rem 0;
                       }
-                      .proposal-output hr { border-color: ${palette.border}; }
-                      .proposal-output table { border-collapse: collapse; width: 100%; }
-                      .proposal-output th { background: ${palette.primary}18; color: ${palette.secondary}; }
-                      .proposal-output td, .proposal-output th { border: 1px solid ${palette.border}; padding: 6px 10px; }
+                      .proposal-output hr {
+                        border: none;
+                        border-top: 1px solid ${palette.border};
+                        margin: 1.75rem 0;
+                      }
+                      .proposal-output table {
+                        border-collapse: collapse;
+                        width: 100%;
+                        margin: 1.25rem 0;
+                        font-size: 13px;
+                      }
+                      .proposal-output th {
+                        background: ${palette.primary}20;
+                        color: ${palette.secondary};
+                        font-weight: 600;
+                        text-align: left;
+                        padding: 8px 12px;
+                        border: 1px solid ${palette.border};
+                      }
+                      .proposal-output td {
+                        padding: 7px 12px;
+                        border: 1px solid ${palette.border};
+                        vertical-align: top;
+                      }
+                      .proposal-output tr:nth-child(even) td {
+                        background: ${palette.bg};
+                      }
+                      .proposal-output strong { font-weight: 600; }
+                      .proposal-output em { font-style: italic; }
+                      .proposal-output code {
+                        font-family: monospace;
+                        font-size: 12px;
+                        background: #f4f4f4;
+                        padding: 1px 5px;
+                        border-radius: 3px;
+                      }
                     `}</style>
-                    <div className="proposal-output prose prose-sm max-w-none text-foreground leading-relaxed
-                      prose-headings:text-foreground
-                      prose-h1:text-xl prose-h1:font-bold prose-h1:pb-2 prose-h1:mb-4 prose-h1:border-b
-                      prose-h2:text-lg prose-h2:font-semibold prose-h2:mt-8 prose-h2:mb-3
-                      prose-h3:text-base prose-h3:font-semibold prose-h3:mt-5 prose-h3:mb-2
-                      prose-strong:font-semibold prose-ul:my-2 prose-li:my-0.5
-                      prose-hr:my-6 prose-p:my-2 prose-p:leading-7
-                      prose-table:text-xs prose-blockquote:not-italic">
+                    <div className="proposal-output max-w-none text-foreground">
                       <ReactMarkdown>{proposal}</ReactMarkdown>
                       {isAgentRunning && proposal && (
                         <span className="inline-block w-2 h-4 ml-0.5 animate-pulse rounded-sm" style={{ background: palette.primary }} />

@@ -456,6 +456,7 @@ CRITICAL INSTRUCTIONS:
 3. Do not produce a summary or abbreviation of any section — write the full text.
 4. After writing Section 1, immediately continue to Section 2, then Section 3, and so on until the last section.
 5. End the proposal with the Requirements Compliance Matrix table showing every requirement ID and which section addresses it.
+6. When the proposal is fully complete, write this exact line on its own line: <<<END_OF_PROPOSAL>>>
 
 BEGIN THE COMPLETE PROPOSAL NOW:`;
 
@@ -467,11 +468,10 @@ BEGIN THE COMPLETE PROPOSAL NOW:`;
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
-        "anthropic-beta": "output-128k-2025-02-19",
       },
       body: sanitizeJson(JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 32000,
+        max_tokens: 8192,   // safe per-pass limit; continuation loop handles the rest
         stream: true,
         system: sanitize(systemPrompt),
         messages,
@@ -524,8 +524,20 @@ BEGIN THE COMPLETE PROPOSAL NOW:`;
     return { stopReason, text: passText };
   }
 
-  // ── Continuation loop — keeps going if the model hit max_tokens ──────────
-  const MAX_CONTINUATIONS = 4;
+  // Returns true when the proposal is genuinely complete:
+  // either the sentinel marker is present, or the text ends on a proper sentence
+  // boundary AND the last non-empty line looks like a closing element.
+  function looksComplete(text: string): boolean {
+    if (text.includes("<<<END_OF_PROPOSAL>>>")) return true;
+    const trimmed = text.trimEnd();
+    if (!trimmed) return false;
+    const lastChar = trimmed[trimmed.length - 1];
+    // Must end with sentence-ending punctuation or a table/list/rule boundary
+    return [".", "!", "?", "|", "-", "]"].includes(lastChar);
+  }
+
+  // ── Continuation loop ─────────────────────────────────────────────────────
+  const MAX_CONTINUATIONS = 6;
   let fullText = "";
   let messages: { role: string; content: string }[] = [
     { role: "user", content: sanitize(userPrompt) },
@@ -535,20 +547,30 @@ BEGIN THE COMPLETE PROPOSAL NOW:`;
     const { stopReason, text } = await streamOnce(messages);
     fullText += text;
 
-    if (stopReason !== "max_tokens") break; // naturally finished
+    // Proposal is done if: model signalled end_turn AND text looks complete,
+    // OR the sentinel marker is present.
+    const complete = fullText.includes("<<<END_OF_PROPOSAL>>>") ||
+      (stopReason !== "max_tokens" && looksComplete(fullText));
+
+    if (complete) break;
 
     if (pass < MAX_CONTINUATIONS) {
       await sendEvent({
         type: "tool_start", tool: "write_proposal",
-        message: `Proposal exceeded token limit — continuing generation (pass ${pass + 2})…`,
+        message: `Proposal continuation pass ${pass + 2} — writing remaining sections…`,
       });
-      // Append assistant turn and ask it to continue seamlessly
       messages = [
         { role: "user",      content: sanitize(userPrompt) },
         { role: "assistant", content: sanitize(fullText) },
-        { role: "user",      content: "The proposal was cut off. Continue writing seamlessly from exactly where you stopped. Do not repeat any content already written. Continue with the next word and complete all remaining sections." },
+        { role: "user",      content: "The proposal was cut off mid-generation. Continue writing seamlessly from the exact word where it stopped. Do not restate or repeat anything already written. Complete all remaining sections and end with <<<END_OF_PROPOSAL>>>." },
       ];
     }
+  }
+
+  // Strip the sentinel marker from the streamed output (already sent to client token-by-token,
+  // but we emit a correction event to remove it from the displayed text)
+  if (fullText.includes("<<<END_OF_PROPOSAL>>>")) {
+    await sendEvent({ type: "proposal_strip_sentinel", sentinel: "<<<END_OF_PROPOSAL>>>" });
   }
 }
 

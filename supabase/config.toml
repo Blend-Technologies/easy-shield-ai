@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.document-chat]
 verify_jwt = false
+
+[functions.write-proposal]
+verify_jwt = false
+
+[functions.seed-knowledge-base]
+verify_jwt = false

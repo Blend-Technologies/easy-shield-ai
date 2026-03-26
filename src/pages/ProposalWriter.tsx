@@ -353,6 +353,12 @@ const ProposalWriter = () => {
                 setProposal(proposalText);
               }
               break;
+            case "proposal_strip_sentinel":
+              if (event.sentinel) {
+                proposalText = proposalText.split(event.sentinel).join("").trimEnd();
+                setProposal(proposalText);
+              }
+              break;
             case "agent_done":
               appendLog({ type: "agent_done", message: event.message });
               toast({ title: "Proposal complete!", description: event.message });

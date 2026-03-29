@@ -447,21 +447,27 @@ async function runModification(
       ? outlineSections
       : (existingProposalText.match(/^#{1,2} .+/gm) ?? []).map((h) => h.replace(/^#{1,2} /, ""));
 
-    const system = `You are an expert government contract proposal writer. You will receive an existing proposal and modification instructions. Apply the requested changes while preserving the overall structure, professional tone, and Markdown formatting of the original. Output the COMPLETE modified proposal — do not truncate or summarize any section. After ALL sections are written, end with <<<END_OF_PROPOSAL>>> on its own line.`;
+    const system = `You are an expert government contract proposal writer. You will receive an existing proposal and update instructions. Apply all requested changes — this includes modifying existing sections, expanding sections with more detail, AND adding entirely new sections that do not yet exist. Professional tone and Markdown formatting must be maintained throughout. Output the COMPLETE updated proposal — do not truncate or summarize any section. After ALL sections are written, end with <<<END_OF_PROPOSAL>>> on its own line.`;
 
-    const user = `Apply the following modifications to the proposal below. Maintain identical Markdown heading styles, bullet formatting, table structure, and professional language throughout.
+    const user = `Apply the following updates to the proposal below. You may:
+- Modify or rewrite any existing section
+- Expand any section with additional detail, sub-sections, tables, or bullet points
+- Add brand-new sections that are missing from the current proposal
+- Insert content at any appropriate location in the document
 
-MODIFICATION INSTRUCTIONS:
+Maintain identical Markdown heading styles, bullet formatting, table structure, and professional language throughout. New sections should follow the same numbering and heading depth as the rest of the document.
+
+UPDATE INSTRUCTIONS:
 ${sanitize(modificationInstructions)}
 
 ---
 
-CURRENT PROPOSAL (apply modifications to this):
+CURRENT PROPOSAL (apply updates to this):
 ${sanitize(existingProposalText.slice(0, 60_000))}
 
 ---
 
-Output the complete modified proposal with all changes applied. End with <<<END_OF_PROPOSAL>>> after the final section.`;
+Output the complete updated proposal with all changes applied. End with <<<END_OF_PROPOSAL>>> after the final section.`;
 
     const { proposalComplete } = await streamOnce(
       ai, sendEvent, "claude-sonnet-4-6", system,

@@ -1197,7 +1197,7 @@ const ProposalWriter = () => {
                       </Label>
                       <textarea
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[72px] resize-none focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
-                        placeholder="Describe changes to make — e.g. 'Expand the Technical Architecture section with more Azure details' or 'Add a risk mitigation table to Section 7'"
+                        placeholder="Modify existing sections or add new ones — e.g. 'Add a Transition Plan section after Section 5' or 'Expand the Technical Architecture with more Azure details' or 'Insert a staffing matrix table in Section 4'"
                         value={modificationPrompt}
                         onChange={(e) => setModificationPrompt(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) updateProposal(); }}

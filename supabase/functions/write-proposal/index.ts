@@ -418,6 +418,73 @@ BEGIN THE COMPLETE PROPOSAL NOW:`;
   ]);
 }
 
+// ── Modification pass ─────────────────────────────────────────────────────────
+// Applies targeted user instructions to an existing proposal, streaming the
+// revised version.  Sends outlineSections extracted from the existing headings
+// so the frontend continuation loop can take over if the output is truncated.
+async function runModification(
+  sendEvent: (payload: object) => Promise<void>,
+  writer: WritableStreamDefaultWriter,
+  existingProposalText: string,
+  modificationInstructions: string,
+  companyName: string,
+  outlineSections: string[],
+  ai: Anthropic,
+): Promise<void> {
+  const encoder = new TextEncoder();
+  let heartbeatStopped = false;
+  const heartbeat = setInterval(async () => {
+    if (heartbeatStopped) return;
+    try { await writer.write(encoder.encode(": heartbeat\n\n")); } catch { /* stream closed */ }
+  }, 20_000);
+
+  try {
+    await sendEvent({ type: "tool_start", tool: "write_proposal",
+      message: "Applying modifications to proposal…" });
+
+    // Derive section list from the existing proposal if none was supplied
+    const sections = outlineSections.length > 0
+      ? outlineSections
+      : (existingProposalText.match(/^#{1,2} .+/gm) ?? []).map((h) => h.replace(/^#{1,2} /, ""));
+
+    const system = `You are an expert government contract proposal writer. You will receive an existing proposal and modification instructions. Apply the requested changes while preserving the overall structure, professional tone, and Markdown formatting of the original. Output the COMPLETE modified proposal — do not truncate or summarize any section. After ALL sections are written, end with <<<END_OF_PROPOSAL>>> on its own line.`;
+
+    const user = `Apply the following modifications to the proposal below. Maintain identical Markdown heading styles, bullet formatting, table structure, and professional language throughout.
+
+MODIFICATION INSTRUCTIONS:
+${sanitize(modificationInstructions)}
+
+---
+
+CURRENT PROPOSAL (apply modifications to this):
+${sanitize(existingProposalText.slice(0, 60_000))}
+
+---
+
+Output the complete modified proposal with all changes applied. End with <<<END_OF_PROPOSAL>>> after the final section.`;
+
+    const { proposalComplete } = await streamOnce(
+      ai, sendEvent, "claude-sonnet-4-6", system,
+      [{ role: "user", content: sanitize(user) }],
+    );
+
+    await sendEvent({
+      type: "agent_done",
+      proposalComplete,
+      outlineSections: sections,
+      message: proposalComplete
+        ? "Modifications applied successfully."
+        : "First modification pass complete — continuing…",
+    });
+  } catch (err) {
+    await sendEvent({ type: "agent_error", message: err instanceof Error ? err.message : "Unknown error" });
+  } finally {
+    heartbeatStopped = true;
+    clearInterval(heartbeat);
+    await writer.close();
+  }
+}
+
 // ── Continuation pass (pass 2+) ───────────────────────────────────────────────
 // Uses the planned section list to tell Claude exactly which sections are missing.
 async function runContinuation(
@@ -613,6 +680,8 @@ serve(async (req) => {
       continuationText?: string;
       continuationPass?: number;
       outlineSections?: string[];
+      modificationInstructions?: string;
+      existingProposalText?: string;
     };
 
     const ANTHROPIC_API_KEY          = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
@@ -634,8 +703,18 @@ serve(async (req) => {
 
     const ai = new Anthropic({ apiKey: ANTHROPIC_API_KEY, maxRetries: 3 });
 
+    // Modification pass: apply targeted changes to an existing proposal
+    if (body.modificationInstructions && body.existingProposalText) {
+      runModification(
+        sendEvent, writer,
+        body.existingProposalText,
+        body.modificationInstructions,
+        body.companyName ?? "Our Company",
+        body.outlineSections ?? [],
+        ai,
+      );
     // Continuation passes (2+): skip the full pipeline, stream directly
-    if (body.continuationText && body.continuationPass && body.continuationPass > 1) {
+    } else if (body.continuationText && body.continuationPass && body.continuationPass > 1) {
       runContinuation(
         sendEvent, writer,
         body.continuationText,

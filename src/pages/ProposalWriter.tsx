@@ -11,7 +11,7 @@ import {
   FileUp, Sparkles, Download, Loader2, X, FileText, ArrowLeft,
   ImagePlus, Palette, Building2, BookOpen, OctagonX, CheckCircle2,
   Layers, LayoutTemplate, Users, TrendingUp, Database, Bot,
-  AlertCircle, ListChecks, Library,
+  AlertCircle, ListChecks, Library, Pencil,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -128,11 +128,16 @@ const ProposalWriter = () => {
   const [requirementsResult, setRequirementsResult] = useState<RequirementsResult | null>(() => lsGet<RequirementsResult>("requirementsResult"));
   const [proposal,          setProposal]          = useState<string>(() => lsGet<string>("proposal") ?? "");
 
-  const rfpRef   = useRef<HTMLInputElement>(null);
-  const capRef   = useRef<HTMLInputElement>(null);
-  const logoRef  = useRef<HTMLInputElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const logRef   = useRef<HTMLDivElement>(null);
+  // ── modification state ──
+  const [modificationPrompt, setModificationPrompt] = useState("");
+  const [isModifying,        setIsModifying]        = useState(false);
+
+  const rfpRef            = useRef<HTMLInputElement>(null);
+  const capRef            = useRef<HTMLInputElement>(null);
+  const logoRef           = useRef<HTMLInputElement>(null);
+  const abortRef          = useRef<AbortController | null>(null);
+  const logRef            = useRef<HTMLDivElement>(null);
+  const outlineSectionsRef = useRef<string[]>([]);
 
   // Stable session ID persisted to localStorage
   const sessionId = useMemo(() => {
@@ -347,7 +352,10 @@ const ProposalWriter = () => {
                 break;
               case "agent_done":
                 // Capture outline sections returned by pass 1 for use in continuation prompts.
-                if (event.outlineSections?.length) outlineSections = event.outlineSections;
+                if (event.outlineSections?.length) {
+                  outlineSections = event.outlineSections;
+                  outlineSectionsRef.current = event.outlineSections;
+                }
 
                 if (event.proposalComplete === true) {
                   // Validate against actual section presence before trusting the sentinel.
@@ -433,6 +441,130 @@ const ProposalWriter = () => {
   }, [rfpFile, capFiles, companyName, sessionId, toast]);
 
   const stopAgent = () => { abortRef.current?.abort(); setIsAgentRunning(false); };
+
+  // ── Update / Modify existing proposal ─────────────────────────────────────
+  const updateProposal = useCallback(async () => {
+    if (!proposal || !modificationPrompt.trim() || isModifying || isAgentRunning) return;
+
+    setIsModifying(true);
+    const savedProposal = proposal;
+    setProposal("");
+    appendLog({ type: "tool_start", tool: "write_proposal",
+      message: `Applying modifications: "${modificationPrompt.trim().slice(0, 80)}${modificationPrompt.length > 80 ? "…" : ""}"` });
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const SENTINEL = "<<<END_OF_PROPOSAL>>>";
+    let modifiedText = "";
+    let modOutlineSections: string[] = outlineSectionsRef.current;
+    const MAX_MOD_PASSES = 10;
+    const FUNC_URL = `${import.meta.env.VITE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL}/functions/v1/write-proposal`;
+    const AUTH_HDR = { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` };
+
+    const streamModPass = async (body: object): Promise<{ done: boolean }> => {
+      const resp = await fetch(FUNC_URL, { method: "POST", headers: AUTH_HDR, body: JSON.stringify(body), signal: controller.signal });
+      if (!resp.ok || !resp.body) {
+        const err = await resp.json().catch(() => ({ error: "Modification request failed" }));
+        throw new Error(err.error || "Modification request failed");
+      }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let agentFinished = false;
+
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const parts = buf.split("\n\n");
+          buf = parts.pop() ?? "";
+          for (const part of parts) {
+            const line = part.trim();
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") continue;
+            let event: any;
+            try { event = JSON.parse(jsonStr); } catch { continue; }
+            switch (event.type) {
+              case "tool_start":
+                appendLog({ type: "tool_start", tool: event.tool, message: event.message });
+                break;
+              case "proposal_token":
+                if (event.token) { modifiedText += event.token; setProposal(modifiedText); }
+                break;
+              case "proposal_strip_sentinel":
+                modifiedText = modifiedText.split(SENTINEL).join("").trimEnd();
+                setProposal(modifiedText);
+                break;
+              case "agent_done":
+                if (event.outlineSections?.length) {
+                  modOutlineSections = event.outlineSections;
+                  outlineSectionsRef.current = event.outlineSections;
+                }
+                if (event.proposalComplete === true) {
+                  if (modOutlineSections.length === 0) {
+                    agentFinished = true;
+                  } else {
+                    const lowerText = modifiedText.toLowerCase();
+                    const cleanTitle = (t: string) => t.replace(/^\d+\.\s*/, "").toLowerCase().trim().slice(0, 25);
+                    const sectionsFound = modOutlineSections.filter(t => lowerText.includes(cleanTitle(t))).length;
+                    const threshold = Math.ceil(modOutlineSections.length * 0.8);
+                    if (sectionsFound >= threshold) agentFinished = true;
+                  }
+                }
+                appendLog({ type: "agent_done", message: event.message });
+                break;
+              case "agent_error":
+                throw new Error(event.message);
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+      return { done: agentFinished };
+    };
+
+    try {
+      let { done } = await streamModPass({
+        modificationInstructions: modificationPrompt.trim(),
+        existingProposalText: savedProposal,
+        companyName: companyName.trim() || "Our Company",
+        sessionId,
+        outlineSections: modOutlineSections,
+      });
+
+      for (let pass = 2; pass <= MAX_MOD_PASSES && !done; pass++) {
+        appendLog({ type: "tool_start", tool: "write_proposal",
+          message: `Continuing modified proposal — pass ${pass} of up to ${MAX_MOD_PASSES}…` });
+        const result = await streamModPass({
+          companyName: companyName.trim() || "Our Company",
+          sessionId,
+          continuationText: modifiedText,
+          continuationPass: pass,
+          outlineSections: modOutlineSections,
+        });
+        done = result.done;
+      }
+
+      setModificationPrompt("");
+      toast({ title: "Proposal updated!", description: "Modifications applied successfully." });
+    } catch (e: any) {
+      if (e.name === "AbortError") {
+        setProposal(savedProposal);
+        appendLog({ type: "agent_error", message: "Modification stopped by user." });
+      } else {
+        setProposal(savedProposal);
+        appendLog({ type: "agent_error", message: e.message });
+        toast({ title: "Error", description: e.message, variant: "destructive" });
+      }
+    } finally {
+      abortRef.current = null;
+      setIsModifying(false);
+    }
+  }, [proposal, modificationPrompt, isModifying, isAgentRunning, companyName, sessionId, toast]);
 
   const resetAgent = () => {
     abortRef.current?.abort();
@@ -933,7 +1065,7 @@ const ProposalWriter = () => {
               </CardHeader>
 
               <CardContent className="flex-1 min-h-0 pb-4">
-                {!proposal && !isAgentRunning ? (
+                {!proposal && !isAgentRunning && !isModifying ? (
                   <div className="h-[calc(100vh-250px)] min-h-[500px] flex items-center justify-center text-muted-foreground">
                     <div className="text-center space-y-3">
                       <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto" style={{ background: `${palette.primary}15` }}>
@@ -946,7 +1078,8 @@ const ProposalWriter = () => {
                     </div>
                   </div>
                 ) : (
-                  <ScrollArea className="h-[calc(100vh-220px)] min-h-[500px] pr-2">
+                  <div className="flex flex-col gap-0">
+                  <ScrollArea className="h-[calc(100vh-300px)] min-h-[420px] pr-2">
                     {/* Cover preview */}
                     {proposal && (
                       <div className="rounded-xl mb-6 p-5 text-center space-y-1.5 border" style={{ background: palette.bg, borderColor: palette.border }}>
@@ -1049,11 +1182,56 @@ const ProposalWriter = () => {
                     `}</style>
                     <div className="proposal-output max-w-none text-foreground">
                       <ReactMarkdown>{proposal}</ReactMarkdown>
-                      {isAgentRunning && proposal && (
+                      {(isAgentRunning || isModifying) && proposal && (
                         <span className="inline-block w-2 h-4 ml-0.5 animate-pulse rounded-sm" style={{ background: palette.primary }} />
                       )}
                     </div>
                   </ScrollArea>
+
+                  {/* ── Modification prompt ── */}
+                  {proposal && !isAgentRunning && !isModifying && (
+                    <div className="pt-3 mt-2 border-t border-border/50 space-y-2 shrink-0">
+                      <Label className="text-xs font-medium flex items-center gap-1.5">
+                        <Pencil className="w-3.5 h-3.5" style={{ color: palette.primary }} />
+                        Modify Proposal
+                      </Label>
+                      <textarea
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[72px] resize-none focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
+                        placeholder="Describe changes to make — e.g. 'Expand the Technical Architecture section with more Azure details' or 'Add a risk mitigation table to Section 7'"
+                        value={modificationPrompt}
+                        onChange={(e) => setModificationPrompt(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) updateProposal(); }}
+                      />
+                      <Button
+                        size="sm"
+                        className="text-white shadow-sm"
+                        style={{ background: `linear-gradient(135deg, ${palette.primary}, ${palette.accent})` }}
+                        onClick={updateProposal}
+                        disabled={!modificationPrompt.trim()}
+                      >
+                        <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                        Update Proposal
+                      </Button>
+                    </div>
+                  )}
+
+                  {isModifying && (
+                    <div className="pt-3 mt-2 border-t border-border/50 flex items-center gap-2 shrink-0">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" style={{ color: palette.primary }} />
+                      <span className="text-xs text-muted-foreground flex-1">Applying modifications…</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950 h-7 text-xs"
+                        onClick={() => abortRef.current?.abort()}
+                      >
+                        <OctagonX className="w-3 h-3 mr-1" />
+                        Stop
+                      </Button>
+                    </div>
+                  )}
+
+                  </div>
                 )}
               </CardContent>
             </Card>

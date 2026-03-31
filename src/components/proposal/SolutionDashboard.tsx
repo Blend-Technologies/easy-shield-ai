@@ -1,13 +1,16 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Cpu, Cloud, Layers, ArrowRight, Maximize2 } from "lucide-react";
+import { Cpu, Cloud, Layers, Pencil } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import {
   ReactFlow,
   Background,
   Controls,
+  useNodesState,
+  useEdgesState,
   type Node,
   type Edge,
 } from "@xyflow/react";
@@ -58,7 +61,9 @@ const providerLabel = (provider: string) => {
 const nodeTypes = { custom: CustomNode };
 
 export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResult; diagramId?: string }) => {
-  const flowNodes: Node[] = useMemo(
+  const navigate = useNavigate();
+
+  const initialNodes: Node[] = useMemo(
     () =>
       result.nodes.map((n) => ({
         id: n.id,
@@ -75,7 +80,7 @@ export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResul
     [result.nodes]
   );
 
-  const flowEdges: Edge[] = useMemo(
+  const initialEdges: Edge[] = useMemo(
     () =>
       result.edges.map((e) => ({
         id: e.id,
@@ -88,6 +93,9 @@ export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResul
       })),
     [result.edges]
   );
+
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
+  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
   return (
     <div className="space-y-4">
@@ -151,36 +159,40 @@ export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResul
               <Cloud className="w-5 h-5 text-primary" />
               <CardTitle className="text-base">Solution Architecture Diagram</CardTitle>
             </div>
-            {diagramId && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs"
-                onClick={() => window.open(`/dashboard/diagram/${diagramId}`, '_blank')}
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-                Expand &amp; Edit
-              </Button>
-            )}
+            <Button
+              size="sm"
+              className="gap-1.5 text-xs"
+              disabled={!diagramId}
+              title={diagramId ? "Open full diagram editor" : "Diagram is still saving — try again in a moment"}
+              onClick={() => navigate(`/dashboard/diagram/${diagramId}`)}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Edit Diagram
+            </Button>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Drag nodes to rearrange inline. Click <strong>Edit Diagram</strong> to add nodes, draw connections, change colors, and export.
+          </p>
         </CardHeader>
         <CardContent className="p-0">
           <div className="h-[500px] w-full rounded-b-lg overflow-hidden border-t border-border">
             <ReactFlow
-              nodes={flowNodes}
-              edges={flowEdges}
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
               nodeTypes={nodeTypes}
               fitView
               fitViewOptions={{ padding: 0.4, maxZoom: 0.8 }}
               proOptions={{ hideAttribution: true }}
-              nodesDraggable={false}
+              nodesDraggable={true}
               nodesConnectable={false}
-              elementsSelectable={false}
+              elementsSelectable={true}
               zoomOnScroll={true}
               panOnScroll={true}
             >
               <Background gap={20} size={1} />
-              <Controls showInteractive={false} />
+              <Controls />
             </ReactFlow>
           </div>
         </CardContent>

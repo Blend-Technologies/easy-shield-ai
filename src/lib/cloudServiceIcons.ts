@@ -4,6 +4,7 @@ import powerPlatformIcon from "@/assets/power-platform.svg";
 import azureDevOpsIcon from "@/assets/azure-devops.svg";
 import azureEntraIdIcon from "@/assets/azure-entra-id.svg";
 import azureMonitorIcon from "@/assets/azure-monitor.svg";
+import azureSynapseIcon from "@/assets/azure-synapse.svg";
 
 /**
  * Maps lowercase label substrings to icon URLs.
@@ -23,6 +24,9 @@ const SERVICE_ICON_MAP: [pattern: string, icon: string][] = [
   ["azure monitor", azureMonitorIcon],
   ["application insights", azureMonitorIcon],
   ["log analytics", azureMonitorIcon],
+  ["azure synapse", azureSynapseIcon],
+  ["synapse analytics", azureSynapseIcon],
+  ["synapse", azureSynapseIcon],
 ];
 
 /** Returns the icon URL for a known cloud service label, or null if none. */

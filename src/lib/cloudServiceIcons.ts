@@ -3,6 +3,7 @@ import awsRdsIcon from "@/assets/aws-rds.svg";
 import powerPlatformIcon from "@/assets/power-platform.svg";
 import azureDevOpsIcon from "@/assets/azure-devops.svg";
 import azureEntraIdIcon from "@/assets/azure-entra-id.svg";
+import azureMonitorIcon from "@/assets/azure-monitor.svg";
 
 /**
  * Maps lowercase label substrings to icon URLs.
@@ -19,6 +20,9 @@ const SERVICE_ICON_MAP: [pattern: string, icon: string][] = [
   ["microsoft entra", azureEntraIdIcon],
   ["azure active directory", azureEntraIdIcon],
   ["azure ad", azureEntraIdIcon],
+  ["azure monitor", azureMonitorIcon],
+  ["application insights", azureMonitorIcon],
+  ["log analytics", azureMonitorIcon],
 ];
 
 /** Returns the icon URL for a known cloud service label, or null if none. */

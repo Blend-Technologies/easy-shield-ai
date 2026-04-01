@@ -171,7 +171,7 @@ export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResul
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Drag nodes to rearrange inline. Click <strong>Edit Diagram</strong> to add nodes, draw connections, change colors, and export.
+            Drag to rearrange · Click to select · <kbd className="px-1 py-0.5 rounded border border-border text-[10px] font-mono">Delete</kbd> or <kbd className="px-1 py-0.5 rounded border border-border text-[10px] font-mono">Backspace</kbd> to remove · <strong>Edit Diagram</strong> for full editor
           </p>
         </CardHeader>
         <CardContent className="p-0">
@@ -188,6 +188,7 @@ export const SolutionDashboard = ({ result, diagramId }: { result: SolutionResul
               nodesDraggable={true}
               nodesConnectable={false}
               elementsSelectable={true}
+              deleteKeyCode={["Backspace", "Delete"]}
               zoomOnScroll={true}
               panOnScroll={true}
             >

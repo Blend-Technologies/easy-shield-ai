@@ -369,6 +369,8 @@ const DiagramEditorInner = () => {
             zoomOnDoubleClick
             nodesDraggable
             nodesConnectable
+            elementsSelectable
+            deleteKeyCode={["Backspace", "Delete"]}
             minZoom={0.1}
             maxZoom={4}
             translateExtent={[[-Infinity, -Infinity], [Infinity, Infinity]]}

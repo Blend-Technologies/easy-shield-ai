@@ -5,6 +5,7 @@ import azureDevOpsIcon from "@/assets/azure-devops.svg";
 import azureEntraIdIcon from "@/assets/azure-entra-id.svg";
 import azureMonitorIcon from "@/assets/azure-monitor.svg";
 import azureSynapseIcon from "@/assets/azure-synapse.svg";
+import azureVnetIcon from "@/assets/azure-vnet.svg";
 
 /**
  * Maps lowercase label substrings to icon URLs.
@@ -27,6 +28,9 @@ const SERVICE_ICON_MAP: [pattern: string, icon: string][] = [
   ["azure synapse", azureSynapseIcon],
   ["synapse analytics", azureSynapseIcon],
   ["synapse", azureSynapseIcon],
+  ["virtual network", azureVnetIcon],
+  ["azure vnet", azureVnetIcon],
+  ["vnet", azureVnetIcon],
 ];
 
 /** Returns the icon URL for a known cloud service label, or null if none. */

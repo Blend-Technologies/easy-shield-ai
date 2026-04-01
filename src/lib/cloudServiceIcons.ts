@@ -6,6 +6,7 @@ import azureEntraIdIcon from "@/assets/azure-entra-id.svg";
 import azureMonitorIcon from "@/assets/azure-monitor.svg";
 import azureSynapseIcon from "@/assets/azure-synapse.svg";
 import azureVnetIcon from "@/assets/azure-vnet.svg";
+import azureApimIcon from "@/assets/azure-apim.svg";
 
 /**
  * Maps lowercase label substrings to icon URLs.
@@ -31,6 +32,9 @@ const SERVICE_ICON_MAP: [pattern: string, icon: string][] = [
   ["virtual network", azureVnetIcon],
   ["azure vnet", azureVnetIcon],
   ["vnet", azureVnetIcon],
+  ["api management", azureApimIcon],
+  ["azure apim", azureApimIcon],
+  ["apim", azureApimIcon],
 ];
 
 /** Returns the icon URL for a known cloud service label, or null if none. */

@@ -198,7 +198,7 @@ const DiagramEditorInner = () => {
   const onExportPNG = useCallback(() => {
     const el = getFlowElement();
     if (!el) return;
-    toPng(el, { backgroundColor: "#09090b", quality: 1, pixelRatio: 2 }).then((dataUrl) => {
+    toPng(el, { backgroundColor: "#ffffff", quality: 1, pixelRatio: 2 }).then((dataUrl) => {
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = `${title || "diagram"}.png`;
@@ -209,7 +209,7 @@ const DiagramEditorInner = () => {
   const onExportSVG = useCallback(() => {
     const el = getFlowElement();
     if (!el) return;
-    toSvg(el, { backgroundColor: "#09090b" }).then((dataUrl) => {
+    toSvg(el, { backgroundColor: "#ffffff" }).then((dataUrl) => {
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = `${title || "diagram"}.svg`;
@@ -220,7 +220,7 @@ const DiagramEditorInner = () => {
   const onExportPDF = useCallback(() => {
     const el = getFlowElement();
     if (!el) return;
-    toPng(el, { backgroundColor: "#09090b", quality: 1, pixelRatio: 2 }).then((dataUrl) => {
+    toPng(el, { backgroundColor: "#ffffff", quality: 1, pixelRatio: 2 }).then((dataUrl) => {
       const img = new Image();
       img.src = dataUrl;
       img.onload = () => {

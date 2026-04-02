@@ -195,44 +195,67 @@ const DiagramEditorInner = () => {
   const getFlowElement = () =>
     reactFlowWrapper.current?.querySelector(".react-flow__viewport") as HTMLElement | null;
 
+  // CSS variables that resolve to dark colours in dark mode — override them to
+  // light values before capture so edge labels and node backgrounds export white.
+  const LIGHT_VARS: [string, string][] = [
+    ["--background",        "0 0% 100%"],
+    ["--card",              "0 0% 100%"],
+    ["--popover",           "0 0% 100%"],
+    ["--muted",             "210 40% 96.1%"],
+    ["--muted-foreground",  "215.4 16.3% 46.9%"],
+    ["--border",            "214.3 31.8% 91.4%"],
+    ["--foreground",        "222.2 84% 4.9%"],
+  ];
+
+  const withLightTheme = (el: HTMLElement, fn: () => Promise<void>) => {
+    LIGHT_VARS.forEach(([k, v]) => el.style.setProperty(k, v));
+    return fn().finally(() => LIGHT_VARS.forEach(([k]) => el.style.removeProperty(k)));
+  };
+
   const onExportPNG = useCallback(() => {
     const el = getFlowElement();
     if (!el) return;
-    toPng(el, { backgroundColor: "#ffffff", quality: 1, pixelRatio: 2 }).then((dataUrl) => {
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `${title || "diagram"}.png`;
-      a.click();
-    });
+    withLightTheme(el, () =>
+      toPng(el, { backgroundColor: "#ffffff", quality: 1, pixelRatio: 2 }).then((dataUrl) => {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `${title || "diagram"}.png`;
+        a.click();
+      })
+    );
   }, [title]);
 
   const onExportSVG = useCallback(() => {
     const el = getFlowElement();
     if (!el) return;
-    toSvg(el, { backgroundColor: "#ffffff" }).then((dataUrl) => {
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `${title || "diagram"}.svg`;
-      a.click();
-    });
+    withLightTheme(el, () =>
+      toSvg(el, { backgroundColor: "#ffffff" }).then((dataUrl) => {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `${title || "diagram"}.svg`;
+        a.click();
+      })
+    );
   }, [title]);
 
   const onExportPDF = useCallback(() => {
     const el = getFlowElement();
     if (!el) return;
-    toPng(el, { backgroundColor: "#ffffff", quality: 1, pixelRatio: 2 }).then((dataUrl) => {
-      const img = new Image();
-      img.src = dataUrl;
-      img.onload = () => {
-        const pdf = new jsPDF({
-          orientation: img.width > img.height ? "landscape" : "portrait",
-          unit: "px",
-          format: [img.width, img.height],
-        });
-        pdf.addImage(dataUrl, "PNG", 0, 0, img.width, img.height);
-        pdf.save(`${title || "diagram"}.pdf`);
-      };
-    });
+    withLightTheme(el, () =>
+      toPng(el, { backgroundColor: "#ffffff", quality: 1, pixelRatio: 2 }).then((dataUrl) => {
+        const img = new Image();
+        img.src = dataUrl;
+        img.onload = () => {
+          const pdf = new jsPDF({
+            orientation: img.width > img.height ? "landscape" : "portrait",
+            unit: "px",
+            format: [img.width, img.height],
+          });
+          pdf.addImage(dataUrl, "PNG", 0, 0, img.width, img.height);
+          pdf.save(`${title || "diagram"}.pdf`);
+        };
+      })
+    );
   }, [title]);
 
   const handleAIGenerate = useCallback(

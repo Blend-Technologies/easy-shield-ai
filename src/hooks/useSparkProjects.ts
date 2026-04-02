@@ -14,6 +14,7 @@ export type SparkProject = {
   is_favorite: boolean;
   priority: Priority;
   state: string | null;
+  due_date: string | null;
 };
 
 export function useSparkProjects() {
@@ -36,7 +37,7 @@ export function useSparkProjects() {
     setLoading(false);
   };
 
-  const createProject = async (name: string, description?: string, state?: string) => {
+  const createProject = async (name: string, description?: string, state?: string, due_date?: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({ variant: "destructive", title: "Error", description: "You must be logged in." });
@@ -45,7 +46,7 @@ export function useSparkProjects() {
 
     const { data, error } = await supabase
       .from("spark_projects")
-      .insert({ name, description: description || null, state: state?.trim() || null, user_id: user.id } as any)
+      .insert({ name, description: description || null, state: state?.trim() || null, due_date: due_date || null, user_id: user.id } as any)
       .select()
       .single();
 
@@ -70,7 +71,7 @@ export function useSparkProjects() {
     return true;
   };
 
-  const updateProject = async (id: string, name: string, description?: string, state?: string) => {
+  const updateProject = async (id: string, name: string, description?: string, state?: string, due_date?: string) => {
     const trimmedName = name.trim();
     if (!trimmedName) return false;
     const { data, error } = await supabase
@@ -79,6 +80,7 @@ export function useSparkProjects() {
         name: trimmedName,
         description: description?.trim() || null,
         state: state?.trim() || null,
+        due_date: due_date || null,
         updated_at: new Date().toISOString(),
       } as any)
       .eq("id", id)
@@ -123,9 +125,24 @@ export function useSparkProjects() {
     return true;
   };
 
+  const setDueDate = async (id: string, due_date: string | null) => {
+    const { data, error } = await supabase
+      .from("spark_projects")
+      .update({ due_date } as any)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+      return false;
+    }
+    setProjects((prev) => prev.map((p) => (p.id === id ? (data as unknown as SparkProject) : p)));
+    return true;
+  };
+
   useEffect(() => {
     fetchProjects();
   }, []);
 
-  return { projects, loading, createProject, deleteProject, updateProject, toggleFavorite, setPriority, refetch: fetchProjects };
+  return { projects, loading, createProject, deleteProject, updateProject, toggleFavorite, setPriority, setDueDate, refetch: fetchProjects };
 }

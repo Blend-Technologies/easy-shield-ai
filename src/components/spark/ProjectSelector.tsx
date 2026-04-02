@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Sparkles, ArrowLeft, AlertTriangle, Pencil, Heart, ChevronDown, MapPin, Search, X } from "lucide-react";
+import { Plus, Trash2, Sparkles, ArrowLeft, AlertTriangle, Pencil, Heart, ChevronDown, MapPin, Search, X, CalendarDays } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,9 +75,9 @@ type Props = {
   projects: SparkProject[];
   loading: boolean;
   onSelect: (project: SparkProject) => void;
-  onCreate: (name: string, description?: string, state?: string) => Promise<SparkProject | null>;
+  onCreate: (name: string, description?: string, state?: string, due_date?: string) => Promise<SparkProject | null>;
   onDelete: (id: string) => Promise<boolean>;
-  onUpdate: (id: string, name: string, description?: string, state?: string) => Promise<boolean>;
+  onUpdate: (id: string, name: string, description?: string, state?: string, due_date?: string) => Promise<boolean>;
   onToggleFavorite: (id: string, current: boolean) => Promise<boolean>;
   onSetPriority: (id: string, priority: Priority) => Promise<boolean>;
 };
@@ -94,6 +94,7 @@ const ProjectSelector = ({
   const [createState, setCreateState] = useState("");
   const [createStateSearch, setCreateStateSearch] = useState("");
   const [createStatePickerOpen, setCreateStatePickerOpen] = useState(false);
+  const [createDueDate, setCreateDueDate] = useState("");
   const [creating, setCreating] = useState(false);
 
   // Edit dialog
@@ -101,6 +102,7 @@ const ProjectSelector = ({
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editState, setEditState] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
   const [stateSearch, setStateSearch] = useState("");
   const [statePickerOpen, setStatePickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -113,13 +115,14 @@ const ProjectSelector = ({
   const handleCreate = async () => {
     if (!name.trim()) return;
     setCreating(true);
-    const project = await onCreate(name.trim(), description.trim(), createState);
+    const project = await onCreate(name.trim(), description.trim(), createState, createDueDate || undefined);
     if (project) {
       setOpen(false);
       setName("");
       setDescription("");
       setCreateState("");
       setCreateStateSearch("");
+      setCreateDueDate("");
       onSelect(project);
     }
     setCreating(false);
@@ -130,6 +133,7 @@ const ProjectSelector = ({
     setEditName(project.name);
     setEditDescription(project.description ?? "");
     setEditState(project.state ?? "");
+    setEditDueDate(project.due_date ?? "");
     setStateSearch("");
     setEditTarget(project);
   };
@@ -137,7 +141,7 @@ const ProjectSelector = ({
   const handleUpdate = async () => {
     if (!editTarget || !editName.trim()) return;
     setSaving(true);
-    const ok = await onUpdate(editTarget.id, editName, editDescription, editState);
+    const ok = await onUpdate(editTarget.id, editName, editDescription, editState, editDueDate || undefined);
     setSaving(false);
     if (ok) { setEditTarget(null); setStatePickerOpen(false); }
   };
@@ -258,6 +262,18 @@ const ProjectSelector = ({
                     </div>
                   </PopoverContent>
                 </Popover>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    Due Date (optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={createDueDate}
+                    onChange={(e) => setCreateDueDate(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
                 <Button onClick={handleCreate} disabled={!name.trim() || creating} className="w-full">
                   {creating ? "Creating..." : "Create Project"}
                 </Button>
@@ -346,6 +362,23 @@ const ProjectSelector = ({
                           </span>
                         )}
 
+                        {project.due_date && (() => {
+                          const due = new Date(project.due_date + "T00:00:00");
+                          const today = new Date(); today.setHours(0,0,0,0);
+                          const overdue = due < today;
+                          const soon = !overdue && (due.getTime() - today.getTime()) <= 7 * 86400000;
+                          return (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                              overdue ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                              : soon   ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                              :          "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                            }`}>
+                              <CalendarDays className="w-2.5 h-2.5" />
+                              {overdue ? "Overdue · " : ""}{due.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                            </span>
+                          );
+                        })()}
+
                         <span className="text-[11px] text-muted-foreground/60">
                           Updated {new Date(project.updated_at).toLocaleDateString()}
                         </span>
@@ -416,6 +449,30 @@ const ProjectSelector = ({
               onChange={(e) => setEditDescription(e.target.value)}
               rows={3}
             />
+            {/* Due date */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <CalendarDays className="w-3.5 h-3.5" />
+                Due Date (optional)
+              </label>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="date"
+                  value={editDueDate}
+                  onChange={(e) => setEditDueDate(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+                {editDueDate && (
+                  <button
+                    type="button"
+                    onClick={() => setEditDueDate("")}
+                    className="text-muted-foreground hover:text-foreground shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
             {/* State picker */}
             <div>
               <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>

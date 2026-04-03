@@ -61,20 +61,25 @@ const ProposalEvaluator = () => {
   const [searchParams] = useSearchParams();
   const projectName = searchParams.get("project") || "spark";
   const { toast } = useToast();
-  const [proposalType, setProposalType] = useState<string>(() => lsGet<string>("proposalType") ?? "enterprise");
+
+  // Project-scoped localStorage helpers — isolate each project's session data
+  const lsGetP = <T,>(key: string): T | null => lsGet<T>(`${projectName}:${key}`);
+  const lsSetP = (key: string, value: unknown) => lsSet(`${projectName}:${key}`, value);
+
+  const [proposalType, setProposalType] = useState<string>(() => lsGetP<string>("proposalType") ?? "enterprise");
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [supplementaryFile, setSupplementaryFile] = useState<UploadedFile | null>(null);
-  const [requirementsResult, setRequirementsResult] = useState<RequirementsResult | null>(() => lsGet<RequirementsResult>("requirementsResult"));
+  const [requirementsResult, setRequirementsResult] = useState<RequirementsResult | null>(() => lsGetP<RequirementsResult>("requirementsResult"));
   const [requirementsExpanded, setRequirementsExpanded] = useState(true);
-  const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(() => lsGet<EvaluationResult>("evaluationResult"));
-  const [solutionResult, setSolutionResult] = useState<SolutionResult | null>(() => lsGet<SolutionResult>("solutionResult"));
-  const [cloudProvider, setCloudProvider] = useState<string>(() => lsGet<string>("cloudProvider") ?? "aws");
-  const [diagramId, setDiagramId] = useState<string | null>(() => lsGet<string>("diagramId"));
+  const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(() => lsGetP<EvaluationResult>("evaluationResult"));
+  const [solutionResult, setSolutionResult] = useState<SolutionResult | null>(() => lsGetP<SolutionResult>("solutionResult"));
+  const [cloudProvider, setCloudProvider] = useState<string>(() => lsGetP<string>("cloudProvider") ?? "aws");
+  const [diagramId, setDiagramId] = useState<string | null>(() => lsGetP<string>("diagramId"));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supplementaryFileRef = useRef<HTMLInputElement>(null);
   const [isAgentRunning, setIsAgentRunning] = useState(false);
   const [agentLog, setAgentLog] = useState<Array<{ type: string; message: string; tool?: string; timestamp: number }>>(
-    () => lsGet<Array<{ type: string; message: string; tool?: string; timestamp: number }>>("agentLog") ?? []
+    () => lsGetP<Array<{ type: string; message: string; tool?: string; timestamp: number }>>("agentLog") ?? []
   );
   const agentLogRef = useRef<HTMLDivElement>(null);
   const agentAbortRef = useRef<AbortController | null>(null);
@@ -82,23 +87,24 @@ const ProposalEvaluator = () => {
   const [isIndexing, setIsIndexing] = useState(false);
   const [indexedChunks, setIndexedChunks] = useState<number | null>(null);
 
-  // Stable session ID — persisted so pgvector chunks survive navigation
+  // Stable session ID — persisted so pgvector chunks survive navigation, scoped per project
   const sessionId = useMemo(() => {
-    const stored = lsGet<string>("sessionId");
+    const stored = lsGetP<string>("sessionId");
     if (stored) return stored;
     const id = crypto.randomUUID();
-    lsSet("sessionId", id);
+    lsSetP("sessionId", id);
     return id;
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectName]);
 
-  // Persist state changes to localStorage
-  useEffect(() => { lsSet("proposalType", proposalType); }, [proposalType]);
-  useEffect(() => { lsSet("cloudProvider", cloudProvider); }, [cloudProvider]);
-  useEffect(() => { lsSet("requirementsResult", requirementsResult); }, [requirementsResult]);
-  useEffect(() => { lsSet("evaluationResult", evaluationResult); }, [evaluationResult]);
-  useEffect(() => { lsSet("solutionResult", solutionResult); }, [solutionResult]);
-  useEffect(() => { lsSet("diagramId", diagramId); }, [diagramId]);
-  useEffect(() => { lsSet("agentLog", agentLog); }, [agentLog]);
+  // Persist state changes to localStorage (project-scoped)
+  useEffect(() => { lsSetP("proposalType", proposalType); }, [proposalType]);
+  useEffect(() => { lsSetP("cloudProvider", cloudProvider); }, [cloudProvider]);
+  useEffect(() => { lsSetP("requirementsResult", requirementsResult); }, [requirementsResult]);
+  useEffect(() => { lsSetP("evaluationResult", evaluationResult); }, [evaluationResult]);
+  useEffect(() => { lsSetP("solutionResult", solutionResult); }, [solutionResult]);
+  useEffect(() => { lsSetP("diagramId", diagramId); }, [diagramId]);
+  useEffect(() => { lsSetP("agentLog", agentLog); }, [agentLog]);
 
   // Auto-scroll to results on initial load if a previous session exists
   useEffect(() => {
@@ -440,7 +446,7 @@ const ProposalEvaluator = () => {
               size="sm"
               className="shrink-0 text-destructive hover:text-destructive"
               onClick={() => {
-                ["sessionId","proposalType","cloudProvider","requirementsResult","evaluationResult","solutionResult","diagramId","agentLog"].forEach(k => localStorage.removeItem(`${SK}:${k}`));
+                ["sessionId","proposalType","cloudProvider","requirementsResult","evaluationResult","solutionResult","diagramId","agentLog"].forEach(k => localStorage.removeItem(`${SK}:${projectName}:${k}`));
                 setRequirementsResult(null);
                 setEvaluationResult(null);
                 setSolutionResult(null);

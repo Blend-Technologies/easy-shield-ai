@@ -1,24 +1,169 @@
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Shield, ArrowRight, Zap } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 
+// ---------------------------------------------------------------------------
+// Free stock videos from Pexels (royalty-free, no attribution required).
+// To swap a video: update the `src` field with a direct .mp4 URL.
+// ---------------------------------------------------------------------------
+const HERO_VIDEOS = [
+  {
+    id: "cyber",
+    label: "Cybersecurity",
+    src: "https://videos.pexels.com/video-files/5473337/5473337-hd_1920_1080_25fps.mp4",
+  },
+  {
+    id: "ai",
+    label: "AI & Machine Learning",
+    src: "https://videos.pexels.com/video-files/3571264/3571264-hd_1920_1080_25fps.mp4",
+  },
+  {
+    id: "enterprise",
+    label: "Enterprise",
+    src: "https://videos.pexels.com/video-files/3255788/3255788-hd_1920_1080_25fps.mp4",
+  },
+  {
+    id: "government",
+    label: "Government",
+    src: "https://videos.pexels.com/video-files/1434604/1434604-hd_1920_1080_25fps.mp4",
+  },
+  {
+    id: "cloud",
+    label: "Cloud & Data",
+    src: "https://videos.pexels.com/video-files/2169880/2169880-hd_1920_1080_25fps.mp4",
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    src: "https://videos.pexels.com/video-files/3679433/3679433-hd_1920_1080_25fps.mp4",
+  },
+];
+
+const SLIDE_DURATION = 8000; // ms per video
+const FADE_DURATION  = 1200; // ms crossfade
+
 const HeroSection = () => {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Filtered list excludes videos that failed to load
+  const validVideos = HERO_VIDEOS.filter((v) => !failedIds.has(v.id));
+
+  const advance = () => {
+    setActiveIdx((prev) => (prev + 1) % (validVideos.length || 1));
+  };
+
+  // Auto-advance timer
+  useEffect(() => {
+    if (validVideos.length <= 1) return;
+    timerRef.current = setInterval(advance, SLIDE_DURATION);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validVideos.length]);
+
+  // Play the active video, pause others
+  useEffect(() => {
+    videoRefs.current.forEach((el, i) => {
+      if (!el) return;
+      if (i === activeIdx) {
+        el.play().catch(() => {});
+      } else {
+        el.pause();
+      }
+    });
+  }, [activeIdx]);
+
+  const handleError = (id: string) => {
+    setFailedIds((prev) => new Set([...prev, id]));
+  };
+
+  const currentVideo = validVideos[activeIdx] ?? null;
+
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-hero">
-      {/* Background image overlay */}
+
+      {/* ── Video layers ─────────────────────────────────────────────────── */}
+      {HERO_VIDEOS.map((video, i) => (
+        <video
+          key={video.id}
+          ref={(el) => { videoRefs.current[i] = el; }}
+          src={video.src}
+          muted
+          playsInline
+          loop
+          preload="metadata"
+          onError={() => handleError(video.id)}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: i === activeIdx ? 1 : 0,
+            transition: `opacity ${FADE_DURATION}ms ease-in-out`,
+            zIndex: i === activeIdx ? 1 : 0,
+          }}
+        />
+      ))}
+
+      {/* Fallback image (visible until first video plays) */}
       <div
-        className="absolute inset-0 opacity-30"
+        className="absolute inset-0"
         style={{
           backgroundImage: `url(${heroBg})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
+          opacity: 0.35,
+          zIndex: 0,
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/80" />
 
-      <div className="container mx-auto px-4 relative z-10 pt-24 pb-16">
+      {/* Dark scrim for text legibility */}
+      <div className="absolute inset-0 bg-black/55" style={{ zIndex: 2 }} />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/80" style={{ zIndex: 3 }} />
+
+      {/* ── Theme label badge ────────────────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        {currentVideo && (
+          <motion.div
+            key={currentVideo.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.5 }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2"
+            style={{ zIndex: 10 }}
+          >
+            {/* Progress dots */}
+            <div className="flex gap-1.5">
+              {validVideos.map((v, i) => (
+                <button
+                  key={v.id}
+                  aria-label={v.label}
+                  onClick={() => setActiveIdx(i)}
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    width: i === activeIdx ? 20 : 6,
+                    height: 6,
+                    background: i === activeIdx ? "white" : "rgba(255,255,255,0.35)",
+                  }}
+                />
+              ))}
+            </div>
+            <span className="ml-2 text-xs font-semibold text-white/70 tracking-widest uppercase">
+              {currentVideo.label}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Hero content ─────────────────────────────────────────────────── */}
+      <div className="container mx-auto px-4 relative pt-24 pb-16" style={{ zIndex: 10 }}>
         <div className="max-w-3xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -69,7 +214,11 @@ const HeroSection = () => {
               </Button>
             </Link>
             <a href="#features">
-              <Button variant="hero-outline" size="xl" className="w-full sm:w-auto text-primary-foreground/80 border-primary-foreground/20 hover:border-primary-foreground/40 hover:bg-primary-foreground/5">
+              <Button
+                variant="hero-outline"
+                size="xl"
+                className="w-full sm:w-auto text-primary-foreground/80 border-primary-foreground/20 hover:border-primary-foreground/40 hover:bg-primary-foreground/5"
+              >
                 See How It Works
               </Button>
             </a>

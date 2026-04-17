@@ -28,7 +28,7 @@ const HeroSection = () => {
           >
             <Zap className="w-4 h-4 text-accent" />
             <span className="text-sm font-medium text-primary-foreground/80">
-              AI-Powered Enterprise Integration Security
+              Built for Government &amp; Enterprise Teams
             </span>
           </motion.div>
 
@@ -38,9 +38,11 @@ const HeroSection = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6"
           >
-            <span className="text-primary-foreground">Secure & Scale Your </span>
-            <span className="text-gradient-accent">Enterprise Integrations</span>
-            <span className="text-primary-foreground"> in Minutes</span>
+            <span className="text-primary-foreground">Win Contracts.</span>
+            <br />
+            <span className="text-gradient-accent">Deliver Projects.</span>
+            <br />
+            <span className="text-primary-foreground">No Experts Required.</span>
           </motion.h1>
 
           <motion.p
@@ -49,8 +51,9 @@ const HeroSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg sm:text-xl text-primary-foreground/60 mb-10 max-w-2xl mx-auto leading-relaxed"
           >
-            Stop wasting 10-15 hours per week on manual security research. EZShield+AI delivers 
-            expert-vetted, context-specific best practices for your No-Code/Low-Code platforms instantly.
+            Write winning technical proposals for AI, cloud &amp; cybersecurity projects, evaluate RFPs
+            in minutes, and manage your delivery from backlog to launch — without a steep learning
+            curve or a dozen expensive subscriptions.
           </motion.p>
 
           <motion.div
@@ -80,11 +83,15 @@ const HeroSection = () => {
           >
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-accent" />
-              <span>SOC 2 Compliant</span>
+              <span>Proposal Writing</span>
             </div>
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-accent" />
-              <span>Enterprise Ready</span>
+              <span>RFP Evaluation</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-accent" />
+              <span>Project Delivery</span>
             </div>
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-accent" />

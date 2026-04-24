@@ -14,10 +14,12 @@ const CommunityCreate = () => {
   const [myCommunities, setMyCommunities] = useState<any[]>([]);
   const [joinedCommunities, setJoinedCommunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id ?? null);
 
     const { data: all } = await supabase
       .from("courses")
@@ -62,7 +64,7 @@ const CommunityCreate = () => {
     ) : communities.length === 0 ? (
       <EmptyState message={emptyMsg} />
     ) : (
-      <CommunityList communities={communities} onRefresh={fetchAll} showActions={showActions} />
+      <CommunityList communities={communities} onRefresh={fetchAll} showActions={showActions} currentUserId={currentUserId} />
     );
 
   return (

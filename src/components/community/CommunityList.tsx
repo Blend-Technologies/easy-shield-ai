@@ -30,6 +30,7 @@ interface Props {
   communities: Community[];
   onRefresh?: () => void;
   showActions?: boolean;
+  currentUserId?: string | null;
 }
 
 const CATEGORIES = [
@@ -37,7 +38,7 @@ const CATEGORIES = [
   "Creative Arts", "Science", "Finance", "Marketing", "Other",
 ];
 
-const CommunityList = ({ communities, onRefresh, showActions = false }: Props) => {
+const CommunityList = ({ communities, onRefresh, showActions = false, currentUserId }: Props) => {
   const navigate = useNavigate();
   const [editItem, setEditItem] = useState<Community | null>(null);
   const [deleteItem, setDeleteItem] = useState<Community | null>(null);
@@ -157,8 +158,8 @@ const CommunityList = ({ communities, onRefresh, showActions = false }: Props) =
                 </div>
               </div>
 
-              {/* Invite link row — always visible, stops card navigation */}
-              {showActions && (
+              {/* Invite link row — visible for own communities on any tab */}
+              {(showActions || (currentUserId && c.created_by === currentUserId)) && (
                 <div
                   className="mx-4 mb-4 mt-1 rounded-xl border border-border bg-muted/40 px-3 py-2.5"
                   onClick={(e) => e.stopPropagation()}

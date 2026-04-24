@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { MessageSquare, CalendarDays, Search, UserPlus, Loader2, X } from "lucide-react";
+import { MessageSquare, CalendarDays, Search, UserPlus, Loader2, X, Mail, Trash2 } from "lucide-react";
 import { useCommunityMembers, type MemberProfile } from "@/hooks/useCommunityMembers";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePresence } from "@/hooks/usePresence";
@@ -262,10 +262,106 @@ const InviteModal = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
+// ── Registered Members (joined via invite link) ───────────────────────────────
+type RegisteredMember = { id: string; full_name: string; email: string; joined_at: string };
+
+const RegisteredMembersSection = ({ communityId, isAdmin }: { communityId: string; isAdmin: boolean }) => {
+  const [members, setMembers] = useState<RegisteredMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [removing, setRemoving] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    supabase
+      .from("community_members" as any)
+      .select("id, full_name, email, joined_at")
+      .eq("community_id", communityId)
+      .order("joined_at", { ascending: false })
+      .then(({ data }) => {
+        setMembers((data as RegisteredMember[]) ?? []);
+        setLoading(false);
+      });
+  }, [communityId]);
+
+  const handleRemove = async (id: string) => {
+    setRemoving(id);
+    await supabase.from("community_members" as any).delete().eq("id", id);
+    setMembers((prev) => prev.filter((m) => m.id !== id));
+    setRemoving(null);
+  };
+
+  if (loading) return (
+    <div className="flex items-center gap-2 text-gray-400 text-sm py-4">
+      <Loader2 className="w-4 h-4 animate-spin" /> Loading registered members…
+    </div>
+  );
+
+  return (
+    <div className="mt-10">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-base font-bold text-gray-900">Registered Members</h3>
+          <p className="text-xs text-gray-400 mt-0.5">People who joined via your invite link</p>
+        </div>
+        <span className="text-xs font-semibold bg-violet-100 text-violet-700 px-2.5 py-1 rounded-full">
+          {members.length} registered
+        </span>
+      </div>
+
+      {members.length === 0 ? (
+        <div className="text-center py-10 bg-white rounded-2xl border border-gray-100 text-gray-400 text-sm">
+          No registrations yet. Share your invite link to get members.
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Joined</th>
+                {isAdmin && <th className="px-5 py-3 w-12" />}
+              </tr>
+            </thead>
+            <tbody>
+              {members.map((m) => (
+                <tr key={m.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                  <td className="px-5 py-3.5 font-medium text-gray-900">{m.full_name}</td>
+                  <td className="px-5 py-3.5 text-gray-500 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                    {m.email}
+                  </td>
+                  <td className="px-5 py-3.5 text-gray-400 text-xs whitespace-nowrap">
+                    {new Date(m.joined_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </td>
+                  {isAdmin && (
+                    <td className="px-5 py-3.5 text-right">
+                      <button
+                        onClick={() => handleRemove(m.id)}
+                        disabled={removing === m.id}
+                        className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
+                        title="Remove"
+                      >
+                        {removing === m.id
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 type TabFilter = "members" | "admins" | "online";
 
-const MembersPage = () => {
+const MembersPage = ({ communityId }: { communityId?: string }) => {
   const { members, isLoading, updateMember, deleteMember } = useCommunityMembers();
   const { isAdmin } = useIsAdmin();
   const { onlineIds } = usePresence();
@@ -387,6 +483,9 @@ const MembersPage = () => {
           </div>
         )}
       </div>
+
+      {/* Registered members (via invite link) */}
+      {communityId && <RegisteredMembersSection communityId={communityId} isAdmin={isAdmin} />}
 
       {/* Invite modal */}
       {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}

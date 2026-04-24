@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import CommunityTopNav from "@/components/community/CommunityTopNav";
 import CommunityLeftSidebar from "@/components/community/CommunityLeftSidebar";
 import CommunityFeed from "@/components/community/CommunityFeed";
@@ -18,6 +18,7 @@ interface CommunityState {
 
 const CommunityHub = () => {
   const location = useLocation();
+  const { communityId } = useParams<{ communityId: string }>();
   const community: CommunityState = location.state?.community ?? {
     name: "EZ Shield AI",
     tagline: "Where builders grow together",
@@ -56,7 +57,7 @@ const CommunityHub = () => {
           onTabChange={setActiveTab}
         />
         <div className="pt-14">
-          <MembersPage />
+          <MembersPage communityId={communityId} />
         </div>
       </div>
     );

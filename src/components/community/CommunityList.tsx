@@ -108,7 +108,7 @@ const CommunityList = ({ communities, onRefresh, showActions = false }: Props) =
                     title="Copy invite link"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const link = `${window.location.origin}/signup?community=${c.id}`;
+                      const link = `${window.location.origin}/community/join/${c.id}`;
                       navigator.clipboard.writeText(link);
                       toast({ title: "Invite link copied!", description: "Share this link with anyone you'd like to invite." });
                     }}

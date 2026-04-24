@@ -21,6 +21,7 @@ import DiagramEditor from "./pages/DiagramEditor";
 import NotFound from "./pages/NotFound";
 import CommunityCreate from "./pages/CommunityCreate";
 import CommunityHub from "./pages/CommunityHub";
+import CommunityJoin from "./pages/CommunityJoin";
 import CourseBuilder from "./pages/CourseBuilder";
 import CoursePlayer from "./pages/CoursePlayer";
 import AccountSettings from "./pages/AccountSettings";
@@ -82,6 +83,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <OnlinePresenceTracker />
+      <PendingCommunityJoin />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -101,6 +103,7 @@ const App = () => (
           <Route path="/dashboard/:projectName/analytics" element={<AnalyticsDashboard />} />
           <Route path="/dashboard/:projectName/boards" element={<KanbanBoard />} />
           <Route path="/dashboard/diagram/:diagramId" element={<DiagramEditor />} />
+          <Route path="/community/join/:communityId" element={<CommunityJoin />} />
           <Route path="/community/create" element={<CommunityCreate />} />
           <Route path="/community/hub/:communityId" element={<CommunityHub />} />
           <Route path="/community/course-builder/:courseId" element={<CourseBuilder />} />

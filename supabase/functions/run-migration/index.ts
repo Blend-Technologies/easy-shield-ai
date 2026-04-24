@@ -12,14 +12,25 @@ serve(async (req) => {
 
   const SUPABASE_DB_URL = Deno.env.get("SUPABASE_DB_URL") ?? "";
   if (!SUPABASE_DB_URL) {
-    return new Response(JSON.stringify({ error: "SUPABASE_DB_URL not set" }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: "SUPABASE_DB_URL not set" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   const client = new Client(SUPABASE_DB_URL);
   await client.connect();
   try {
-    await client.queryObject(`ALTER TABLE spark_projects ADD COLUMN IF NOT EXISTS due_date date`);
-    return new Response(JSON.stringify({ success: true, message: "due_date column added to spark_projects" }), {
+    const body = await req.json().catch(() => ({}));
+    const sql = body.sql as string | undefined;
+
+    if (!sql) {
+      return new Response(JSON.stringify({ error: "sql field is required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    await client.queryObject(sql);
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

@@ -122,8 +122,13 @@ function buildHtml(data: {
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Proposal Evaluation — ${esc(projectName)}</title>
 <style>
-  /* ── Reset & base ────────────────────────────────────────────────────── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* ── Force all backgrounds/colors to print exactly ──────────────────── */
+  *, *::before, *::after {
+    box-sizing: border-box; margin: 0; padding: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
   html { font-size: 14px; }
   body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -388,18 +393,90 @@ function buildHtml(data: {
 
   /* ── Print styles ────────────────────────────────────────────────────── */
   @media print {
-    @page { size: A4; margin: 18mm 16mm; }
-    body { background: #fff; font-size: 11pt; }
+    @page { size: letter portrait; margin: 14mm 12mm; }
+
+    html, body { background: #fff !important; font-size: 10.5pt; }
     .print-bar { display: none !important; }
-    .cover { break-after: page; min-height: auto; padding: 60px 40px 50px; }
-    .toc { break-after: page; }
-    .section { break-inside: avoid; border: none; box-shadow: none; border-bottom: 1px solid #e2e8f0; border-radius: 0; }
-    .section-header { background: #f1f5f9; }
-    .exec-bar { break-after: avoid; }
-    .req-table { font-size: 9pt; }
-    .comp-grid { grid-template-columns: 1fr 1fr; }
-    .sw-grid { grid-template-columns: 1fr 1fr; }
-    a { color: inherit !important; }
+    .page { max-width: 100% !important; padding: 0 !important; }
+
+    /* Cover — force gradient to print */
+    .cover {
+      break-after: page;
+      min-height: 220px;
+      padding: 50px 40px 40px;
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1d4ed8 100%) !important;
+    }
+    .cover-eyebrow { color: #a5b4fc !important; }
+    .cover-project  { color: #c7d2fe !important; }
+    .cover-pill {
+      background: rgba(255,255,255,0.15) !important;
+      border: 1px solid rgba(255,255,255,0.25) !important;
+    }
+
+    /* Executive bar */
+    .exec-bar { break-inside: avoid; box-shadow: none !important; }
+
+    /* TOC */
+    .toc { break-after: page; break-inside: avoid; box-shadow: none !important; }
+
+    /* Section wrappers — allow internal breaks, keep header attached */
+    .section {
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      border: 1px solid #e2e8f0 !important;
+      margin: 14px 0 !important;
+      overflow: visible !important;
+    }
+    .section-header {
+      break-after: avoid;
+      background: #f1f5f9 !important;
+    }
+    .section-body { break-before: avoid; }
+
+    /* Section number circles */
+    .section-num { background: #6366f1 !important; color: #fff !important; }
+
+    /* Requirements */
+    .req-table { font-size: 8.5pt; }
+    .req-table thead { display: table-header-group; }
+    .req-table tr  { break-inside: avoid; }
+    .req-table thead th { background: #f1f5f9 !important; }
+    .req-stat { background: #f1f5f9 !important; }
+    .req-support { background: #f8fafc !important; }
+
+    /* Badges */
+    .badge-shall { background: #ede9fe !important; color: #5b21b6 !important; }
+    .badge-must  { background: #fee2e2 !important; color: #b91c1c !important; }
+
+    /* Evaluation */
+    .score-hero { break-inside: avoid; }
+    .cat-bar-wrap { background: #f1f5f9 !important; }
+
+    .sw-grid { grid-template-columns: 1fr 1fr !important; break-inside: avoid; }
+    .sw-card  { break-inside: avoid; }
+    .sw-card-header.strengths  { background: #dcfce7 !important; color: #166534 !important; }
+    .sw-card-header.weaknesses { background: #fee2e2 !important; color: #991b1b !important; }
+    .sw-card ul { background: #f8fafc !important; }
+
+    .rec-num { background: #6366f1 !important; color: #fff !important; }
+
+    /* Tech stack chips */
+    .ts-chip.required { background: #ede9fe !important; border-color: #c4b5fd !important; color: #5b21b6 !important; }
+    .ts-chip.optional { background: #f1f5f9 !important; border-color: #e2e8f0 !important; }
+
+    /* Solution components */
+    .comp-grid { grid-template-columns: 1fr 1fr !important; }
+    .comp-card { break-inside: avoid; }
+    .comp-header {
+      background: linear-gradient(135deg, #1e1b4b, #312e81) !important;
+    }
+    .comp-name  { color: #fff !important; }
+    .comp-cloud {
+      color: #a5b4fc !important;
+      background: rgba(255,255,255,0.12) !important;
+    }
+
+    a { color: inherit !important; text-decoration: none !important; }
   }
 </style>
 </head>

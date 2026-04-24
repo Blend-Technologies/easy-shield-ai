@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import jsPDF from "jspdf";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -433,157 +432,39 @@ const ProposalEvaluator = () => {
     if (!requirementsResult && !evaluationResult && !solutionResult) return;
     setIsGeneratingReport(true);
     try {
-      const doc = new jsPDF({ unit: "pt", format: "letter" });
-      const pageW = doc.internal.pageSize.getWidth();
-      const pageH = doc.internal.pageSize.getHeight();
-      const margin = 50;
-      const contentW = pageW - margin * 2;
-      let y = margin;
-
-      const addPage = () => { doc.addPage(); y = margin; };
-      const checkPage = (needed = 40) => { if (y + needed > pageH - margin) addPage(); };
-
-      const addText = (text: string, fontSize = 11, bold = false, color = "#111111") => {
-        doc.setFontSize(fontSize);
-        doc.setFont("helvetica", bold ? "bold" : "normal");
-        doc.setTextColor(color);
-        const lines = doc.splitTextToSize(text, contentW);
-        checkPage(lines.length * fontSize * 1.5);
-        doc.text(lines, margin, y);
-        y += lines.length * fontSize * 1.5 + 2;
-      };
-
-      const addSectionHeader = (title: string) => {
-        checkPage(50);
-        y += 12;
-        doc.setFillColor("#4f46e5");
-        doc.roundedRect(margin, y - 16, contentW, 26, 3, 3, "F");
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor("#ffffff");
-        doc.text(title, margin + 10, y);
-        y += 18;
-        doc.setTextColor("#111111");
-      };
-
-      // Cover page
-      y = pageH / 3;
-      doc.setFontSize(26);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor("#4f46e5");
-      doc.text("Proposal Evaluation Report", pageW / 2, y, { align: "center" });
-      y += 38;
-      doc.setFontSize(13);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor("#555555");
-      doc.text(`Project: ${projectName}`, pageW / 2, y, { align: "center" });
-      y += 22;
-      doc.text(`Type: ${proposalType.charAt(0).toUpperCase() + proposalType.slice(1)}  |  Cloud: ${cloudProvider.toUpperCase()}`, pageW / 2, y, { align: "center" });
-      y += 22;
-      doc.text(`Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, pageW / 2, y, { align: "center" });
-
-      // Requirements
-      if (requirementsResult) {
-        addPage();
-        addSectionHeader("1. Requirements Analysis");
-        addText(requirementsResult.summary, 11);
-        addText(`Shall: ${requirementsResult.totalShall}   Must: ${requirementsResult.totalMust}`, 11, true);
-        y += 6;
-        for (const req of requirementsResult.requirements) {
-          checkPage(48);
-          doc.setFontSize(10);
-          doc.setFont("helvetica", "bold");
-          doc.setTextColor(req.type === "must" ? "#dc2626" : "#4f46e5");
-          doc.text(`[${req.id}] ${req.type.toUpperCase()}`, margin, y);
-          y += 13;
-          doc.setFont("helvetica", "normal");
-          doc.setTextColor("#111111");
-          const lines = doc.splitTextToSize(req.text, contentW);
-          checkPage(lines.length * 14);
-          doc.text(lines, margin, y);
-          y += lines.length * 14;
-          if (req.section) {
-            doc.setTextColor("#888888");
-            doc.setFontSize(9);
-            doc.text(`Section: ${req.section}`, margin, y);
-            y += 12;
-          }
-          y += 5;
+      const resp = await fetch(
+        `${import.meta.env.VITE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-report`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ projectName, proposalType, cloudProvider, requirementsResult, evaluationResult, solutionResult }),
         }
+      );
+      if (!resp.ok) throw new Error("Report generation failed");
+      const html = await resp.text();
+      const win = window.open("", "_blank");
+      if (win) {
+        win.document.write(html);
+        win.document.close();
+      } else {
+        // Fallback: blob download if popup blocked
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `proposal-evaluation-${projectName}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
       }
-
-      // Evaluation
-      if (evaluationResult) {
-        addPage();
-        addSectionHeader("2. Evaluation Results");
-        addText(`Overall Score: ${evaluationResult.overallScore}%`, 14, true);
-        addText(evaluationResult.summary, 11);
-        y += 8;
-        addText("Category Scores", 12, true);
-        for (const cat of evaluationResult.categories) {
-          checkPage(18);
-          const pct = Math.round((cat.score / cat.maxScore) * 100);
-          doc.setFontSize(10);
-          doc.setFont("helvetica", "normal");
-          doc.setTextColor("#111111");
-          doc.text(`• ${cat.name}: ${cat.score}/${cat.maxScore} (${pct}%)`, margin + 8, y);
-          y += 15;
-        }
-        y += 4;
-        if (evaluationResult.strengths?.length) {
-          addText("Strengths", 12, true);
-          for (const s of evaluationResult.strengths) addText(`• ${s}`, 10);
-          y += 4;
-        }
-        if (evaluationResult.weaknesses?.length) {
-          addText("Weaknesses", 12, true);
-          for (const w of evaluationResult.weaknesses) addText(`• ${w}`, 10);
-          y += 4;
-        }
-        if (evaluationResult.recommendations?.length) {
-          addText("Recommendations", 12, true);
-          for (const r of evaluationResult.recommendations) addText(`• ${r}`, 10);
-          y += 4;
-        }
-        if (evaluationResult.techStack?.length) {
-          addText("Recommended Tech Stack", 12, true);
-          for (const ts of evaluationResult.techStack) {
-            checkPage(16);
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor("#111111");
-            doc.text(`• ${ts.name} (${ts.category})${ts.required ? " — Required" : ""}`, margin + 8, y);
-            y += 14;
-          }
-        }
-      }
-
-      // Solution
-      if (solutionResult) {
-        addPage();
-        addSectionHeader("3. Solution Architecture");
-        addText(solutionResult.solutionTitle, 14, true);
-        addText(solutionResult.solutionOverview.replace(/[#*`]/g, ""), 11);
-        y += 8;
-        if (solutionResult.keyComponents?.length) {
-          addText("Key Components", 12, true);
-          for (const comp of solutionResult.keyComponents) {
-            checkPage(50);
-            addText(`${comp.name} (${comp.cloudProvider})`, 11, true);
-            addText(comp.description, 10);
-            if (comp.rfpQuotes?.length) {
-              for (const q of comp.rfpQuotes) addText(`"${q}"`, 9, false, "#555555");
-            }
-            y += 4;
-          }
-        }
-      }
-
-      doc.save(`proposal-evaluation-${projectName}-${Date.now()}.pdf`);
+    } catch (e: any) {
+      toast({ title: "Report error", description: e.message, variant: "destructive" });
     } finally {
       setIsGeneratingReport(false);
     }
-  }, [requirementsResult, evaluationResult, solutionResult, projectName, proposalType, cloudProvider]);
+  }, [requirementsResult, evaluationResult, solutionResult, projectName, proposalType, cloudProvider, toast]);
 
   return (
     <DashboardLayout>

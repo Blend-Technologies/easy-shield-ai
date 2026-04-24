@@ -695,7 +695,7 @@ serve(async (req) => {
     const AZURE_OPENAI_API_KEY       = Deno.env.get("AZURE_OPENAI_API_KEY") ?? "";
     const AZURE_EMBEDDING_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT") ?? "text-embedding-ada-002";
     const AZURE_API_VERSION          = Deno.env.get("AZURE_OPENAI_API_VERSION") ?? "2024-08-01-preview";
-    const AZURE_POSTGRES_URL         = Deno.env.get("AZURE_POSTGRES_URL") ?? "";
+    // document_chunks now lives in Supabase DB — always reachable from edge functions.
     const SUPABASE_DB_URL            = Deno.env.get("SUPABASE_DB_URL") ?? "";
 
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
@@ -744,7 +744,7 @@ serve(async (req) => {
         ANTHROPIC_API_KEY,
         AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY,
         AZURE_EMBEDDING_DEPLOYMENT, AZURE_API_VERSION,
-        AZURE_POSTGRES_URL, SUPABASE_DB_URL,
+        SUPABASE_DB_URL, SUPABASE_DB_URL,
       );
     }
 

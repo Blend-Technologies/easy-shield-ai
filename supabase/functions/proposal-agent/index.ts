@@ -670,12 +670,12 @@ serve(async (req) => {
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
     const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") ?? "claude-sonnet-4-6";
-    // Azure is still used for embeddings (pgvector retrieval)
+    // Azure OpenAI is still used for embeddings; document_chunks now lives in Supabase DB.
     const AZURE_OPENAI_ENDPOINT = (Deno.env.get("AZURE_OPENAI_ENDPOINT") ?? "").replace(/\/+$/, "");
     const AZURE_OPENAI_API_KEY = Deno.env.get("AZURE_OPENAI_API_KEY") ?? "";
     const AZURE_OPENAI_EMBEDDING_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT") ?? "text-embedding-ada-002";
     const AZURE_OPENAI_API_VERSION = Deno.env.get("AZURE_OPENAI_API_VERSION") ?? "2024-08-01-preview";
-    const AZURE_POSTGRES_URL = Deno.env.get("AZURE_POSTGRES_URL") ?? "";
+    const SUPABASE_DB_URL = Deno.env.get("SUPABASE_DB_URL") ?? "";
 
     if (!ANTHROPIC_API_KEY) {
       return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY is not configured" }), {
@@ -706,7 +706,7 @@ serve(async (req) => {
       ANTHROPIC_API_KEY, CLAUDE_MODEL,
       AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY,
       AZURE_OPENAI_EMBEDDING_DEPLOYMENT, AZURE_OPENAI_API_VERSION,
-      AZURE_POSTGRES_URL,
+      SUPABASE_DB_URL,
       preExtractedRequirements ?? [],
       sectionHeadings ?? [],
     );

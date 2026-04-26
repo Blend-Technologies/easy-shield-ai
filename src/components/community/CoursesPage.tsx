@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "@/hooks/use-toast";
-import { Bell, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Bell, Plus, Pencil, Trash2, Loader2, X, Maximize2, ExternalLink, Sparkles } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import {
   AlertDialog,
@@ -18,6 +18,67 @@ import {
 } from "@/components/ui/alert-dialog";
 
 type Course = Database["public"]["Tables"]["courses"]["Row"];
+
+// ─── Artifact Viewer Modal ────────────────────────────────────────────────────
+const ArtifactViewer = ({ course, onClose }: { course: Course; onClose: () => void }) => {
+  const [loaded, setLoaded] = useState(false);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-gray-950">
+      {/* Top bar */}
+      <div className="flex items-center gap-3 px-4 h-14 bg-gray-900 border-b border-white/10 flex-shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+          <Sparkles className="w-4 h-4 text-violet-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-semibold text-sm leading-tight truncate">{course.title}</p>
+          {course.subtitle && (
+            <p className="text-white/40 text-xs truncate">{course.subtitle}</p>
+          )}
+        </div>
+        <a
+          href={course.website!}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Open in new tab
+        </a>
+        <button
+          onClick={onClose}
+          className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* iframe */}
+      <div className="flex-1 relative">
+        {!loaded && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
+            <p className="text-white/40 text-sm">Loading course…</p>
+          </div>
+        )}
+        <iframe
+          src={course.website!}
+          className="w-full h-full border-0"
+          onLoad={() => setLoaded(true)}
+          allow="fullscreen"
+          title={course.title}
+        />
+      </div>
+    </div>
+  );
+};
 
 const GRADIENTS = [
   "from-orange-400 via-orange-500 to-red-500",
@@ -45,7 +106,8 @@ interface CourseCardProps {
 const CourseCard = ({ course, index, lessonCount, canManage, onEdit, onDelete, onClick }: CourseCardProps) => {
   const gradient = GRADIENTS[index % GRADIENTS.length];
   const isNew = isNewCourse(course.created_at);
-  const pct = 0; // TODO: real enrollment progress
+  const isArtifact = !!course.website;
+  const pct = 0;
 
   return (
     <div
@@ -53,30 +115,35 @@ const CourseCard = ({ course, index, lessonCount, canManage, onEdit, onDelete, o
       onClick={onClick}
     >
       {/* Banner */}
-      <div className={`relative h-[170px] bg-gradient-to-br ${gradient} overflow-hidden`}>
+      <div className={`relative h-[170px] bg-gradient-to-br ${isArtifact ? "from-violet-600 via-indigo-600 to-blue-700" : gradient} overflow-hidden`}>
         {course.logo_url && (
           <img src={course.logo_url} alt={course.title} className="absolute inset-0 w-full h-full object-cover" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <h3 className="text-white font-bold text-lg leading-tight drop-shadow">{course.title}</h3>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+
+        {/* Artifact sparkle pattern */}
+        {isArtifact && !course.logo_url && (
+          <div className="absolute inset-0 flex items-center justify-center opacity-10">
+            <Sparkles className="w-24 h-24 text-white" />
+          </div>
+        )}
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between gap-2">
+          <h3 className="text-white font-bold text-lg leading-tight drop-shadow flex-1">{course.title}</h3>
+          {isArtifact && (
+            <span className="flex-shrink-0 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-white bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full border border-white/30">
+              <Sparkles className="w-2.5 h-2.5" /> Interactive
+            </span>
+          )}
         </div>
 
-        {/* Admin controls — visible on hover */}
+        {/* Admin controls */}
         {canManage && (
           <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={onEdit}
-              title="Edit course"
-              className="w-8 h-8 bg-white/90 hover:bg-white rounded-lg flex items-center justify-center text-gray-700 shadow transition-colors"
-            >
+            <button onClick={onEdit} title="Edit course" className="w-8 h-8 bg-white/90 hover:bg-white rounded-lg flex items-center justify-center text-gray-700 shadow transition-colors">
               <Pencil className="w-3.5 h-3.5" />
             </button>
-            <button
-              onClick={onDelete}
-              title="Delete course"
-              className="w-8 h-8 bg-red-500/90 hover:bg-red-600 rounded-lg flex items-center justify-center text-white shadow transition-colors"
-            >
+            <button onClick={onDelete} title="Delete course" className="w-8 h-8 bg-red-500/90 hover:bg-red-600 rounded-lg flex items-center justify-center text-white shadow transition-colors">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -88,23 +155,31 @@ const CourseCard = ({ course, index, lessonCount, canManage, onEdit, onDelete, o
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <h3 className="font-bold text-gray-900 text-sm leading-snug">{course.title}</h3>
           {isNew && (
-            <span className="flex-shrink-0 text-xs font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100">
-              New
-            </span>
+            <span className="flex-shrink-0 text-xs font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100">New</span>
           )}
         </div>
         <p className="text-gray-500 text-xs leading-relaxed line-clamp-2 mb-4">
           {course.subtitle || course.description || "No description yet."}
         </p>
 
-        {/* Progress */}
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
-          <span>0 / {lessonCount} lessons</span>
-          <span className="font-semibold text-gray-700">{pct}%</span>
-        </div>
-        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full bg-violet-500 rounded-full" style={{ width: `${pct}%` }} />
-        </div>
+        {isArtifact ? (
+          <div className="flex items-center gap-2 pt-1">
+            <div className="flex-1 h-1.5 bg-violet-100 rounded-full" />
+            <span className="flex items-center gap-1 text-xs font-semibold text-violet-600">
+              <Maximize2 className="w-3 h-3" /> Open Course
+            </span>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+              <span>0 / {lessonCount} lessons</span>
+              <span className="font-semibold text-gray-700">{pct}%</span>
+            </div>
+            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-violet-500 rounded-full" style={{ width: `${pct}%` }} />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -136,6 +211,7 @@ const CoursesPage = () => {
   const [deleteTarget, setDeleteTarget] = useState<Course | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [artifactCourse, setArtifactCourse] = useState<Course | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
@@ -281,7 +357,7 @@ const CoursesPage = () => {
               canManage={canManageCourse(course)}
               onEdit={(e) => { e.stopPropagation(); navigate(`/community/course-builder/${course.id}`); }}
               onDelete={(e) => { e.stopPropagation(); setDeleteTarget(course); }}
-              onClick={() => navigate(`/community/course/${course.id}`)}
+              onClick={() => course.website ? setArtifactCourse(course) : navigate(`/community/course/${course.id}`)}
             />
           ))}
 
@@ -294,6 +370,9 @@ const CoursesPage = () => {
           )}
         </div>
       )}
+
+      {/* Artifact viewer */}
+      {artifactCourse && <ArtifactViewer course={artifactCourse} onClose={() => setArtifactCourse(null)} />}
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>

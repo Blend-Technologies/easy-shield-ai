@@ -4,8 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "@/hooks/use-toast";
-import { Bell, Plus, Pencil, Trash2, Loader2, X, Maximize2, ExternalLink, Sparkles } from "lucide-react";
+import { Bell, Plus, Pencil, Trash2, Loader2, X, Maximize2, Sparkles } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import GovernmentITPlaybook from "@/components/community/courses/GovernmentITPlaybook";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,11 +20,14 @@ import {
 
 type Course = Database["public"]["Tables"]["courses"]["Row"];
 
-// ─── Artifact Viewer Modal ────────────────────────────────────────────────────
-const ArtifactViewer = ({ course, onClose }: { course: Course; onClose: () => void }) => {
-  const [loaded, setLoaded] = useState(false);
+const INLINE_COURSE_COMPONENTS: Record<string, React.ComponentType> = {
+  "https://claude.ai/public/artifacts/0fa077d3-152b-40b0-97d8-1dccd3b32344": GovernmentITPlaybook,
+};
 
-  // Close on Escape
+// ─── Course Viewer Modal ──────────────────────────────────────────────────────
+const ArtifactViewer = ({ course, onClose }: { course: Course; onClose: () => void }) => {
+  const InlineComponent = course.website ? INLINE_COURSE_COMPONENTS[course.website] : null;
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
@@ -43,15 +47,6 @@ const ArtifactViewer = ({ course, onClose }: { course: Course; onClose: () => vo
             <p className="text-white/40 text-xs truncate">{course.subtitle}</p>
           )}
         </div>
-        <a
-          href={course.website!}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-          Open in new tab
-        </a>
         <button
           onClick={onClose}
           className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
@@ -60,21 +55,18 @@ const ArtifactViewer = ({ course, onClose }: { course: Course; onClose: () => vo
         </button>
       </div>
 
-      {/* iframe */}
-      <div className="flex-1 relative">
-        {!loaded && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
-            <p className="text-white/40 text-sm">Loading course…</p>
-          </div>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {InlineComponent ? (
+          <InlineComponent />
+        ) : (
+          <iframe
+            src={course.website!}
+            className="w-full h-full border-0"
+            allow="fullscreen"
+            title={course.title}
+          />
         )}
-        <iframe
-          src={course.website!}
-          className="w-full h-full border-0"
-          onLoad={() => setLoaded(true)}
-          allow="fullscreen"
-          title={course.title}
-        />
       </div>
     </div>
   );

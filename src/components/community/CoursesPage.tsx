@@ -194,7 +194,7 @@ const AddCourseCard = ({ onClick }: { onClick: () => void }) => (
 );
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-const CoursesPage = () => {
+const CoursesPage = ({ communityId }: { communityId?: string }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
@@ -256,7 +256,7 @@ const CoursesPage = () => {
       return;
     }
     toast({ title: "Program created — set up the details now!" });
-    navigate(`/community/course-builder/${data.id}`);
+    navigate(`/community/course-builder/${data.id}${communityId ? `?from=${communityId}` : ""}`);
   };
 
   const confirmDelete = async () => {
@@ -347,7 +347,7 @@ const CoursesPage = () => {
               index={i}
               lessonCount={course.lesson_count ?? lessonCounts[course.id] ?? 0}
               canManage={canManageCourse(course)}
-              onEdit={(e) => { e.stopPropagation(); navigate(`/community/course-builder/${course.id}`); }}
+              onEdit={(e) => { e.stopPropagation(); navigate(`/community/course-builder/${course.id}${communityId ? `?from=${communityId}` : ""}`); }}
               onDelete={(e) => { e.stopPropagation(); setDeleteTarget(course); }}
               onClick={() => course.website ? setArtifactCourse(course) : navigate(`/community/course/${course.id}`)}
             />

@@ -41,7 +41,7 @@ const CommunityHub = () => {
           onTabChange={setActiveTab}
         />
         <div className="pt-14">
-          <CoursesPage />
+          <CoursesPage communityId={communityId} />
         </div>
       </div>
     );

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Pencil, Settings, Loader2, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,9 @@ const PlaceholderStep = ({ label }: { label: string }) => (
 const CourseBuilder = () => {
   const navigate = useNavigate();
   const { courseId } = useParams<{ courseId: string }>();
+  const [searchParams] = useSearchParams();
+  const fromCommunityId = searchParams.get("from");
+  const backUrl = fromCommunityId ? `/community/hub/${fromCommunityId}` : "/community/hub";
   const { isAdmin, loading } = useIsAdmin();
 
   const [activeStep, setActiveStep] = useState<StepId>("landing-page");
@@ -202,7 +205,7 @@ const CourseBuilder = () => {
       return;
     }
     toast({ title: "Course deleted" });
-    navigate("/community/hub");
+    navigate(backUrl);
   };
 
   if (loading) return null;
@@ -234,7 +237,7 @@ const CourseBuilder = () => {
       {/* Top bar */}
       <header className="h-14 shrink-0 bg-foreground flex items-center px-4 gap-4">
         <button
-          onClick={() => navigate("/community/hub")}
+          onClick={() => navigate(backUrl)}
           className="flex items-center gap-1.5 text-muted-foreground hover:text-background text-sm"
         >
           <ArrowLeft className="h-4 w-4" />

@@ -28,7 +28,7 @@ const CommunityHub = () => {
     logo: null,
   };
 
-  const [activeTab, setActiveTab] = useState("Community");
+  const [activeTab, setActiveTab] = useState<string>(location.state?.initialTab ?? "Community");
   const [activeChannel, setActiveChannel] = useState("All Posts");
 
   if (activeTab === "Programs") {

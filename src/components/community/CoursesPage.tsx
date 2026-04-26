@@ -364,7 +364,15 @@ const CoursesPage = ({ communityId }: { communityId?: string }) => {
       )}
 
       {/* Artifact viewer */}
-      {artifactCourse && <ArtifactViewer course={artifactCourse} onClose={() => setArtifactCourse(null)} />}
+      {artifactCourse && (
+        <ArtifactViewer
+          course={artifactCourse}
+          onClose={() => {
+            setArtifactCourse(null);
+            if (communityId) navigate(`/community/hub/${communityId}`, { state: { initialTab: "Programs" } });
+          }}
+        />
+      )}
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>

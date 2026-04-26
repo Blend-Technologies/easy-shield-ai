@@ -369,7 +369,7 @@ const CoursesPage = ({ communityId }: { communityId?: string }) => {
           course={artifactCourse}
           onClose={() => {
             setArtifactCourse(null);
-            if (communityId) navigate(`/community/hub/${communityId}`, { state: { initialTab: "Programs" } });
+            if (communityId) navigate(`/community/hub/${communityId}?tab=programs`);
           }}
         />
       )}

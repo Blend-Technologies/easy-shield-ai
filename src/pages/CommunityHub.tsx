@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import CommunityTopNav from "@/components/community/CommunityTopNav";
 import CommunityLeftSidebar from "@/components/community/CommunityLeftSidebar";
 import CommunityFeed from "@/components/community/CommunityFeed";
@@ -28,7 +28,10 @@ const CommunityHub = () => {
     logo: null,
   };
 
-  const [activeTab, setActiveTab] = useState<string>(location.state?.initialTab ?? "Community");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<string>(
+    searchParams.get("tab") === "programs" ? "Programs" : "Community"
+  );
   const [activeChannel, setActiveChannel] = useState("All Posts");
 
   if (activeTab === "Programs") {

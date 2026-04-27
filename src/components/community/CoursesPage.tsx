@@ -4,9 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "@/hooks/use-toast";
-import { Bell, Plus, Pencil, Trash2, Loader2, X, Maximize2, Sparkles } from "lucide-react";
+import { Bell, Plus, Pencil, Trash2, Loader2, Maximize2, Sparkles } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
-import GovernmentITPlaybook from "@/components/community/courses/GovernmentITPlaybook";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,57 +19,6 @@ import {
 
 type Course = Database["public"]["Tables"]["courses"]["Row"];
 
-const INLINE_COURSE_COMPONENTS: Record<string, React.ComponentType> = {
-  "minicourse://government-it-playbook": GovernmentITPlaybook,
-};
-
-// ─── Course Viewer Modal ──────────────────────────────────────────────────────
-const ArtifactViewer = ({ course, onClose }: { course: Course; onClose: () => void }) => {
-  const InlineComponent = course.website ? INLINE_COURSE_COMPONENTS[course.website] : null;
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-gray-950">
-      {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 h-14 bg-gray-900 border-b border-white/10 flex-shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-          <Sparkles className="w-4 h-4 text-violet-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-white font-semibold text-sm leading-tight truncate">{course.title}</p>
-          {course.subtitle && (
-            <p className="text-white/40 text-xs truncate">{course.subtitle}</p>
-          )}
-        </div>
-        <button
-          onClick={onClose}
-          className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        {InlineComponent ? (
-          <InlineComponent />
-        ) : (
-          <iframe
-            src={course.website!}
-            className="w-full h-full border-0"
-            allow="fullscreen"
-            title={course.title}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
 
 const GRADIENTS = [
   "from-orange-400 via-orange-500 to-red-500",
@@ -203,7 +151,6 @@ const CoursesPage = ({ communityId }: { communityId?: string }) => {
   const [deleteTarget, setDeleteTarget] = useState<Course | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [artifactCourse, setArtifactCourse] = useState<Course | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
@@ -350,7 +297,7 @@ const CoursesPage = ({ communityId }: { communityId?: string }) => {
               canManage={canManageCourse(course)}
               onEdit={(e) => { e.stopPropagation(); navigate(`/community/course-builder/${course.id}${communityId ? `?from=${communityId}` : ""}`); }}
               onDelete={(e) => { e.stopPropagation(); setDeleteTarget(course); }}
-              onClick={() => course.content_type === "minicourse" ? setArtifactCourse(course) : navigate(`/community/course/${course.id}`)}
+              onClick={() => course.content_type === "minicourse" ? navigate(`/community/hub/${communityId}/programs/${course.id}`) : navigate(`/community/course/${course.id}`)}
             />
           ))}
 
@@ -362,17 +309,6 @@ const CoursesPage = ({ communityId }: { communityId?: string }) => {
             </div>
           )}
         </div>
-      )}
-
-      {/* Artifact viewer */}
-      {artifactCourse && (
-        <ArtifactViewer
-          course={artifactCourse}
-          onClose={() => {
-            setArtifactCourse(null);
-            if (communityId) navigate(`/community/hub/${communityId}/programs`);
-          }}
-        />
       )}
 
       {/* Delete confirmation */}

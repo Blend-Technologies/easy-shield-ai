@@ -24,6 +24,7 @@ import CommunityHub from "./pages/CommunityHub";
 import CommunityJoin from "./pages/CommunityJoin";
 import CourseBuilder from "./pages/CourseBuilder";
 import CoursePlayer from "./pages/CoursePlayer";
+import MiniCourseViewer from "./pages/MiniCourseViewer";
 import AccountSettings from "./pages/AccountSettings";
 import ProfileSettings from "./pages/ProfileSettings";
 import { useOnlinePresence } from "./hooks/useOnlinePresence";
@@ -107,6 +108,7 @@ const App = () => (
           <Route path="/community/create" element={<CommunityCreate />} />
           <Route path="/community/hub/:communityId" element={<CommunityHub />} />
           <Route path="/community/hub/:communityId/:tab" element={<CommunityHub />} />
+          <Route path="/community/hub/:communityId/programs/:courseId" element={<MiniCourseViewer />} />
           <Route path="/community/course-builder/:courseId" element={<CourseBuilder />} />
           <Route path="/community/course/:courseId" element={<CoursePlayer />} />
           <Route path="/community/settings" element={<AccountSettings />} />

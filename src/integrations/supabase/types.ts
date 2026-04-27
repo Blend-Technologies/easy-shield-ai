@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -10,7 +11,32 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.4"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -92,6 +118,38 @@ export type Database = {
         }
         Relationships: []
       }
+      community_members: {
+        Row: {
+          community_id: string
+          email: string
+          full_name: string
+          id: string
+          joined_at: string | null
+        }
+        Insert: {
+          community_id: string
+          email: string
+          full_name: string
+          id?: string
+          joined_at?: string | null
+        }
+        Update: {
+          community_id?: string
+          email?: string
+          full_name?: string
+          id?: string
+          joined_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_posts: {
         Row: {
           body: string
@@ -101,6 +159,7 @@ export type Database = {
           id: string
           image_url: string | null
           likes: number
+          pinned: boolean
           title: string | null
           updated_at: string
           user_id: string
@@ -113,6 +172,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes?: number
+          pinned?: boolean
           title?: string | null
           updated_at?: string
           user_id: string
@@ -125,40 +185,12 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes?: number
+          pinned?: boolean
           title?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
-      }
-      course_enrollments: {
-        Row: {
-          course_id: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          course_id: string
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          course_id?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "course_enrollments_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       course_items: {
         Row: {
@@ -248,6 +280,7 @@ export type Database = {
       courses: {
         Row: {
           category: string | null
+          content_type: string
           created_at: string
           created_by: string
           description: string | null
@@ -263,6 +296,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          content_type?: string
           created_at?: string
           created_by: string
           description?: string | null
@@ -278,6 +312,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          content_type?: string
           created_at?: string
           created_by?: string
           description?: string | null
@@ -326,6 +361,36 @@ export type Database = {
         }
         Relationships: []
       }
+      document_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          document_name: string
+          embedding: string | null
+          id: number
+          session_id: string
+        }
+        Insert: {
+          chunk_index?: number
+          content: string
+          created_at?: string
+          document_name: string
+          embedding?: string | null
+          id?: number
+          session_id: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          document_name?: string
+          embedding?: string | null
+          id?: number
+          session_id?: string
+        }
+        Relationships: []
+      }
       event_rsvps: {
         Row: {
           created_at: string
@@ -354,6 +419,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      invitations: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
+      knowledge_base_chunks: {
+        Row: {
+          category: string
+          chunk_index: number
+          content: string
+          created_at: string
+          document_name: string
+          embedding: string | null
+          id: number
+        }
+        Insert: {
+          category?: string
+          chunk_index?: number
+          content: string
+          created_at?: string
+          document_name: string
+          embedding?: string | null
+          id?: number
+        }
+        Update: {
+          category?: string
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          document_name?: string
+          embedding?: string | null
+          id?: number
+        }
+        Relationships: []
       }
       post_bookmarks: {
         Row: {
@@ -530,24 +649,36 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          due_date: string | null
           id: string
+          is_favorite: boolean
           name: string
+          priority: string
+          state: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           description?: string | null
+          due_date?: string | null
           id?: string
+          is_favorite?: boolean
           name: string
+          priority?: string
+          state?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           description?: string | null
+          due_date?: string | null
           id?: string
+          is_favorite?: boolean
           name?: string
+          priority?: string
+          state?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -672,6 +803,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "team_members_user_id_profiles_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -745,54 +883,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_streaks: {
-        Row: {
-          current_streak: number
-          id: string
-          last_activity_date: string | null
-          longest_streak: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          current_streak?: number
-          id?: string
-          last_activity_date?: string | null
-          longest_streak?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          current_streak?: number
-          id?: string
-          last_activity_date?: string | null
-          longest_streak?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_xp: {
-        Row: {
-          id: string
-          total_xp: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          total_xp?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          id?: string
-          total_xp?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       work_items: {
         Row: {
           assignee_initials: string | null
@@ -853,47 +943,11 @@ export type Database = {
           },
         ]
       }
-      xp_transactions: {
-        Row: {
-          amount: number
-          created_at: string
-          id: string
-          source: string
-          source_id: string | null
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          id?: string
-          source: string
-          source_id?: string | null
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          id?: string
-          source?: string
-          source_id?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      award_xp: {
-        Args: {
-          _amount: number
-          _source: string
-          _source_id?: string
-          _user_id: string
-        }
-        Returns: undefined
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1033,6 +1087,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "member"],

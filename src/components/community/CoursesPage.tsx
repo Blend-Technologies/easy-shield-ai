@@ -21,7 +21,7 @@ import {
 type Course = Database["public"]["Tables"]["courses"]["Row"];
 
 const INLINE_COURSE_COMPONENTS: Record<string, React.ComponentType> = {
-  "https://claude.ai/public/artifacts/0fa077d3-152b-40b0-97d8-1dccd3b32344": GovernmentITPlaybook,
+  "minicourse://government-it-playbook": GovernmentITPlaybook,
 };
 
 // ─── Course Viewer Modal ──────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ interface CourseCardProps {
 const CourseCard = ({ course, index, lessonCount, canManage, onEdit, onDelete, onClick }: CourseCardProps) => {
   const gradient = GRADIENTS[index % GRADIENTS.length];
   const isNew = isNewCourse(course.created_at);
-  const isArtifact = !!course.website;
+  const isMiniCourse = course.content_type === "minicourse";
   const pct = 0;
 
   return (
@@ -107,14 +107,14 @@ const CourseCard = ({ course, index, lessonCount, canManage, onEdit, onDelete, o
       onClick={onClick}
     >
       {/* Banner */}
-      <div className={`relative h-[170px] bg-gradient-to-br ${isArtifact ? "from-violet-600 via-indigo-600 to-blue-700" : gradient} overflow-hidden`}>
+      <div className={`relative h-[170px] bg-gradient-to-br ${isMiniCourse ? "from-amber-600 via-yellow-700 to-amber-900" : gradient} overflow-hidden`}>
         {course.logo_url && (
           <img src={course.logo_url} alt={course.title} className="absolute inset-0 w-full h-full object-cover" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
 
-        {/* Artifact sparkle pattern */}
-        {isArtifact && !course.logo_url && (
+        {/* Mini course pattern */}
+        {isMiniCourse && !course.logo_url && (
           <div className="absolute inset-0 flex items-center justify-center opacity-10">
             <Sparkles className="w-24 h-24 text-white" />
           </div>
@@ -122,9 +122,9 @@ const CourseCard = ({ course, index, lessonCount, canManage, onEdit, onDelete, o
 
         <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between gap-2">
           <h3 className="text-white font-bold text-lg leading-tight drop-shadow flex-1">{course.title}</h3>
-          {isArtifact && (
-            <span className="flex-shrink-0 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-white bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full border border-white/30">
-              <Sparkles className="w-2.5 h-2.5" /> Interactive
+          {isMiniCourse && (
+            <span className="flex-shrink-0 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-white bg-amber-500/40 backdrop-blur-sm px-2 py-1 rounded-full border border-amber-300/40">
+              <Sparkles className="w-2.5 h-2.5" /> Mini Course
             </span>
           )}
         </div>
@@ -154,11 +154,11 @@ const CourseCard = ({ course, index, lessonCount, canManage, onEdit, onDelete, o
           {course.subtitle || course.description || "No description yet."}
         </p>
 
-        {isArtifact ? (
+        {isMiniCourse ? (
           <div className="flex items-center gap-2 pt-1">
-            <div className="flex-1 h-1.5 bg-violet-100 rounded-full" />
-            <span className="flex items-center gap-1 text-xs font-semibold text-violet-600">
-              <Maximize2 className="w-3 h-3" /> Open Course
+            <div className="flex-1 h-1.5 bg-amber-100 rounded-full" />
+            <span className="flex items-center gap-1 text-xs font-semibold text-amber-600">
+              <Maximize2 className="w-3 h-3" /> Open Mini Course
             </span>
           </div>
         ) : (
@@ -220,6 +220,7 @@ const CoursesPage = ({ communityId }: { communityId?: string }) => {
       const { data, error } = await supabase
         .from("courses")
         .select("*")
+        .neq("content_type", "community")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data as Course[];
@@ -247,7 +248,7 @@ const CoursesPage = ({ communityId }: { communityId?: string }) => {
     setCreating(true);
     const { data, error } = await supabase
       .from("courses")
-      .insert({ title: "Untitled Program", created_by: user.id })
+      .insert({ title: "Untitled Program", created_by: user.id, content_type: "course" })
       .select()
       .single();
     setCreating(false);
@@ -349,7 +350,7 @@ const CoursesPage = ({ communityId }: { communityId?: string }) => {
               canManage={canManageCourse(course)}
               onEdit={(e) => { e.stopPropagation(); navigate(`/community/course-builder/${course.id}${communityId ? `?from=${communityId}` : ""}`); }}
               onDelete={(e) => { e.stopPropagation(); setDeleteTarget(course); }}
-              onClick={() => course.website ? setArtifactCourse(course) : navigate(`/community/course/${course.id}`)}
+              onClick={() => course.content_type === "minicourse" ? setArtifactCourse(course) : navigate(`/community/course/${course.id}`)}
             />
           ))}
 

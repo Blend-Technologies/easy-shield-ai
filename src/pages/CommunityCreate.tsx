@@ -24,6 +24,7 @@ const CommunityCreate = () => {
     const { data: all } = await supabase
       .from("courses")
       .select("id, title, subtitle, description, category, logo_url, created_at, created_by")
+      .eq("content_type", "community")
       .order("created_at", { ascending: false });
 
     setAllCommunities(all || []);

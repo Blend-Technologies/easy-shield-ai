@@ -74,7 +74,7 @@ const CommunityCreateForm = ({ onBack }: Props) => {
         .insert({
           title: form.name, subtitle: form.tagline || "Data Freelancer",
           description: form.description, category: form.category,
-          website: form.website, logo_url: logoUrl, created_by: user.id,
+          website: form.website, logo_url: logoUrl, created_by: user.id, content_type: "community",
         } as any)
         .select().single();
       if (error) {

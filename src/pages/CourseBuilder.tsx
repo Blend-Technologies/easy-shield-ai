@@ -77,7 +77,7 @@ const CourseBuilder = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const [searchParams] = useSearchParams();
   const fromCommunityId = searchParams.get("from");
-  const backUrl = fromCommunityId ? `/community/hub/${fromCommunityId}` : "/community/hub";
+  const backUrl = fromCommunityId ? `/community/hub/${fromCommunityId}/programs` : "/community/hub";
   const { isAdmin, loading } = useIsAdmin();
 
   const [activeStep, setActiveStep] = useState<StepId>("landing-page");

@@ -106,6 +106,7 @@ const App = () => (
           <Route path="/community/join/:communityId" element={<CommunityJoin />} />
           <Route path="/community/create" element={<CommunityCreate />} />
           <Route path="/community/hub/:communityId" element={<CommunityHub />} />
+          <Route path="/community/hub/:communityId/:tab" element={<CommunityHub />} />
           <Route path="/community/course-builder/:courseId" element={<CourseBuilder />} />
           <Route path="/community/course/:courseId" element={<CoursePlayer />} />
           <Route path="/community/settings" element={<AccountSettings />} />

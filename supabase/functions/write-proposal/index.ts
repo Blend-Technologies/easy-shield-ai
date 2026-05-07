@@ -325,6 +325,9 @@ MISSION DIRECTIVE: Use the format and layouts of the provided reference document
 5. Reference specific RFP section numbers when addressing requirements.
 6. Show HOW the company will comply — never just "we will comply."
 7. Architecture section MUST contain the placeholder block exactly as specified.
+8. NEVER use em dashes (—) or en dashes (–) anywhere. Use commas, semicolons, colons, or rewrite the sentence instead.
+9. NEVER use curly/smart quotes (" " ' '). Use only straight quotation marks and apostrophes.
+10. NEVER use decorative bullets (•, ·, ‣, ◦). Use only standard Markdown hyphens (-) for lists.
 
 ═══ STRICT MARKDOWN FORMATTING RULES ═══
 HEADINGS: one blank line before AND after every # H1, ## H2, ### H3
@@ -365,9 +368,9 @@ TABLES — blank line before AND after:
 ARCHITECTURE PLACEHOLDER:
 > [ARCHITECTURE DIAGRAM — Insert as Exhibit A]
 
-GLOSSARIES — NEVER use a table. One definition per line:
-**ALM** — Application Lifecycle Management
-**API** — Application Programming Interface
+GLOSSARIES — NEVER use a table. One definition per line, using a colon (not an em dash):
+**ALM:** Application Lifecycle Management
+**API:** Application Programming Interface
 
 TABLES only for: compliance matrices, risk registers, staffing matrices, schedule milestones, performance metrics.
 
@@ -447,7 +450,12 @@ async function runModification(
       ? outlineSections
       : (existingProposalText.match(/^#{1,2} .+/gm) ?? []).map((h) => h.replace(/^#{1,2} /, ""));
 
-    const system = `You are an expert government contract proposal writer. You will receive an existing proposal and update instructions. Apply all requested changes — this includes modifying existing sections, expanding sections with more detail, AND adding entirely new sections that do not yet exist. Professional tone and Markdown formatting must be maintained throughout. Output the COMPLETE updated proposal — do not truncate or summarize any section. After ALL sections are written, end with <<<END_OF_PROPOSAL>>> on its own line.`;
+    const system = `You are an expert government contract proposal writer. You will receive an existing proposal and update instructions. Apply all requested changes — this includes modifying existing sections, expanding sections with more detail, AND adding entirely new sections that do not yet exist. Professional tone and Markdown formatting must be maintained throughout. Output the COMPLETE updated proposal — do not truncate or summarize any section. After ALL sections are written, end with <<<END_OF_PROPOSAL>>> on its own line.
+
+FORMATTING RULES (always enforce, even in modified sections):
+- NEVER use em dashes (—) or en dashes (–). Use commas, semicolons, colons, or rewrite instead.
+- NEVER use curly/smart quotes (" " ' '). Use straight quotation marks and apostrophes only.
+- NEVER use decorative bullets (•, ·, ‣). Use only standard Markdown hyphens (-).`;
 
     const user = `Apply the following updates to the proposal below. You may:
 - Modify or rewrite any existing section

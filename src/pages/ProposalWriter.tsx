@@ -132,6 +132,10 @@ const ProposalWriter = () => {
   const [modificationPrompt, setModificationPrompt] = useState("");
   const [isModifying,        setIsModifying]        = useState(false);
 
+  // ── inline editing state ──
+  const [isEditing,    setIsEditing]    = useState(false);
+  const [hasUserEdits, setHasUserEdits] = useState(false);
+
   const rfpRef            = useRef<HTMLInputElement>(null);
   const capRef            = useRef<HTMLInputElement>(null);
   const logoRef           = useRef<HTMLInputElement>(null);
@@ -277,6 +281,8 @@ const ProposalWriter = () => {
     }
 
     setIsAgentRunning(true);
+    setIsEditing(false);
+    setHasUserEdits(false);
     setAgentLog([]);
     setRequirementsResult(null);
     setProposal("");
@@ -447,7 +453,11 @@ const ProposalWriter = () => {
     if (!proposal || !modificationPrompt.trim() || isModifying || isAgentRunning) return;
 
     setIsModifying(true);
+    setIsEditing(false);
     const savedProposal = proposal;
+    const effectiveInstructions = hasUserEdits
+      ? `CRITICAL — USER EDITS PROTECTION: This proposal contains manual edits made directly by the user. You MUST preserve ALL existing text exactly as written. Do NOT rephrase, reword, or restructure any existing content unless it is explicitly named in the update instructions below. Only apply the specific changes requested.\n\nUPDATE INSTRUCTIONS:\n${modificationPrompt.trim()}`
+      : modificationPrompt.trim();
     setProposal("");
     appendLog({ type: "tool_start", tool: "write_proposal",
       message: `Applying modifications: "${modificationPrompt.trim().slice(0, 80)}${modificationPrompt.length > 80 ? "…" : ""}"` });
@@ -529,7 +539,7 @@ const ProposalWriter = () => {
 
     try {
       let { done } = await streamModPass({
-        modificationInstructions: modificationPrompt.trim(),
+        modificationInstructions: effectiveInstructions,
         existingProposalText: savedProposal,
         companyName: companyName.trim() || "Our Company",
         sessionId,
@@ -550,6 +560,7 @@ const ProposalWriter = () => {
       }
 
       setModificationPrompt("");
+      setHasUserEdits(false);
       toast({ title: "Proposal updated!", description: "Modifications applied successfully." });
     } catch (e: any) {
       if (e.name === "AbortError") {
@@ -569,6 +580,8 @@ const ProposalWriter = () => {
   const resetAgent = () => {
     abortRef.current?.abort();
     setIsAgentRunning(false);
+    setIsEditing(false);
+    setHasUserEdits(false);
     setAgentLog([]);
     setRequirementsResult(null);
     setProposal("");
@@ -1040,7 +1053,24 @@ const ProposalWriter = () => {
                   )}
                 </div>
                 {proposal && !isAgentRunning && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="shadow-sm"
+                      style={isEditing
+                        ? { borderColor: palette.primary, color: palette.primary }
+                        : { borderColor: palette.border, color: "var(--muted-foreground)" }}
+                      onClick={() => setIsEditing((v) => !v)}
+                      title={isEditing ? "Switch to preview" : "Edit proposal text directly"}
+                    >
+                      {isEditing ? (
+                        <><Eye className="w-3.5 h-3.5 mr-1.5" />Preview</>
+                      ) : (
+                        <><Pencil className="w-3.5 h-3.5 mr-1.5" />{hasUserEdits ? "Edit ✓" : "Edit"}</>
+                      )}
+                    </Button>
+                    <div className="w-px h-4 bg-border" />
                     <Button
                       size="sm"
                       className="text-white shadow-sm"
@@ -1180,21 +1210,41 @@ const ProposalWriter = () => {
                         border-radius: 3px;
                       }
                     `}</style>
-                    <div className="proposal-output max-w-none text-foreground">
-                      <ReactMarkdown>{proposal}</ReactMarkdown>
-                      {(isAgentRunning || isModifying) && proposal && (
-                        <span className="inline-block w-2 h-4 ml-0.5 animate-pulse rounded-sm" style={{ background: palette.primary }} />
-                      )}
-                    </div>
+                    {isEditing ? (
+                      <textarea
+                        className="w-full h-[calc(100vh-360px)] min-h-[400px] font-mono text-sm leading-relaxed bg-background border border-input rounded-lg px-4 py-3 resize-none focus:outline-none focus:ring-1 focus:ring-ring text-foreground"
+                        value={proposal}
+                        onChange={(e) => {
+                          setProposal(e.target.value);
+                          setHasUserEdits(true);
+                        }}
+                        spellCheck
+                      />
+                    ) : (
+                      <div className="proposal-output max-w-none text-foreground">
+                        <ReactMarkdown>{proposal}</ReactMarkdown>
+                        {(isAgentRunning || isModifying) && proposal && (
+                          <span className="inline-block w-2 h-4 ml-0.5 animate-pulse rounded-sm" style={{ background: palette.primary }} />
+                        )}
+                      </div>
+                    )}
                   </ScrollArea>
 
                   {/* ── Modification prompt ── */}
                   {proposal && !isAgentRunning && !isModifying && (
                     <div className="pt-3 mt-2 border-t border-border/50 space-y-2 shrink-0">
-                      <Label className="text-xs font-medium flex items-center gap-1.5">
-                        <Pencil className="w-3.5 h-3.5" style={{ color: palette.primary }} />
-                        Modify Proposal
-                      </Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium flex items-center gap-1.5">
+                          <Pencil className="w-3.5 h-3.5" style={{ color: palette.primary }} />
+                          Modify Proposal
+                        </Label>
+                        {hasUserEdits && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                            style={{ color: palette.primary, borderColor: palette.border, background: `${palette.primary}10` }}>
+                            Your edits are protected
+                          </span>
+                        )}
+                      </div>
                       <textarea
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[72px] resize-none focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
                         placeholder="Modify existing sections or add new ones — e.g. 'Add a Transition Plan section after Section 5' or 'Expand the Technical Architecture with more Azure details' or 'Insert a staffing matrix table in Section 4'"

@@ -27,6 +27,7 @@ import CoursePlayer from "./pages/CoursePlayer";
 import MiniCourseViewer from "./pages/MiniCourseViewer";
 import AccountSettings from "./pages/AccountSettings";
 import ProfileSettings from "./pages/ProfileSettings";
+import JoinTeam from "./pages/JoinTeam";
 import { useOnlinePresence } from "./hooks/useOnlinePresence";
 import { useEffect } from "react";
 import { supabase } from "./integrations/supabase/client";
@@ -35,6 +36,37 @@ const queryClient = new QueryClient();
 
 const OnlinePresenceTracker = () => {
   useOnlinePresence();
+  return null;
+};
+
+// Accept a pending team invitation after the user authenticates
+const PendingTeamJoin = () => {
+  useEffect(() => {
+    const handleJoin = async () => {
+      const token = localStorage.getItem("pendingTeamInvite");
+      if (!token) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      localStorage.removeItem("pendingTeamInvite");
+
+      const res = await supabase.functions.invoke("invite-team-member", {
+        body: { action: "accept", token },
+      });
+
+      if (!res.error && !res.data?.error) {
+        window.location.href = "/dashboard/spark";
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") handleJoin();
+    });
+    handleJoin();
+
+    return () => subscription.unsubscribe();
+  }, []);
   return null;
 };
 
@@ -84,6 +116,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <OnlinePresenceTracker />
+      <PendingTeamJoin />
       <PendingCommunityJoin />
       <BrowserRouter>
         <Routes>
@@ -113,6 +146,7 @@ const App = () => (
           <Route path="/community/course/:courseId" element={<CoursePlayer />} />
           <Route path="/community/settings" element={<AccountSettings />} />
           <Route path="/community/profile" element={<ProfileSettings />} />
+          <Route path="/join-team" element={<JoinTeam />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

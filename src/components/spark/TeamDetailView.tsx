@@ -20,12 +20,21 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Pencil, UserPlus, Trash2, Save, Users, FileText } from "lucide-react";
+import { ArrowLeft, Pencil, UserPlus, Trash2, Save, Users, FileText, Mail, Clock, X } from "lucide-react";
 import { Team } from "@/hooks/useTeams";
 import { useTeamMembers, TeamMember } from "@/hooks/useTeamMembers";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+
+type PendingInvite = {
+  id: string;
+  email: string;
+  full_name: string;
+  title: string;
+  created_at: string;
+  expires_at: string;
+};
 
 type Props = {
   team: Team;
@@ -47,10 +56,13 @@ const TeamDetailView = ({ team, onBack }: Props) => {
   const [savingDesc, setSavingDesc] = useState(false);
 
   const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState("");
-  const [newMemberRole, setNewMemberRole] = useState("Project Manager");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<{ id: string; full_name: string | null }[]>([]);
+  const [inviteFullName, setInviteFullName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteTitle, setInviteTitle] = useState("Project Manager");
+  const [inviteSending, setInviteSending] = useState(false);
+
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
+  const [invitesLoading, setInvitesLoading] = useState(false);
 
   const handleSaveDescription = async () => {
     setSavingDesc(true);
@@ -68,42 +80,60 @@ const TeamDetailView = ({ team, onBack }: Props) => {
     }
   };
 
-  // Search profiles as user types
-  useEffect(() => {
-    if (!searchQuery.trim() || searchQuery.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    const timeout = setTimeout(async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .ilike("full_name", `%${searchQuery.trim()}%`)
-        .limit(10);
-      // Filter out users already in the team
-      const memberIds = members.map((m) => m.user_id);
-      setSearchResults((data || []).filter((p) => !memberIds.includes(p.id)));
-    }, 300);
-    return () => clearTimeout(timeout);
-  }, [searchQuery, members]);
+  const fetchPendingInvites = async () => {
+    setInvitesLoading(true);
+    const { data } = await supabase
+      .from("team_invitations")
+      .select("id, email, full_name, title, created_at, expires_at")
+      .eq("team_id", team.id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+    setPendingInvites(data || []);
+    setInvitesLoading(false);
+  };
 
-  const handleAddMember = () => {
-    if (!selectedUserId) {
-      toast({ title: "Select a user", description: "Please select a user from the search results.", variant: "destructive" });
+  useEffect(() => {
+    fetchPendingInvites();
+  }, [team.id]);
+
+  const handleSendInvite = async () => {
+    if (!inviteFullName.trim()) {
+      toast({ title: "Full name required", variant: "destructive" });
       return;
     }
-    addMember.mutate(
-      { userId: selectedUserId, role: newMemberRole },
-      {
-        onSuccess: () => {
-          setAddMemberOpen(false);
-          setSelectedUserId("");
-          setSearchQuery("");
-          setNewMemberRole("Project Manager");
-          setSearchResults([]);
-        },
-      }
-    );
+    if (!inviteEmail.trim()) {
+      toast({ title: "Email required", variant: "destructive" });
+      return;
+    }
+    setInviteSending(true);
+    const res = await supabase.functions.invoke("invite-team-member", {
+      body: { action: "send", team_id: team.id, email: inviteEmail.trim(), full_name: inviteFullName.trim(), title: inviteTitle },
+    });
+    setInviteSending(false);
+
+    if (res.error || res.data?.error) {
+      toast({ title: "Failed to send invitation", description: res.data?.error ?? res.error?.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Invitation sent", description: `An email has been sent to ${inviteEmail.trim()}.` });
+    setAddMemberOpen(false);
+    setInviteFullName("");
+    setInviteEmail("");
+    setInviteTitle("Project Manager");
+    fetchPendingInvites();
+  };
+
+  const handleCancelInvite = async (inviteId: string) => {
+    const res = await supabase.functions.invoke("invite-team-member", {
+      body: { action: "cancel", invitation_id: inviteId, team_id: team.id },
+    });
+    if (res.error || res.data?.error) {
+      toast({ title: "Failed to cancel invitation", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Invitation cancelled" });
+    fetchPendingInvites();
   };
 
   return (
@@ -219,7 +249,7 @@ const TeamDetailView = ({ team, onBack }: Props) => {
           ) : members.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="w-10 h-10 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No members yet. Add your first team member.</p>
+              <p className="text-sm">No members yet. Invite your first team member.</p>
             </div>
           ) : (
             <div className="space-y-2 max-w-2xl">
@@ -233,47 +263,74 @@ const TeamDetailView = ({ team, onBack }: Props) => {
               ))}
             </div>
           )}
+
+          {pendingInvites.length > 0 && (
+            <div className="max-w-2xl mt-6">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <Clock className="w-3 h-3" />
+                Pending Invitations
+              </h3>
+              <div className="space-y-2">
+                {pendingInvites.map((inv) => (
+                  <div key={inv.id} className="flex items-center gap-3 p-3 rounded-lg border border-dashed border-border">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{inv.full_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{inv.email}</p>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] shrink-0">{inv.title}</Badge>
+                    <Badge variant="secondary" className="text-[10px] shrink-0">Pending</Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                      onClick={() => handleCancelInvite(inv.id)}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
-      {/* Add Member Dialog - outside Tabs to avoid z-index issues */}
-      <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+      {/* Invite Member Dialog */}
+      <Dialog open={addMemberOpen} onOpenChange={(open) => {
+        setAddMemberOpen(open);
+        if (!open) { setInviteFullName(""); setInviteEmail(""); setInviteTitle("Project Manager"); }
+      }}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Add Team Member</DialogTitle>
+            <DialogTitle>Invite Team Member</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Search by name</Label>
+              <Label htmlFor="invite-name">Full Name</Label>
               <Input
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setSelectedUserId(""); }}
-                placeholder="Type a name to search..."
+                id="invite-name"
+                value={inviteFullName}
+                onChange={(e) => setInviteFullName(e.target.value)}
+                placeholder="Jane Smith"
                 autoFocus
               />
-              {searchResults.length > 0 && (
-                <div className="border border-border rounded-md max-h-32 overflow-auto">
-                  {searchResults.map((user) => (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() => { setSelectedUserId(user.id); setSearchQuery(user.full_name || ""); setSearchResults([]); }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${
-                        selectedUserId === user.id ? "bg-accent font-medium" : ""
-                      }`}
-                    >
-                      {user.full_name || "Unnamed User"}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {searchQuery.length >= 2 && searchResults.length === 0 && !selectedUserId && (
-                <p className="text-xs text-muted-foreground">No users found</p>
-              )}
             </div>
             <div className="space-y-2">
-              <Label>Role</Label>
-              <Select value={newMemberRole} onValueChange={setNewMemberRole}>
+              <Label htmlFor="invite-email">Email Address</Label>
+              <Input
+                id="invite-email"
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="jane@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Select value={inviteTitle} onValueChange={setInviteTitle}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -284,11 +341,17 @@ const TeamDetailView = ({ team, onBack }: Props) => {
                 </SelectContent>
               </Select>
             </div>
+            <p className="text-xs text-muted-foreground">
+              An invitation email will be sent. The link expires in 7 days.
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddMemberOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddMember} disabled={!selectedUserId || addMember.isPending}>
-              {addMember.isPending ? "Adding..." : "Add Member"}
+            <Button
+              onClick={handleSendInvite}
+              disabled={inviteSending || !inviteFullName.trim() || !inviteEmail.trim()}
+            >
+              {inviteSending ? "Sending..." : "Send Invitation"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import SparkLayout from "@/components/spark/SparkLayout";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -467,7 +467,7 @@ const ProposalEvaluator = () => {
   }, [requirementsResult, evaluationResult, solutionResult, projectName, proposalType, cloudProvider, toast]);
 
   return (
-    <DashboardLayout>
+    <SparkLayout>
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/spark")} className="shrink-0">
@@ -923,7 +923,7 @@ const ProposalEvaluator = () => {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </SparkLayout>
   );
 };
 

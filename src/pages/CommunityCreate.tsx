@@ -18,30 +18,35 @@ const CommunityCreate = () => {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    setCurrentUserId(user?.id ?? null);
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user ?? null;
+      setCurrentUserId(user?.id ?? null);
 
-    const { data: all } = await supabase
-      .from("courses")
-      .select("id, title, subtitle, description, category, logo_url, created_at, created_by")
-      .eq("content_type", "community")
-      .order("created_at", { ascending: false });
+      const { data: all } = await supabase
+        .from("courses")
+        .select("id, title, subtitle, description, category, logo_url, created_at, created_by, content_type")
+        .eq("content_type", "community")
+        .order("created_at", { ascending: false });
 
-    setAllCommunities(all || []);
+      setAllCommunities(all || []);
 
-    if (user) {
-      setMyCommunities((all || []).filter((c) => c.created_by === user.id));
+      if (user) {
+        setMyCommunities((all || []).filter((c) => c.created_by === user.id));
 
-      const { data: enrollments } = await supabase
-        .from("course_enrollments")
-        .select("course_id")
-        .eq("user_id", user.id);
+        const { data: enrollments } = await supabase
+          .from("course_enrollments")
+          .select("course_id")
+          .eq("user_id", user.id);
 
-      const enrolledIds = new Set((enrollments || []).map((e) => e.course_id));
-      setJoinedCommunities((all || []).filter((c) => enrolledIds.has(c.id)));
+        const enrolledIds = new Set((enrollments || []).map((e) => e.course_id));
+        setJoinedCommunities((all || []).filter((c) => enrolledIds.has(c.id)));
+      }
+    } catch (err) {
+      console.error("CommunityCreate fetchAll error:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);

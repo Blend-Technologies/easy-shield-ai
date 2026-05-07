@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import {
   Home,
@@ -77,6 +77,7 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack, on
   const [spacesExpanded, setSpacesExpanded] = useState(true);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
   const { teams, isLoading: teamsLoading, createTeam, deleteTeam } = useTeams(selectedProjectId);
   const scopeSubItems = getScopeSubItems(selectedProject?.name || "");
@@ -129,16 +130,23 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack, on
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
-              {scopeSubItems.map((sub) => (
-                <button
-                  key={sub.label}
-                  onClick={() => navigate(sub.href)}
-                  className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm text-spark-sidebar-foreground hover:bg-black/5 transition-colors"
-                >
-                  <sub.icon className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
-                  <span className="text-left">{sub.label}</span>
-                </button>
-              ))}
+              {scopeSubItems.map((sub) => {
+                const isActive = location.pathname === sub.href.split("?")[0];
+                return (
+                  <button
+                    key={sub.label}
+                    onClick={() => navigate(sub.href)}
+                    className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors ${
+                      isActive
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-spark-sidebar-foreground hover:bg-black/5"
+                    }`}
+                  >
+                    <sub.icon className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-left">{sub.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </CollapsibleContent>
         </Collapsible>

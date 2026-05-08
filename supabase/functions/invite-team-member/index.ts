@@ -68,7 +68,15 @@ serve(async (req) => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email.trim())) return json({ error: "Invalid email address" });
 
-      // Verify caller is a member of this team
+      const { data: team } = await adminClient
+        .from("teams")
+        .select("id, name, slug, created_by")
+        .eq("id", team_id)
+        .single();
+
+      if (!team) return json({ error: "Team not found" });
+
+      // Caller must be the team creator OR an existing team member
       const { data: membership } = await adminClient
         .from("team_members")
         .select("id")
@@ -76,15 +84,9 @@ serve(async (req) => {
         .eq("user_id", caller.id)
         .maybeSingle();
 
-      if (!membership) return json({ error: "You are not a member of this team" });
-
-      const { data: team } = await adminClient
-        .from("teams")
-        .select("id, name, slug")
-        .eq("id", team_id)
-        .single();
-
-      if (!team) return json({ error: "Team not found" });
+      if (!membership && team.created_by !== caller.id) {
+        return json({ error: "You are not a member of this team" });
+      }
 
       const token = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -184,15 +186,22 @@ serve(async (req) => {
       const { invitation_id, team_id } = body;
       if (!invitation_id || !team_id) return json({ error: "invitation_id and team_id are required" });
 
-      // Verify caller is a member of this team
-      const { data: membership } = await adminClient
+      const { data: cancelTeam } = await adminClient
+        .from("teams")
+        .select("created_by")
+        .eq("id", team_id)
+        .maybeSingle();
+
+      const { data: cancelMembership } = await adminClient
         .from("team_members")
         .select("id")
         .eq("team_id", team_id)
         .eq("user_id", caller.id)
         .maybeSingle();
 
-      if (!membership) return json({ error: "You are not a member of this team" });
+      if (!cancelMembership && cancelTeam?.created_by !== caller.id) {
+        return json({ error: "You are not a member of this team" });
+      }
 
       const { error: delErr } = await adminClient
         .from("team_invitations")

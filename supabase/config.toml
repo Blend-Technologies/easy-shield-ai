@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.seed-knowledge-base]
 verify_jwt = false
+
+[functions.invite-team-member]
+verify_jwt = false

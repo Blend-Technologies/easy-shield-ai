@@ -113,25 +113,28 @@ serve(async (req) => {
         .maybeSingle();
       const inviterName = callerProfile?.full_name || "A team member";
 
-      if (resendApiKey) {
-        const joinUrl = `${siteUrl}/join-team?token=${token}`;
-        try {
-          await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${resendApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: fromEmail,
-              to: [email.trim()],
-              subject: `You've been invited to join the ${team.name} team on EZShield AI`,
-              html: buildInviteEmail({ inviterName, teamName: team.name, fullName: full_name.trim(), title, joinUrl }),
-            }),
-          });
-        } catch (emailErr) {
-          console.error("Failed to send invite email:", emailErr);
-        }
+      if (!resendApiKey) {
+        return json({ error: "Email service is not configured (RESEND_API_KEY missing)" });
+      }
+
+      const joinUrl = `${siteUrl}/join-team?token=${token}`;
+      const emailRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [email.trim()],
+          subject: `You've been invited to join the ${team.name} team on EZShield AI`,
+          html: buildInviteEmail({ inviterName, teamName: team.name, fullName: full_name.trim(), title, joinUrl }),
+        }),
+      });
+
+      if (!emailRes.ok) {
+        const emailError = await emailRes.text();
+        return json({ error: `Invitation saved but email failed: ${emailError}` });
       }
 
       return json({ success: true });

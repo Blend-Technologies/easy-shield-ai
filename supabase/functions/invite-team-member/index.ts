@@ -7,9 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const json = (body: unknown, status = 200) =>
+// Always return HTTP 200 so the Supabase JS client surfaces res.data instead of
+// swallowing the body inside a generic FunctionsHttpError.
+const json = (body: unknown) =>
   new Response(JSON.stringify(body), {
-    status,
+    status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
@@ -31,7 +33,7 @@ serve(async (req) => {
     // ── Lookup invitation by token (public, no auth required) ───────────────
     if (action === "lookup") {
       const { token } = body;
-      if (!token) return json({ error: "token is required" }, 400);
+      if (!token) return json({ error: "token is required" });
 
       const { data: invite, error } = await adminClient
         .from("team_invitations")
@@ -39,32 +41,32 @@ serve(async (req) => {
         .eq("token", token)
         .maybeSingle();
 
-      if (error || !invite) return json({ error: "Invitation not found" }, 404);
-      if (invite.status === "accepted") return json({ error: "Invitation already accepted", invite }, 410);
-      if (new Date(invite.expires_at) < new Date()) return json({ error: "Invitation expired", invite }, 410);
+      if (error || !invite) return json({ error: "Invitation not found" });
+      if (invite.status === "accepted") return json({ error: "Invitation already accepted", invite });
+      if (new Date(invite.expires_at) < new Date()) return json({ error: "Invitation expired", invite });
 
       return json({ invite });
     }
 
     // All other actions require authentication
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader) return json({ error: "Unauthorized" });
 
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user: caller } } = await callerClient.auth.getUser();
-    if (!caller) return json({ error: "Unauthorized" }, 401);
+    if (!caller) return json({ error: "Unauthorized" });
 
     // ── Send invitation ─────────────────────────────────────────────────────
     if (action === "send") {
       const { team_id, email, full_name, title } = body;
       if (!team_id || !email || !full_name || !title) {
-        return json({ error: "team_id, email, full_name, and title are required" }, 400);
+        return json({ error: "team_id, email, full_name, and title are required" });
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) return json({ error: "Invalid email address" }, 400);
+      if (!emailRegex.test(email.trim())) return json({ error: "Invalid email address" });
 
       // Verify caller is a member of this team
       const { data: membership } = await adminClient
@@ -74,7 +76,7 @@ serve(async (req) => {
         .eq("user_id", caller.id)
         .maybeSingle();
 
-      if (!membership) return json({ error: "You are not a member of this team" }, 403);
+      if (!membership) return json({ error: "You are not a member of this team" });
 
       const { data: team } = await adminClient
         .from("teams")
@@ -82,7 +84,7 @@ serve(async (req) => {
         .eq("id", team_id)
         .single();
 
-      if (!team) return json({ error: "Team not found" }, 404);
+      if (!team) return json({ error: "Team not found" });
 
       const token = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -100,7 +102,7 @@ serve(async (req) => {
           expires_at: expiresAt,
         }, { onConflict: "team_id,email" });
 
-      if (inviteErr) return json({ error: inviteErr.message }, 500);
+      if (inviteErr) return json({ error: inviteErr.message });
 
       const { data: callerProfile } = await adminClient
         .from("profiles")
@@ -136,7 +138,7 @@ serve(async (req) => {
     // ── Accept invitation ───────────────────────────────────────────────────
     if (action === "accept") {
       const { token } = body;
-      if (!token) return json({ error: "token is required" }, 400);
+      if (!token) return json({ error: "token is required" });
 
       const { data: invite, error: fetchErr } = await adminClient
         .from("team_invitations")
@@ -144,16 +146,16 @@ serve(async (req) => {
         .eq("token", token)
         .maybeSingle();
 
-      if (fetchErr || !invite) return json({ error: "Invitation not found" }, 404);
-      if (invite.status === "accepted") return json({ error: "Invitation already accepted" }, 410);
-      if (new Date(invite.expires_at) < new Date()) return json({ error: "Invitation has expired" }, 410);
+      if (fetchErr || !invite) return json({ error: "Invitation not found" });
+      if (invite.status === "accepted") return json({ error: "Invitation already accepted" });
+      if (new Date(invite.expires_at) < new Date()) return json({ error: "Invitation has expired" });
 
       const { error: memberErr } = await adminClient
         .from("team_members")
         .upsert({ team_id: invite.team_id, user_id: caller.id, role: invite.title },
           { onConflict: "team_id,user_id" });
 
-      if (memberErr) return json({ error: memberErr.message }, 500);
+      if (memberErr) return json({ error: memberErr.message });
 
       await adminClient
         .from("team_invitations")
@@ -180,7 +182,7 @@ serve(async (req) => {
     // ── Cancel invitation ───────────────────────────────────────────────────
     if (action === "cancel") {
       const { invitation_id, team_id } = body;
-      if (!invitation_id || !team_id) return json({ error: "invitation_id and team_id are required" }, 400);
+      if (!invitation_id || !team_id) return json({ error: "invitation_id and team_id are required" });
 
       // Verify caller is a member of this team
       const { data: membership } = await adminClient
@@ -190,7 +192,7 @@ serve(async (req) => {
         .eq("user_id", caller.id)
         .maybeSingle();
 
-      if (!membership) return json({ error: "You are not a member of this team" }, 403);
+      if (!membership) return json({ error: "You are not a member of this team" });
 
       const { error: delErr } = await adminClient
         .from("team_invitations")
@@ -198,14 +200,14 @@ serve(async (req) => {
         .eq("id", invitation_id)
         .eq("team_id", team_id);
 
-      if (delErr) return json({ error: delErr.message }, 500);
+      if (delErr) return json({ error: delErr.message });
 
       return json({ success: true });
     }
 
-    return json({ error: "Invalid action" }, 400);
+    return json({ error: "Invalid action" });
   } catch (e) {
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json({ error: e instanceof Error ? e.message : "Unknown error" });
   }
 });
 

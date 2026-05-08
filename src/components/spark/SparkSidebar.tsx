@@ -27,6 +27,7 @@ import {
   Sparkles,
   Truck,
   Trash2,
+  FileSearch,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SparkProject } from "@/hooks/useSparkProjects";
@@ -130,23 +131,37 @@ const SparkSidebar = ({ projects, selectedProjectId, onSelectProject, onBack, on
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
-              {scopeSubItems.map((sub) => {
-                const isActive = location.pathname === sub.href.split("?")[0];
-                return (
-                  <button
-                    key={sub.label}
-                    onClick={() => navigate(sub.href)}
-                    className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors ${
-                      isActive
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-spark-sidebar-foreground hover:bg-black/5"
-                    }`}
-                  >
-                    <sub.icon className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className="text-left">{sub.label}</span>
+              {/* Request For Proposals sub-section */}
+              <Collapsible defaultOpen>
+                <CollapsibleTrigger asChild>
+                  <button className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors text-spark-sidebar-foreground hover:bg-black/5 group">
+                    <FileSearch className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+                    <span className="flex-1 text-left font-medium">Request For Proposals</span>
+                    <ChevronDown className="w-3 h-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-0 group-data-[state=closed]:-rotate-90" />
                   </button>
-                );
-              })}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="ml-4 pl-2.5 border-l border-spark-card-border space-y-0.5 py-0.5">
+                    {scopeSubItems.map((sub) => {
+                      const isActive = location.pathname === sub.href.split("?")[0];
+                      return (
+                        <button
+                          key={sub.label}
+                          onClick={() => navigate(sub.href)}
+                          className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-sm transition-colors ${
+                            isActive
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-spark-sidebar-foreground hover:bg-black/5"
+                          }`}
+                        >
+                          <sub.icon className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                          <span className="text-left">{sub.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </CollapsibleContent>
         </Collapsible>

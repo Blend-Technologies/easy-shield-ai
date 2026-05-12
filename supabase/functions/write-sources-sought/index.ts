@@ -254,7 +254,7 @@ async function executeBuildOutline(
   const response = await ai.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
-    system: sanitize(`You are an expert government contracting consultant. Create a structured outline for a Sources Sought response (capability statement). Respond with valid JSON only — no markdown, no extra text.\n\nOutput format:\n{\n  "sections": [\n    {\n      "title": "<Section number and title>",\n      "requirements": ["R-001", "R-005"],\n      "keyPoints": ["<1-sentence description of what this section will cover>"]\n    }\n  ]\n}\n\nRules:\n- A Sources Sought response is 2-5 pages — concise and targeted\n- Standard sections: Cover Letter / Transmittal, Company Overview, Core Competencies, Relevant Past Performance, Key Personnel, Certifications and Clearances, Conclusion / Interest Statement\n- NO price or cost section (Sources Sought is market research only)\n- Every government information request should map to at least one section\n- Aim for 6-8 sections`),
+    system: sanitize(`You are an expert government contracting consultant. Create a structured outline for a Sources Sought response. The response is a FORMAL LETTER (3-5 pages) — not a proposal. Respond with valid JSON only — no markdown, no extra text.\n\nOutput format:\n{\n  "sections": [\n    {\n      "title": "<Section number and title>",\n      "requirements": ["R-001", "R-005"],\n      "keyPoints": ["<1-sentence description of what this section will cover>"]\n    }\n  ]\n}\n\nRules:\n- A Sources Sought response is a formal letter — 3-5 pages, concise and targeted\n- REQUIRED sections in this order: Opening Letter/Reference (letterhead, date, attention block, reference line, salutation, opening paragraphs), 1. Submittal Intention, 2. Company Profile (employees, office, single bonding, aggregate bonding, DUNS, CAGE, SB designation, Responsible Office/Contact), 3. Relevant Experience (4-8 structured past performance entries)\n- NO price or cost section (Sources Sought is market research only)\n- Every government information request should map to at least one section\n- Keep to exactly 4 sections following the formal letter structure`),
     messages: [{
       role: "user",
       content: sanitize(`Create a Sources Sought response outline for a notice with ${requirementsResult.totalShall} SHALL and ${requirementsResult.totalMust} MUST information requests.\n\nNotice Summary: ${requirementsResult.summary}\n\nRequirements:\n${reqSummary}\n\nNotice Content:\n${rfpSnippet}\n\n${capabilityContext ? "Company Capability Context:\n" + capabilityContext.slice(0, 4000) : ""}`),
@@ -266,13 +266,10 @@ async function executeBuildOutline(
     return extractJSON(raw);
   } catch {
     return { sections: [
-      { title: "1. Cover Letter", requirements: [], keyPoints: ["Introduction and statement of interest"] },
-      { title: "2. Company Overview", requirements: [], keyPoints: ["Company background, size, NAICS codes, DUNS/UEI"] },
-      { title: "3. Core Competencies", requirements: requirementsResult.requirements.slice(0, 10).map((r: any) => r.id), keyPoints: ["Primary capabilities and technical expertise"] },
-      { title: "4. Relevant Past Performance", requirements: [], keyPoints: ["Similar contracts with scope, value, and outcomes"] },
-      { title: "5. Key Personnel", requirements: [], keyPoints: ["Proposed team leads and their qualifications"] },
-      { title: "6. Certifications and Clearances", requirements: [], keyPoints: ["Relevant certifications, clearances, socioeconomic status"] },
-      { title: "7. Conclusion", requirements: [], keyPoints: ["Statement of interest and readiness to respond to a formal solicitation"] },
+      { title: "Opening Letter", requirements: [], keyPoints: ["Letterhead, date, attention block, reference line, salutation, opening paragraph, background paragraph"] },
+      { title: "1. Submittal Intention", requirements: requirementsResult.requirements.slice(0, 5).map((r: any) => r.id), keyPoints: ["Team assembled statement, statement of interest, relevant geographic or domain experience"] },
+      { title: "2. Company Profile", requirements: [], keyPoints: ["Employees, office location, single/aggregate bonding, DUNS, CAGE, SB designation, Responsible Office/Contact Person two-column block"] },
+      { title: "3. Relevant Experience", requirements: requirementsResult.requirements.slice(5, 20).map((r: any) => r.id), keyPoints: ["4-8 past performance entries with Role, Contract Value, POC, Tel, Timeliness, Customer Satisfaction, Scope"] },
     ]};
   }
 }
@@ -299,57 +296,86 @@ async function streamProposal(
   const rfpText = rfpDocuments.map((d) => `=== ${sanitize(d.name)} ===\n${sanitize(truncateDoc(d.content))}`).join("\n\n");
   const capText = capabilityDocuments.map((d) => `=== ${sanitize(d.name)} ===\n${sanitize(truncateDoc(d.content))}`).join("\n\n");
 
-  const system = `You are an expert government contracting consultant writing a Sources Sought response (capability statement) on behalf of a company.
+  const system = `You are an expert government contracting consultant writing a Sources Sought response on behalf of a company.
 
-A Sources Sought is a government market research tool — NOT a formal solicitation. The response demonstrates the company's qualifications and interest without a price quote. It is typically 2-5 pages.
+A Sources Sought is a government market research tool — NOT a formal solicitation. The response is a FORMAL BUSINESS LETTER (3-5 pages). It demonstrates the company's qualifications and interest. It does NOT include a price section.
 
-MISSION DIRECTIVE: Write a concise, professional Sources Sought response that directly addresses every information request. Use the company's capability documents to provide specific, factual responses. Write naturally and professionally — not like AI.
+MISSION DIRECTIVE: Write the response as a formal letter following the EXACT structure below. Use the company's capability documents for specific, factual content. Write naturally and professionally — not like AI.
 
-═══ ABSOLUTE RULES ═══
+ABSOLUTE RULES:
 1. Address EVERY information request from the Sources Sought notice.
-2. NO price, cost estimate, or pricing section — Sources Sought responses never include pricing.
+2. NO price, cost estimate, or pricing section.
 3. Active voice, confident and specific. Never sound like AI.
 4. Zero grammar or spelling errors. Formal professional English.
-5. Each section must be substantive but concise — this is a 2-5 page document, not a full proposal.
-6. Reference specific line items from the Sources Sought notice when applicable.
-7. Show HOW the company meets the requirements — not just that they do.
-8. NEVER use em dashes (—) or en dashes (–) anywhere. Use commas, semicolons, colons, or rewrite instead.
-9. NEVER use curly/smart quotes (" " ' '). Use only straight quotation marks and apostrophes.
-10. NEVER use decorative bullets (•, ·, ‣, ◦). Use only standard Markdown hyphens (-) for lists.
+5. NEVER use em dashes (--) or en dashes. Use commas, semicolons, colons, or rewrite instead.
+6. NEVER use curly/smart quotes. Use only straight quotation marks and apostrophes.
+7. NEVER use decorative bullets (bullets, middle dots, triangles). Use only standard Markdown hyphens (-) for lists.
 
-═══ STRICT MARKDOWN FORMATTING RULES ═══
-HEADINGS: one blank line before AND after every # H1, ## H2, ### H3
-PARAGRAPHS: separated by one blank line.
-COVER LETTER — exact template:
-# SOURCES SOUGHT RESPONSE
-## [SOURCES SOUGHT TITLE / NOTICE NUMBER]
-**Notice Number:** [number]
-**Issued by:** [agency name]
-**NAICS Code:** [code]
+REQUIRED DOCUMENT STRUCTURE — follow this EXACT format in order:
 
-**Submitted by:**
+--- LETTERHEAD / HEADER ---
 [Company Name]
+[Street Address, City, State ZIP]
+P: [phone] | F: [fax]
+Certifications: [e.g., 8(a) Certified | Small Business | DBE | LEED AP]
+
+[Month Day, Year]
+
+[Agency / Contracting Office Name]
 [Street Address]
 [City, State ZIP]
-**UEI:** [UEI]  |  **CAGE Code:** [code]
-**DUNS:** [number]  |  **SAM.gov:** Active
 
-**Point of Contact:** [name, title]
-**Telephone:** [phone]
-**Email:** [email]
+**Reference: Statement of Capability to Provide [Services] for [Project Title]. (Sol. #[Number])**
 
-**Date:** [date]
+To whom it may concern,
 
-BULLET LISTS — blank line before and after:
-- Item one
-- Item two
+[OPENING PARAGRAPH: Company name, location, certifications (8(a), Small Business, DBE, etc.), statement of intent to submit capability, one sentence on core specialization.]
 
-TABLES — blank line before AND after:
-| Column A | Column B |
-|----------|----------|
-| data     | data     |
+[BACKGROUND PARAGRAPH: Number of contracts completed, years in program (e.g., SBA 8(a)), specialization areas, on-time/on-budget track record, customer satisfaction highlight.]
 
-Write naturally and professionally. Keep it concise — this is a capability statement, not a full proposal.`;
+**SUBMITTAL REQUIREMENTS:**
+
+**1. Submittal Intention:**
+
+[Team assembled statement, statement of interest in the project, relevant geographic or domain experience. 2-3 sentences.]
+
+**2. Company Profile:**
+
+(1.) Number of employees:        [X]
+(2.) Office location:            [Street, City, State ZIP]
+(3.) Single bonding capacity:    $[X]
+(4.) Aggregate bonding capacity: $[X]
+(5.) DUNS number:                [X]
+(6.) CAGE code:                  [X]
+(7.) Small business designation/status claimed: [8(a) / HUBZone / SDVOSB / WOSB / etc.]
+
+Responsible Office              Contact Person
+[Company Name]                  [Name, Credentials]
+[Street Address]                [Title]
+[City, State ZIP]               Mobile: [phone]
+P: [phone]                      Email: [email]
+F: [fax]
+
+**3. Relevant Experience:**
+
+[4-8 past performance entries. Each MUST follow this exact structure:]
+
+- [Project Name] ([Year or "In Progress"])
+  Role:                     Prime Contractor / Sub Contractor
+  Contract Value:           $[X]
+  Point Of Contact:         [Name] - [Title]
+  Tel. Number:              [phone]
+  Timeliness of Perform.:   Finished on schedule / Finished ahead of schedule
+  Customer Satisfaction:    [specific outcome, e.g., "Zero call back and zero warranty issues"]
+  Scope:                    [2-4 sentences describing work performed, starting with an action verb]
+
+List most relevant projects first. Use data from capability documents when available.
+
+FORMATTING RULES:
+- Paragraphs separated by one blank line.
+- Use **bold** for section labels and field names.
+- Bullet lists: blank line before and after.
+- This is a formal letter — do not use H1/H2/H3 markdown headers inside the body. Use bold text for section labels.`;
 
   const user = `Write a complete, professional Sources Sought response for **${companyName || "Our Company"}**.
 
@@ -420,13 +446,16 @@ async function runModification(
       ? outlineSections
       : (existingProposalText.match(/^#{1,2} .+/gm) ?? []).map((h) => h.replace(/^#{1,2} /, ""));
 
-    const system = `You are an expert government contracting consultant. You will receive an existing Sources Sought response and update instructions. Apply all requested changes while maintaining the concise, professional format appropriate for a capability statement. Output the COMPLETE updated response. After ALL sections are written, end with <<<END_OF_PROPOSAL>>> on its own line.
+    const system = `You are an expert government contracting consultant. You will receive an existing Sources Sought response (a formal business letter) and update instructions. Apply all requested changes while preserving the formal letter format: letterhead, date, attention block, reference line, salutation, opening paragraphs, and SUBMITTAL REQUIREMENTS sections (1. Submittal Intention, 2. Company Profile, 3. Relevant Experience). Output the COMPLETE updated response. After ALL sections are written, end with <<<END_OF_PROPOSAL>>> on its own line.
 
 FORMATTING RULES:
-- NEVER use em dashes (—) or en dashes (–). Use commas, semicolons, colons, or rewrite instead.
-- NEVER use curly/smart quotes (" " ' '). Use straight quotation marks and apostrophes only.
-- NEVER use decorative bullets (•, ·, ‣). Use only standard Markdown hyphens (-).
-- NO price or cost information.`;
+- Preserve the formal letter structure — do not convert to headers or a proposal format.
+- NEVER use em dashes (--) or en dashes. Use commas, semicolons, colons, or rewrite instead.
+- NEVER use curly/smart quotes. Use straight quotation marks and apostrophes only.
+- NEVER use decorative bullets. Use only standard Markdown hyphens (-).
+- NO price or cost information.
+- Company Profile section must retain all numbered fields: employees, office, single bonding, aggregate bonding, DUNS, CAGE, SB status, Responsible Office/Contact Person block.
+- Relevant Experience entries must retain all structured fields: Role, Contract Value, Point Of Contact, Tel. Number, Timeliness of Perform., Customer Satisfaction, Scope.`;
 
     const user = `Apply the following updates to the Sources Sought response below.
 
@@ -506,15 +535,16 @@ async function runContinuation(
       ? `\nSECTIONS STILL NEEDED (write ALL of these):\n${stillNeeded.map((s) => `  - ${s}`).join("\n")}\n`
       : "\nAll planned sections appear to be present — finish any incomplete section.\n";
 
-    const system = `You are an expert government contracting consultant continuing a Sources Sought response for ${companyName || "Our Company"}.
+    const system = `You are an expert government contracting consultant continuing a Sources Sought response (formal business letter) for ${companyName || "Our Company"}.
 
 The response was cut off mid-generation due to output length limits. Continue writing from EXACTLY where it stopped.
 
 RULES:
 - Do NOT repeat, summarize, or restate anything already written.
 - Pick up at the exact word where the text ends and continue seamlessly.
-- Maintain identical tone, heading style, and Markdown formatting.
-- Keep sections concise — this is a capability statement, not a full proposal.
+- Maintain identical formal letter tone, bold section labels, and Markdown formatting (no H1/H2 headers inside the body).
+- If continuing Relevant Experience entries, each entry must include: Role, Contract Value, Point Of Contact, Tel. Number, Timeliness of Perform., Customer Satisfaction, Scope.
+- Keep sections concise — this is a 3-5 page formal letter, not a full proposal.
 - NO price or cost information.
 - After ALL sections are written, end with <<<END_OF_PROPOSAL>>> on its own line.`;
 

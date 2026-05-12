@@ -20,6 +20,9 @@ import {
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import remarkGfm from "remark-gfm";
+import { MarkdownToolbar } from "@/components/ui/MarkdownToolbar";
 import { readFileAsText } from "@/lib/fileReader";
 import { extractShallMust, extractSectionHeadings } from "@/lib/requirementsExtractor";
 
@@ -142,6 +145,7 @@ const SourcesSoughtWriter = () => {
   const abortRef          = useRef<AbortController | null>(null);
   const logRef            = useRef<HTMLDivElement>(null);
   const outlineSectionsRef = useRef<string[]>([]);
+  const editTextareaRef   = useRef<HTMLTextAreaElement>(null);
 
   const sessionId = useMemo(() => {
     const stored = lsGet<string>("sessionId");
@@ -1182,18 +1186,27 @@ const SourcesSoughtWriter = () => {
                       }
                     `}</style>
                     {isEditing ? (
-                      <textarea
-                        className="w-full h-[calc(100vh-360px)] min-h-[400px] font-mono text-sm leading-relaxed bg-background border border-input rounded-lg px-4 py-3 resize-none focus:outline-none focus:ring-1 focus:ring-ring text-foreground"
-                        value={proposal}
-                        onChange={(e) => {
-                          setProposal(e.target.value);
-                          setHasUserEdits(true);
-                        }}
-                        spellCheck
-                      />
+                      <div className="flex flex-col">
+                        <MarkdownToolbar
+                          textareaRef={editTextareaRef}
+                          value={proposal}
+                          onChange={(v) => { setProposal(v); setHasUserEdits(true); }}
+                          palette={{ primary: palette.primary, border: palette.border }}
+                        />
+                        <textarea
+                          ref={editTextareaRef}
+                          className="w-full h-[calc(100vh-360px)] min-h-[400px] font-mono text-sm leading-relaxed bg-background border border-input rounded-b-lg rounded-t-none px-4 py-3 resize-none focus:outline-none focus:ring-1 focus:ring-ring text-foreground"
+                          value={proposal}
+                          onChange={(e) => {
+                            setProposal(e.target.value);
+                            setHasUserEdits(true);
+                          }}
+                          spellCheck
+                        />
+                      </div>
                     ) : (
                       <div className="proposal-output max-w-none text-foreground">
-                        <ReactMarkdown>{proposal}</ReactMarkdown>
+                        <ReactMarkdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>{proposal}</ReactMarkdown>
                         {(isAgentRunning || isModifying) && proposal && (
                           <span className="inline-block w-2 h-4 ml-0.5 animate-pulse rounded-sm" style={{ background: palette.primary }} />
                         )}

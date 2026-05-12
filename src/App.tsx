@@ -13,6 +13,8 @@ import Dashboard from "./pages/Dashboard";
 import DesignVisualizer from "./pages/DesignVisualizer";
 import ProposalWriter from "./pages/ProposalWriter";
 import ProposalEvaluator from "./pages/ProposalEvaluator";
+import SourcesSoughtEvaluator from "./pages/SourcesSoughtEvaluator";
+import SourcesSoughtWriter from "./pages/SourcesSoughtWriter";
 import SparkFramework from "./pages/SparkFramework";
 import WorkItems from "./pages/WorkItems";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
@@ -130,6 +132,8 @@ const App = () => (
           <Route path="/dashboard/visualizer" element={<DesignVisualizer />} />
           <Route path="/dashboard/proposal-writer" element={<ProposalWriter />} />
           <Route path="/dashboard/proposal-evaluator" element={<ProposalEvaluator />} />
+          <Route path="/dashboard/sources-sought-evaluator" element={<SourcesSoughtEvaluator />} />
+          <Route path="/dashboard/sources-sought-writer" element={<SourcesSoughtWriter />} />
           <Route path="/dashboard/spark" element={<SparkFramework />} />
           <Route path="/dashboard/spark/:projectName" element={<SparkFramework />} />
           <Route path="/dashboard/:projectName" element={<SparkFramework />} />

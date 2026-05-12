@@ -35,3 +35,9 @@ verify_jwt = false
 
 [functions.invite-team-member]
 verify_jwt = false
+
+[functions.sources-sought-agent]
+verify_jwt = false
+
+[functions.write-sources-sought]
+verify_jwt = false

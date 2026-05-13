@@ -1,7 +1,7 @@
 import {
   Bold, Italic, Strikethrough,
   Heading1, Heading2, Heading3, Heading4,
-  AlignLeft, AlignCenter, AlignRight,
+  AlignLeft, AlignCenter, AlignRight, AlignJustify,
   List, ListOrdered,
   Quote, Code, Code2,
   Minus, Link, RemoveFormatting,
@@ -18,7 +18,7 @@ interface MarkdownToolbarProps {
 type FormatAction =
   | "bold" | "italic" | "strikethrough"
   | "h1" | "h2" | "h3" | "h4"
-  | "align-left" | "align-center" | "align-right"
+  | "align-left" | "align-center" | "align-right" | "align-justify"
   | "ul" | "ol"
   | "blockquote" | "code" | "codeblock"
   | "hr" | "link" | "clear";
@@ -48,9 +48,6 @@ function applyFormat(
 
   // Helper: prefix each selected line
   const prefixLines = (prefix: string) => {
-    const linesBefore = before.slice(lineStart);
-    const selLines = value.slice(lineStart + linesBefore.length - (lineStart === ss ? 0 : 0), se);
-
     // Work on lines from lineStart to se
     const fullSelected = value.slice(lineStart, se);
     const prefixed = fullSelected
@@ -96,11 +93,11 @@ function applyFormat(
   };
 
   // Helper: wrap block with HTML align div
-  const alignBlock = (dir: "center" | "right" | "left") => {
+  const alignBlock = (dir: "center" | "right" | "left" | "justify") => {
     const inner = selected || "text";
     if (dir === "left") {
       // Remove alignment wrappers if present
-      const cleaned = inner.replace(/<div align="(?:center|right)">\n\n?/g, "").replace(/\n?\n?<\/div>/g, "");
+      const cleaned = inner.replace(/<div align="(?:center|right|justify)">\n\n?/g, "").replace(/\n?\n?<\/div>/g, "");
       const newVal = `${before}${cleaned}${after}`;
       return { newVal, newStart: ss, newEnd: ss + cleaned.length };
     }
@@ -122,6 +119,7 @@ function applyFormat(
     case "align-left":    result = alignBlock("left"); break;
     case "align-center":  result = alignBlock("center"); break;
     case "align-right":   result = alignBlock("right"); break;
+    case "align-justify": result = alignBlock("justify"); break;
     case "ul":            result = prefixLines("- "); break;
     case "ol":            result = prefixOrderedLines(); break;
     case "blockquote":    result = prefixLines("> "); break;
@@ -161,7 +159,7 @@ function applyFormat(
         .replace(/^[-*]\s+/gm, "")
         .replace(/^\d+\.\s+/gm, "")
         .replace(/^>\s+/gm, "")
-        .replace(/<div align="(?:center|right|left)">\n\n?/g, "")
+        .replace(/<div align="(?:center|right|left|justify)">\n\n?/g, "")
         .replace(/\n?\n?<\/div>/g, "");
       const newVal = `${before}${cleaned}${after}`;
       result = { newVal, newStart: ss, newEnd: ss + cleaned.length };
@@ -184,7 +182,6 @@ function ToolBtn({
   label,
   action,
   textareaRef,
-  value,
   onChange,
   accentColor,
 }: {
@@ -192,7 +189,6 @@ function ToolBtn({
   label: string;
   action: FormatAction;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
-  value: string;
   onChange: (v: string) => void;
   accentColor?: string;
 }) {
@@ -221,9 +217,9 @@ function ToolBtn({
 const Sep = () => <div className="w-px h-4 bg-border mx-0.5 self-center" />;
 
 // ── Main toolbar ──────────────────────────────────────────────────────────────
-export function MarkdownToolbar({ textareaRef, value, onChange, palette }: MarkdownToolbarProps) {
+export function MarkdownToolbar({ textareaRef, onChange, palette }: MarkdownToolbarProps) {
   const accent = palette?.primary;
-  const btnProps = { textareaRef, value, onChange, accentColor: accent };
+  const btnProps = { textareaRef, onChange, accentColor: accent };
 
   return (
     <div
@@ -246,9 +242,10 @@ export function MarkdownToolbar({ textareaRef, value, onChange, palette }: Markd
       <Sep />
 
       {/* Alignment */}
-      <ToolBtn icon={AlignLeft}   label="Align left (remove alignment)"  action="align-left"   {...btnProps} />
-      <ToolBtn icon={AlignCenter} label="Align center"                    action="align-center" {...btnProps} />
-      <ToolBtn icon={AlignRight}  label="Align right"                     action="align-right"  {...btnProps} />
+      <ToolBtn icon={AlignLeft}    label="Align left (remove alignment)"  action="align-left"    {...btnProps} />
+      <ToolBtn icon={AlignCenter}  label="Align center"                    action="align-center"  {...btnProps} />
+      <ToolBtn icon={AlignRight}   label="Align right"                     action="align-right"   {...btnProps} />
+      <ToolBtn icon={AlignJustify} label="Justify"                         action="align-justify" {...btnProps} />
 
       <Sep />
 

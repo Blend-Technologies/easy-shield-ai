@@ -29,6 +29,7 @@ import { SparkProject, Priority } from "@/hooks/useSparkProjects";
 
 // ── US States ────────────────────────────────────────────────────────────────
 const US_STATES = [
+  "Federal",
   "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut",
   "Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa",
   "Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan",

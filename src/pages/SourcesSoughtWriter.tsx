@@ -1129,11 +1129,20 @@ const SourcesSoughtWriter = () => {
                         margin-top: 0.65rem; margin-bottom: 0.65rem;
                         line-height: 1.85;
                       }
-                      .proposal-output ul, .proposal-output ol {
+                      .proposal-output ul {
+                        list-style-type: disc;
                         padding-left: 1.6rem;
                         margin-top: 0.65rem; margin-bottom: 0.65rem;
                       }
+                      .proposal-output ol {
+                        list-style-type: decimal;
+                        padding-left: 1.6rem;
+                        margin-top: 0.65rem; margin-bottom: 0.65rem;
+                      }
+                      .proposal-output ul ul { list-style-type: circle; }
+                      .proposal-output ul ul ul { list-style-type: square; }
                       .proposal-output li {
+                        display: list-item;
                         margin-top: 0.3rem; margin-bottom: 0.3rem;
                         line-height: 1.75;
                       }

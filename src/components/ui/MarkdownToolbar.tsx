@@ -56,24 +56,49 @@ function applyFormat(
 
   // Extend the selection to cover full lines (start of first line → end of last line)
   const blockStart = lineStart;
-  const blockEnd = se > ss ? lineEndAt(se - 1) : lineEndAt(ss);
+  const blockEnd = se > ss
+    ? lineEndAt(value[se - 1] === "\n" ? se - 1 : se)
+    : lineEndAt(ss);
 
-  // Ensure a blank line exists immediately before/after the block
-  const addBlankBefore = (before: string) =>
-    before.length > 0 && !before.endsWith("\n\n") ? (before.endsWith("\n") ? "\n" : "\n\n") : "";
-  const addBlankAfter = (after: string) =>
-    after.length > 0 && !after.startsWith("\n\n") ? (after.startsWith("\n") ? "\n" : "\n\n") : "";
+  // Detect if a line of text is already a list item (bullet or numbered)
+  const isListLine = (line: string) => /^(\s*[-*+]|\s*\d+\.)\s/.test(line);
 
-  // Helper: prefix each selected line
+  // Only add a blank line when needed — skip if adjacent content is already a list item
+  const addBlankBefore = (str: string) => {
+    if (!str.length || str.endsWith("\n\n")) return "";
+    const prevLine = str.slice(0, str.endsWith("\n") ? -1 : undefined).split("\n").pop() ?? "";
+    if (isListLine(prevLine)) return "";          // adjacent list — no gap needed
+    return str.endsWith("\n") ? "\n" : "\n\n";
+  };
+  const addBlankAfter = (str: string) => {
+    if (!str.length || str.startsWith("\n\n")) return "";
+    const nextLine = (str.startsWith("\n") ? str.slice(1) : str).split("\n")[0] ?? "";
+    if (isListLine(nextLine)) return "";          // adjacent list — no gap needed
+    return str.startsWith("\n") ? "\n" : "\n\n";
+  };
+
+  // Helper: toggle-prefix each selected line (adds prefix if any line is missing it, removes if all have it)
   const prefixLines = (prefix: string) => {
     const textBefore = value.slice(0, blockStart);
     const textAfter  = value.slice(blockEnd);
     const block      = value.slice(blockStart, blockEnd);
+    const lines      = block.split("\n");
 
-    const prefixed = block
-      .split("\n")
-      .map((l) => (l.startsWith(prefix) ? l : prefix + l))
+    // Toggle: if every non-empty line already has the prefix, remove it
+    const allPrefixed = lines.filter((l) => l.trim()).every((l) => l.startsWith(prefix));
+
+    const prefixed = lines
+      .map((l) => allPrefixed
+        ? (l.startsWith(prefix) ? l.slice(prefix.length) : l)
+        : (l.startsWith(prefix) ? l : prefix + l)
+      )
       .join("\n");
+
+    if (allPrefixed) {
+      // Removing prefix — preserve surrounding whitespace as-is
+      const newVal = textBefore + prefixed + textAfter;
+      return { newVal, newStart: blockStart, newEnd: blockStart + prefixed.length };
+    }
 
     const gap1 = addBlankBefore(textBefore);
     const gap2 = addBlankAfter(textAfter);
@@ -82,20 +107,28 @@ function applyFormat(
     return { newVal, newStart, newEnd: newStart + prefixed.length };
   };
 
-  // Helper: prefix each selected line with ordered numbers
+  // Helper: toggle-prefix each selected line with ordered numbers
   const prefixOrderedLines = () => {
     const textBefore = value.slice(0, blockStart);
     const textAfter  = value.slice(blockEnd);
     const block      = value.slice(blockStart, blockEnd);
+    const lines      = block.split("\n");
+
+    const allPrefixed = lines.filter((l) => l.trim()).every((l) => /^\d+\.\s/.test(l));
 
     let counter = 1;
-    const prefixed = block
-      .split("\n")
+    const prefixed = lines
       .map((l) => {
-        if (/^\d+\.\s/.test(l)) { counter++; return l; } // already numbered — skip
+        if (allPrefixed) return /^\d+\.\s/.test(l) ? l.replace(/^\d+\.\s/, "") : l;
+        if (/^\d+\.\s/.test(l)) { counter++; return l; }
         return `${counter++}. ${l}`;
       })
       .join("\n");
+
+    if (allPrefixed) {
+      const newVal = textBefore + prefixed + textAfter;
+      return { newVal, newStart: blockStart, newEnd: blockStart + prefixed.length };
+    }
 
     const gap1 = addBlankBefore(textBefore);
     const gap2 = addBlankAfter(textAfter);

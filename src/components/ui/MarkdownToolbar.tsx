@@ -46,38 +46,60 @@ function applyFormat(
     return { newVal, newStart, newEnd };
   };
 
+  // Find the end of the line at position p
+  const lineEndAt = (p: number) => {
+    const idx = value.indexOf("\n", p);
+    return idx === -1 ? value.length : idx;
+  };
+
+  // Extend the selection to cover full lines (start of first line → end of last line)
+  const blockStart = lineStart;
+  const blockEnd = se > ss ? lineEndAt(se - 1) : lineEndAt(ss);
+
+  // Ensure a blank line exists immediately before/after the block
+  const addBlankBefore = (before: string) =>
+    before.length > 0 && !before.endsWith("\n\n") ? (before.endsWith("\n") ? "\n" : "\n\n") : "";
+  const addBlankAfter = (after: string) =>
+    after.length > 0 && !after.startsWith("\n\n") ? (after.startsWith("\n") ? "\n" : "\n\n") : "";
+
   // Helper: prefix each selected line
   const prefixLines = (prefix: string) => {
-    // Work on lines from lineStart to se
-    const fullSelected = value.slice(lineStart, se);
-    const prefixed = fullSelected
+    const textBefore = value.slice(0, blockStart);
+    const textAfter  = value.slice(blockEnd);
+    const block      = value.slice(blockStart, blockEnd);
+
+    const prefixed = block
       .split("\n")
-      .map((l) => {
-        if (l.startsWith(prefix)) return l; // already has prefix — idempotent
-        return prefix + l;
-      })
+      .map((l) => (l.startsWith(prefix) ? l : prefix + l))
       .join("\n");
 
-    const newVal = value.slice(0, lineStart) + prefixed + value.slice(se);
-    return { newVal, newStart: lineStart, newEnd: lineStart + prefixed.length };
+    const gap1 = addBlankBefore(textBefore);
+    const gap2 = addBlankAfter(textAfter);
+    const newVal = textBefore + gap1 + prefixed + gap2 + textAfter;
+    const newStart = blockStart + gap1.length;
+    return { newVal, newStart, newEnd: newStart + prefixed.length };
   };
 
   // Helper: prefix each selected line with ordered numbers
   const prefixOrderedLines = () => {
-    const fullSelected = value.slice(lineStart, se);
+    const textBefore = value.slice(0, blockStart);
+    const textAfter  = value.slice(blockEnd);
+    const block      = value.slice(blockStart, blockEnd);
+
     let counter = 1;
-    const prefixed = fullSelected
+    const prefixed = block
       .split("\n")
       .map((l) => {
-        const p = `${counter}. `;
-        counter++;
-        if (/^\d+\. /.test(l)) return l;
-        return p + l;
+        if (/^\d+\.\s/.test(l)) { counter++; return l; } // already numbered — skip
+        return `${counter++}. ${l}`;
       })
       .join("\n");
 
-    const newVal = value.slice(0, lineStart) + prefixed + value.slice(se);
-    return { newVal, newStart: lineStart, newEnd: lineStart + prefixed.length };
+    const gap1 = addBlankBefore(textBefore);
+    const gap2 = addBlankAfter(textAfter);
+    const newVal = textBefore + gap1 + prefixed + gap2 + textAfter;
+    const newStart = blockStart + gap1.length;
+    return { newVal, newStart, newEnd: newStart + prefixed.length };
   };
 
   // Helper: block-level heading prefix on current line only

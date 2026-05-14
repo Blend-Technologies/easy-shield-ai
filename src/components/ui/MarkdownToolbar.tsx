@@ -1,12 +1,14 @@
+import { useState } from "react";
 import {
   Bold, Italic, Strikethrough,
   Heading1, Heading2, Heading3, Heading4,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   List, ListOrdered,
   Quote, Code, Code2,
-  Minus, Link, RemoveFormatting,
+  Minus, Link, RemoveFormatting, Table2,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface MarkdownToolbarProps {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -238,6 +240,100 @@ function ToolBtn({
 
 const Sep = () => <div className="w-px h-4 bg-border mx-0.5 self-center" />;
 
+// ── Table grid picker ─────────────────────────────────────────────────────────
+const MAX_COLS = 8;
+const MAX_ROWS = 6;
+
+function TablePickerBtn({
+  textareaRef,
+  onChange,
+}: {
+  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState({ row: 0, col: 0 });
+
+  const insertTable = (rows: number, cols: number) => {
+    const el = textareaRef.current;
+    if (!el) return;
+
+    const { value, selectionStart: ss } = el;
+    const before = value.slice(0, ss);
+    const after  = value.slice(ss);
+
+    const header    = "| " + Array.from({ length: cols }, (_, i) => `Header ${i + 1}`).join(" | ") + " |";
+    const separator = "|" + Array(cols).fill(" --- ").join("|") + "|";
+    const dataRow   = "| " + Array(cols).fill("     ").join(" | ") + " |";
+    const table     = [header, separator, ...Array(rows).fill(dataRow)].join("\n");
+
+    const gap1   = before.length > 0 && !before.endsWith("\n\n") ? (before.endsWith("\n") ? "\n" : "\n\n") : "";
+    const gap2   = after.length  > 0 && !after.startsWith("\n\n") ? (after.startsWith("\n") ? "\n" : "\n\n") : "";
+    const newVal = before + gap1 + table + gap2 + after;
+
+    onChange(newVal);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = before.length + gap1.length + table.length;
+      el.setSelectionRange(pos, pos);
+    });
+
+    setOpen(false);
+    setHover({ row: 0, col: 0 });
+  };
+
+  return (
+    <Tooltip>
+      <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setHover({ row: 0, col: 0 }); }}>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground focus-visible:outline-none"
+            >
+              <Table2 className="w-3.5 h-3.5" />
+            </button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">Insert table</TooltipContent>
+        <PopoverContent side="bottom" align="start" className="w-auto p-3">
+          <div
+            className="grid gap-1"
+            style={{ gridTemplateColumns: `repeat(${MAX_COLS}, 18px)` }}
+            onMouseLeave={() => setHover({ row: 0, col: 0 })}
+          >
+            {Array.from({ length: MAX_ROWS * MAX_COLS }, (_, i) => {
+              const row = Math.floor(i / MAX_COLS) + 1;
+              const col = (i % MAX_COLS) + 1;
+              const active = row <= hover.row && col <= hover.col;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onMouseEnter={() => setHover({ row, col })}
+                  onClick={() => insertTable(row, col)}
+                  className={`w-[18px] h-[18px] rounded-sm border transition-colors ${
+                    active
+                      ? "bg-primary/70 border-primary"
+                      : "bg-muted/50 border-border hover:bg-muted"
+                  }`}
+                />
+              );
+            })}
+          </div>
+          <p className="text-xs text-center text-muted-foreground mt-2 min-w-[120px]">
+            {hover.row > 0
+              ? `${hover.row} row${hover.row > 1 ? "s" : ""} × ${hover.col} column${hover.col > 1 ? "s" : ""}`
+              : "Hover to select size"}
+          </p>
+        </PopoverContent>
+      </Popover>
+    </Tooltip>
+  );
+}
+
 // ── Main toolbar ──────────────────────────────────────────────────────────────
 export function MarkdownToolbar({ textareaRef, onChange, palette }: MarkdownToolbarProps) {
   const accent = palette?.primary;
@@ -282,6 +378,11 @@ export function MarkdownToolbar({ textareaRef, onChange, palette }: MarkdownTool
       <ToolBtn icon={Code}   label="Inline code"     action="code"       {...btnProps} />
       <ToolBtn icon={Code2}  label="Code block"      action="codeblock"  {...btnProps} />
       <ToolBtn icon={Minus}  label="Horizontal rule" action="hr"         {...btnProps} />
+
+      <Sep />
+
+      {/* Table */}
+      <TablePickerBtn textareaRef={textareaRef} onChange={onChange} />
 
       <Sep />
 
